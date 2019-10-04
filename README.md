@@ -1,2 +1,1 @@
-# GEOGloWS Toolbox
-
+# GEOGloWS
