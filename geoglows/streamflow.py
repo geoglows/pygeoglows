@@ -37,7 +37,7 @@ def forecast_ensembles(reach_id, apikey, return_format='csv'):
     data = requests.get(AZURE_ENDPOINT + 'ForecastEnsembles', headers=headers, params=params).text
 
     if return_format == 'csv':
-        return pandas.read_csv(StringIO(data))
+        return pandas.read_csv(StringIO(data), index_col='datetime')
     elif return_format == 'json':
         return json.loads(data)
     elif return_format == 'waterml':
@@ -88,7 +88,7 @@ def return_periods(reach_id, apikey, return_format='csv'):
     data = requests.get(AZURE_ENDPOINT + 'ReturnPeriods', headers=headers, params=params).text
 
     if return_format == 'csv':
-        return pandas.read_csv(StringIO(data))
+        return pandas.read_csv(StringIO(data), index_col='return period')
     elif return_format == 'json':
         return json.loads(data)
     elif return_format == 'waterml':
