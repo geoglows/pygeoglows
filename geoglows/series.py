@@ -141,7 +141,10 @@ def forecasted(forecast, reach_id, returnperiods, outformat='json'):
         raise ValueError('invalid outformat specified. pick json or html')
 
 
-def historical(historical, returnperiods, outformat='json'):
+def historical(hist, returnperiods, outformat='json'):
+    if not isinstance(hist, pandas.DataFrame):
+        raise ValueError('Sorry, I only process pandas dataframes right now')
+
     r2 = returnperiods.iloc[3][0]
     r10 = returnperiods.iloc[2][0]
     r20 = returnperiods.iloc[1][0]
@@ -162,7 +165,7 @@ def historical(historical, returnperiods, outformat='json'):
             },
             yaxis={
                 'title': 'Streamflow (m<sup>3</sup>/s)',
-                'range': [0, 1.2 * max(historical['streamflow (m3/s)'])]
+                'range': [0, 1.2 * max(hist['streamflow (m3/s)'])]
             },
             shapes=[
                 go.layout.Shape(
@@ -190,7 +193,7 @@ def historical(historical, returnperiods, outformat='json'):
                     x0=startdate,
                     x1=enddate,
                     y0=r20,
-                    y1=1.2 * 1.2 * max(historical['streamflow (m3/s)']),
+                    y1=1.2 * 1.2 * max(hist['streamflow (m3/s)']),
                     line={'width': 0},
                     opacity=.4,
                     fillcolor='purple'
@@ -198,14 +201,35 @@ def historical(historical, returnperiods, outformat='json'):
             ]
         )
         return offplot(
-            Figure([Scattergl(x=dates, y=historical['streamflow (m3/s)'].tolist())], layout=layout),
+            Figure([Scattergl(x=dates, y=hist['streamflow (m3/s)'].tolist())], layout=layout),
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False)
 
 
-def daily_avg(daily,):
-    return
+def daily_avg(daily, outformat='html'):
+    if not isinstance(daily, pandas.DataFrame):
+        raise ValueError('Sorry, I only process pandas dataframes right now')
+
+    daily['day'] = pandas.to_datetime(daily['day'] + 1, format='%j')
+    layout = Layout(
+        title='Daily Average Streamflow (Historic Simulation)',
+        xaxis={
+            'title': 'Date',
+            'hoverformat': '%b %d (%j)',
+            'tickformat': '%b'
+        },
+        yaxis={
+            'title': 'Streamflow (m<sup>3</sup>/s)',
+            'range': [0, 1.2 * max(daily['streamflow_avg (m3/s)'])]
+        },
+    )
+    return offplot(
+        Figure([Scatter(x=daily['day'].tolist(), y=daily['streamflow_avg (m3/s)'].tolist())], layout=layout),
+        config={'autosizable': True, 'responsive': True},
+        output_type='div',
+        include_plotlyjs=False
+    )
 
 
 def probabilities_table(forecast, returnperiods):

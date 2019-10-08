@@ -1,0 +1,30 @@
+package:
+  name: geoglows
+  version: 0.0.1
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - python
+  run:
+    - python>=3.7
+    - plotly
+    - pandas
+
+about:
+  summary: This is a package with tools from the GEOGloWS initiative
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+
+test:
+  imports:
+    - requests
+    - plotly>=4
+    - pandas
+
+extra:
+  recipe-maintainers:
+    - rileyhales
