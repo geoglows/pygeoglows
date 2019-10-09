@@ -10,8 +10,12 @@ requirements:
     - python
   run:
     - python>=3.7
-    - plotly
-    - pandas
+    - pandas>=0.25
+    - plotly>=4
+    - requests>=2
+    - flask>=1
+    - sphinx
+    - sphinx_rtd_theme
 
 about:
   summary: This is a package with tools from the GEOGloWS initiative
@@ -22,8 +26,9 @@ about:
 test:
   imports:
     - requests
-    - plotly>=4
+    - plotly
     - pandas
+    - flask
 
 extra:
   recipe-maintainers:

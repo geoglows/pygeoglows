@@ -1,0 +1,41 @@
+<h4 style="text-align: center">Percent of Ensembles that Exceed Return Periods</h4>
+<table id="returntable" align="center">
+  <tbody>
+    <tr>
+      <th>Dates</th>
+      {% for day in days %}
+        <th>{{ day }}</th>
+      {% endfor %}
+    </tr>
+    <tr>
+      <td>2-yr Return Period</td>
+      {% for r in r2 %}
+        {% if r != 0 %}
+          <td style="background-color: rgba(255, 255, 0, calc(9 * {{ r }} / 1000 + .1))">{{ r }}%</td>
+        {% else %}
+          <td>0</td>
+        {% endif %}
+      {% endfor %}
+    </tr>
+    <tr>
+      <td>10-yr Return Period</td>
+      {% for r in r10 %}
+        {% if r != 0 %}
+          <td style="background-color: rgba(255, 0, 0, calc(9 * {{ r }} / 1000 + .1))">{{ r }}%</td>
+        {% else %}
+          <td>0</td>
+        {% endif %}
+      {% endfor %}
+    </tr>
+    <tr>
+      <td>20-yr Return Period</td>
+      {% for r in r20 %}
+        {% if r != 0 %}
+          <td style="background-color: rgba(128, 0, 128, calc(9 * {{ r }} / 1000 + .1))">{{ r }}%</td>
+        {% else %}
+          <td>0</td>
+        {% endif %}
+      {% endfor %}
+    </tr>
+  </tbody>
+</table>
