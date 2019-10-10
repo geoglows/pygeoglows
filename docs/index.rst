@@ -1,15 +1,13 @@
 geoglowstoolbox
 ===============
+The geoglows python package is intended to promote access to data, api's, and code developed as part of the GEOGloWS
+initiative.
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Contents:
+	:caption: Table of Contents
+	:name: mastertoc
 
+	geoglows_streamflow
+	geoglows_series
+	license
 
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
