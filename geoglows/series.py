@@ -1,7 +1,7 @@
 try:
     import pandas
     import datetime
-    import flask
+    import jinja2
     import os
     import multiprocessing
     from plotly.offline import plot as offplot
@@ -12,7 +12,7 @@ except ImportError as error:
     raise error
 
 
-def forecasted(stats, rperiods, reach_id, outformat='json'):
+def forecasted(stats, rperiods, reach_id, outformat='html'):
     if not isinstance(stats, pandas.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
 
@@ -92,7 +92,7 @@ def forecasted(stats, rperiods, reach_id, outformat='json'):
             line={'color': 'black'}
         )
         layout = Layout(
-            title='Forecasted Streamflow<br>Stream ID: ' + reach_id,
+            title='Forecasted Streamflow<br>Stream ID: ' + str(reach_id),
             xaxis={'title': 'Date'},
             yaxis={
                 'title': 'Streamflow (m<sup>3</sup>/s)',
@@ -249,33 +249,37 @@ def probabilities_table(stats, ensembles, rperiods):
     span = datetime.datetime.strptime(enddate, "%Y-%m-%d %H:00:00") - start_datetime
     uniqueday = [start_datetime + datetime.timedelta(days=i) for i in range(span.days + 2)]
     # get the return periods for the stream reach
-    r2 = rperiods.iloc[3][0]
-    r10 = rperiods.iloc[2][0]
-    r20 = rperiods.iloc[1][0]
+    rp2 = rperiods.iloc[3][0]
+    rp10 = rperiods.iloc[2][0]
+    rp20 = rperiods.iloc[1][0]
 
-    # Build the ensemble stat table- iterate over each day and then over each ensemble.
-    returntable = {'days': [], 'r2': [], 'r10': [], 'r20': []}
+    # fill the lists of things used as context in rendering the template
+    days = []
+    r2 = []
+    r10 = []
+    r20 = []
     for i in range(len(uniqueday) - 1):  # (-1) omit the extra day used for reference only
         tmp = ensembles.loc[uniqueday[i]:uniqueday[i + 1]]
-        returntable['days'].append(uniqueday[i].strftime('%b %d'))
+        days.append(uniqueday[i].strftime('%b %d'))
         num2 = 0
         num10 = 0
         num20 = 0
         for column in tmp:
-            if any(i > r20 for i in tmp[column].to_numpy()):
+            if any(i > rp20 for i in tmp[column].to_numpy()):
                 num2 += 1
                 num10 += 1
                 num20 += 1
-            elif any(i > r10 for i in tmp[column].to_numpy()):
+            elif any(i > rp10 for i in tmp[column].to_numpy()):
                 num10 += 1
                 num2 += 1
-            elif any(i > r2 for i in tmp[column].to_numpy()):
+            elif any(i > rp2 for i in tmp[column].to_numpy()):
                 num2 += 1
-        returntable['r2'].append(round(num2 * 100 / 52))
-        returntable['r10'].append(round(num10 * 100 / 52))
-        returntable['r20'].append(round(num20 * 100 / 52))
+        r2.append(round(num2 * 100 / 52))
+        r10.append(round(num10 * 100 / 52))
+        r20.append(round(num20 * 100 / 52))
 
-    return flask.render_template(os.path.join(os.pardir, 'templates', 'return_period_table.html'), returntable)
+    with open(os.path.join(os.pardir, 'templates', 'probabilities_table.html')) as template:
+        return jinja2.Template(template.read()).render(days=days, r2=r2, r10=r10, r20=r20)
 
 
 def hydroviewer_forecast(reach_id, apikey):
@@ -289,8 +293,4 @@ def hydroviewer_forecast(reach_id, apikey):
         stats = stats.get()
         ensembles = ensembles.get()
         rperiods = rperiods.get()
-
     return forecasted(stats, rperiods, reach_id) + probabilities_table(stats, ensembles, rperiods)
-
-
-hydroviewer_forecast(56691, 'asdf')

@@ -13,7 +13,7 @@ requirements:
     - pandas>=0.25
     - plotly>=4
     - requests>=2
-    - flask>=1
+    - jinja2>=2.10
     - sphinx
     - sphinx_rtd_theme
 
@@ -28,7 +28,7 @@ test:
     - requests
     - plotly
     - pandas
-    - flask
+    - jinja2
 
 extra:
   recipe-maintainers:

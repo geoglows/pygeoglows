@@ -37,7 +37,9 @@ def forecast_ensembles(reach_id, apikey, return_format='csv'):
     data = requests.get(AZURE_ENDPOINT + 'ForecastEnsembles', headers=headers, params=params).text
 
     if return_format == 'csv':
-        return pandas.read_csv(StringIO(data), index_col='datetime')
+        tmp = pandas.read_csv(StringIO(data), index_col='datetime')
+        tmp.index = pandas.to_datetime(tmp.index)
+        return tmp
     elif return_format == 'json':
         return json.loads(data)
     elif return_format == 'waterml':
@@ -47,6 +49,7 @@ def forecast_ensembles(reach_id, apikey, return_format='csv'):
 def historic_simulation(reach_id, apikey, return_format='csv'):
     params = {
         'reach_id': reach_id,
+        'region': 'south_asia-mainland',
         'return_format': return_format
     }
     headers = {'Ocp-Apim-Subscription-Key': apikey}
@@ -64,6 +67,7 @@ def historic_simulation(reach_id, apikey, return_format='csv'):
 def seasonal_average(reach_id, apikey, return_format='csv'):
     params = {
         'reach_id': reach_id,
+        'region': 'south_asia-mainland',
         'return_format': return_format
     }
     headers = {'Ocp-Apim-Subscription-Key': apikey}
@@ -81,6 +85,7 @@ def seasonal_average(reach_id, apikey, return_format='csv'):
 def return_periods(reach_id, apikey, return_format='csv'):
     params = {
         'reach_id': reach_id,
+        'region': 'south_asia-mainland',
         'return_format': return_format
     }
     headers = {'Ocp-Apim-Subscription-Key': apikey}
