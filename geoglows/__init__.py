@@ -12,3 +12,4 @@ from .series import forecasted
 from .series import historical
 from .series import daily_avg
 from .series import probabilities_table
+from .series import hydroviewer_forecast

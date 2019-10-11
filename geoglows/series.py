@@ -1,52 +1,54 @@
 try:
     import pandas
-    from plotly.offline import plot as offplot
-    from plotly.graph_objs import Scatter, Scattergl, Layout, Figure
-    import plotly.graph_objs as go
     import datetime
     import flask
     import os
+    import multiprocessing
+    from plotly.offline import plot as offplot
+    from plotly.graph_objs import Scatter, Scattergl, Layout, Figure
+    import plotly.graph_objs as go
+    from streamflow import forecast_stats, forecast_ensembles, historic_simulation, seasonal_average, return_periods
 except ImportError as error:
     raise error
 
 
-def forecasted(forecast, returnperiods, reach_id, outformat='json'):
-    if not isinstance(forecast, pandas.DataFrame):
+def forecasted(stats, rperiods, reach_id, outformat='json'):
+    if not isinstance(stats, pandas.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
 
-    r2 = returnperiods.iloc[3][0]
-    r10 = returnperiods.iloc[2][0]
-    r20 = returnperiods.iloc[1][0]
-    dates = forecast['datetime'].tolist()
+    r2 = rperiods.iloc[3][0]
+    r10 = rperiods.iloc[2][0]
+    r20 = rperiods.iloc[1][0]
+    dates = stats['datetime'].tolist()
     startdate = dates[0]
     enddate = dates[-1]
 
     if outformat in ['json', 'JSON', 'dict', 'dictionary']:
-        hires = forecast[['datetime', 'high_res (m3/s)']].dropna(axis=0)
-        tmp = forecast[['datetime', 'mean (m3/s)']].dropna(axis=0)
+        hires = stats[['datetime', 'high_res (m3/s)']].dropna(axis=0)
+        tmp = stats[['datetime', 'mean (m3/s)']].dropna(axis=0)
         return {
             'reach_id': reach_id,
             'x_ensembles': tmp['datetime'].tolist(),
             'x_hires': hires['datetime'].tolist(),
-            'ymax': max(forecast['max (m3/s)']),
-            'min': list(forecast['min (m3/s)'].dropna(axis=0)),
-            'mean': list(forecast['mean (m3/s)'].dropna(axis=0)),
-            'max': list(forecast['max (m3/s)'].dropna(axis=0)),
-            'stdlow': list(forecast['std_dev_range_lower (m3/s)'].dropna(axis=0)),
-            'stdup': list(forecast['std_dev_range_upper (m3/s)'].dropna(axis=0)),
-            'hires': list(forecast['high_res (m3/s)'].dropna(axis=0)),
+            'ymax': max(stats['max (m3/s)']),
+            'min': list(stats['min (m3/s)'].dropna(axis=0)),
+            'mean': list(stats['mean (m3/s)'].dropna(axis=0)),
+            'max': list(stats['max (m3/s)'].dropna(axis=0)),
+            'stdlow': list(stats['std_dev_range_lower (m3/s)'].dropna(axis=0)),
+            'stdup': list(stats['std_dev_range_upper (m3/s)'].dropna(axis=0)),
+            'hires': list(stats['high_res (m3/s)'].dropna(axis=0)),
         }
 
     elif outformat in ['html', 'HTML']:
-        tmp = forecast[['datetime', 'mean (m3/s)']].dropna(axis=0)
+        tmp = stats[['datetime', 'mean (m3/s)']].dropna(axis=0)
         meanplot = Scatter(
             name='Mean',
             x=list(tmp['datetime']),
             y=list(tmp['mean (m3/s)']),
             line=dict(color='blue'),
         )
-        tmp = forecast[['datetime', 'max (m3/s)']].dropna(axis=0)
-        rangemax = max(forecast['max (m3/s)'])
+        tmp = stats[['datetime', 'max (m3/s)']].dropna(axis=0)
+        rangemax = max(stats['max (m3/s)'])
         maxplot = Scatter(
             name='Max',
             x=list(tmp['datetime']),
@@ -55,7 +57,7 @@ def forecasted(forecast, returnperiods, reach_id, outformat='json'):
             mode='lines',
             line=dict(color='rgb(152, 251, 152)', width=0)
         )
-        tmp = forecast[['datetime', 'min (m3/s)']].dropna(axis=0)
+        tmp = stats[['datetime', 'min (m3/s)']].dropna(axis=0)
         minplot = Scatter(
             name='Min',
             x=list(tmp['datetime']),
@@ -64,7 +66,7 @@ def forecasted(forecast, returnperiods, reach_id, outformat='json'):
             mode='lines',
             line=dict(color='rgb(152, 251, 152)')
         )
-        tmp = forecast[['datetime', 'std_dev_range_lower (m3/s)']].dropna(axis=0)
+        tmp = stats[['datetime', 'std_dev_range_lower (m3/s)']].dropna(axis=0)
         stdlow = Scatter(
             name='Std. Dev. Lower',
             x=list(tmp['datetime']),
@@ -73,7 +75,7 @@ def forecasted(forecast, returnperiods, reach_id, outformat='json'):
             mode='lines',
             line=dict(color='rgb(152, 251, 152)', width=0)
         )
-        tmp = forecast[['datetime', 'std_dev_range_upper (m3/s)']].dropna(axis=0)
+        tmp = stats[['datetime', 'std_dev_range_upper (m3/s)']].dropna(axis=0)
         stdup = Scatter(
             name='Std. Dev. Upper',
             x=list(tmp['datetime']),
@@ -82,7 +84,7 @@ def forecasted(forecast, returnperiods, reach_id, outformat='json'):
             mode='lines',
             line={'width': 0, 'color': 'rgb(34, 139, 34)'}
         )
-        tmp = forecast[['datetime', 'high_res (m3/s)']].dropna(axis=0)
+        tmp = stats[['datetime', 'high_res (m3/s)']].dropna(axis=0)
         hires = Scatter(
             name='Higher Resolution',
             x=list(tmp['datetime']),
@@ -140,13 +142,13 @@ def forecasted(forecast, returnperiods, reach_id, outformat='json'):
         raise ValueError('invalid outformat specified. pick json or html')
 
 
-def historical(hist, returnperiods, outformat='json'):
+def historical(hist, rperiods, outformat='json'):
     if not isinstance(hist, pandas.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
 
-    r2 = returnperiods.iloc[3][0]
-    r10 = returnperiods.iloc[2][0]
-    r20 = returnperiods.iloc[1][0]
+    r2 = rperiods.iloc[3][0]
+    r10 = rperiods.iloc[2][0]
+    r20 = rperiods.iloc[1][0]
     dates = hist['datetime'].tolist()
     startdate = dates[0]
     enddate = dates[-1]
@@ -239,17 +241,17 @@ def daily_avg(daily, outformat='html'):
     raise ValueError('invalid outformat specified. pick json or html')
 
 
-def probabilities_table(forecast, ensembles, returnperiods):
-    dates = forecast['datetime'].tolist()
+def probabilities_table(stats, ensembles, rperiods):
+    dates = stats['datetime'].tolist()
     startdate = dates[0]
     enddate = dates[-1]
     start_datetime = datetime.datetime.strptime(startdate, "%Y-%m-%d %H:00:00")
     span = datetime.datetime.strptime(enddate, "%Y-%m-%d %H:00:00") - start_datetime
     uniqueday = [start_datetime + datetime.timedelta(days=i) for i in range(span.days + 2)]
     # get the return periods for the stream reach
-    r2 = returnperiods.iloc[3][0]
-    r10 = returnperiods.iloc[2][0]
-    r20 = returnperiods.iloc[1][0]
+    r2 = rperiods.iloc[3][0]
+    r10 = rperiods.iloc[2][0]
+    r20 = rperiods.iloc[1][0]
 
     # Build the ensemble stat table- iterate over each day and then over each ensemble.
     returntable = {'days': [], 'r2': [], 'r10': [], 'r20': []}
@@ -276,5 +278,19 @@ def probabilities_table(forecast, ensembles, returnperiods):
     return flask.render_template(os.path.join(os.pardir, 'templates', 'return_period_table.html'), returntable)
 
 
-def hydroviewer(forecast, ensembles, returnperiods, reach_id):
-    return forecasted(forecast, returnperiods, reach_id) + probabilities_table(forecast, ensembles, returnperiods)
+def hydroviewer_forecast(reach_id, apikey):
+    # make all the API calls asynchronously with a pool
+    with multiprocessing.Pool(3) as pl:
+        stats = pl.apply_async(forecast_stats, (reach_id, apikey))
+        ensembles = pl.apply_async(forecast_ensembles, (reach_id, apikey))
+        rperiods = pl.apply_async(return_periods, (reach_id, apikey))
+        pl.close()
+        pl.join()
+        stats = stats.get()
+        ensembles = ensembles.get()
+        rperiods = rperiods.get()
+
+    return forecasted(stats, rperiods, reach_id) + probabilities_table(stats, ensembles, rperiods)
+
+
+hydroviewer_forecast(56691, 'asdf')
