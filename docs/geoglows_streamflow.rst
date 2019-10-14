@@ -24,9 +24,8 @@ and the high resolution forecast.
 
 .. code-block:: python
 
-    from geoglows.streamflow import forecast_stats
-
-    data = forecast_stats(12341234, 'my_api_token', return_format='csv')
+    import geoglows
+    data = geoglows.streamflow.forecast_stats(12341234, 'my_api_token', return_format='csv')
 
 forecast_ensembles
 ------------------
@@ -44,9 +43,8 @@ Returns a table of the forecasted streamflow made by each of the 52 members.
 
 .. code-block:: python
 
-    from geoglows.streamflow import forecast_ensembles
-
-    data = forecast_ensembles(12341234, 'my_api_token', return_format='csv')
+    import geoglows
+    data = geoglows.streamflow.forecast_ensembles(12341234, 'my_api_token', return_format='csv')
 
 historic_simulation
 -------------------
@@ -64,9 +62,8 @@ Returns a timeseries of simulated streamflow for the reach based on the ERA Inte
 
 .. code-block:: python
 
-    from geoglows.streamflow import historic_simulation
-
-    data = historic_simulation(12341234, 'my_api_token', return_format='csv')
+    import geoglows
+    data = geoglows.streamflow.historic_simulation(12341234, 'my_api_token', return_format='csv')
 
 seasonal_average
 ----------------
@@ -84,9 +81,8 @@ Returns a timeseries of the average streamflow for each day of the year based on
 
 .. code-block:: python
 
-    from geoglows.streamflow import seasonal_average
-
-    data = seasonal_average(12341234, 'my_api_token', return_format='csv')
+    import geoglows
+    data = geoglows.streamflow.seasonal_average(12341234, 'my_api_token', return_format='csv')
 
 return_periods
 --------------
@@ -102,9 +98,8 @@ Returns a dictionary with the streamflows corresponding to a 2, 10, and 20 year 
 
 .. code-block:: python
 
-    from geoglows.streamflow import return_periods
-
-    data = return_periods(12341234, 'my_api_token')
+    import geoglows
+    data = geoglows.streamflow.return_periods(12341234, 'my_api_token')
 
 available_regions
 -----------------
@@ -118,9 +113,8 @@ Returns a dictionary with a list of the names of regions currently supported by 
 
 .. code-block:: python
 
-    from geoglows.streamflow import available_regions
-
-    data = available_regions('my_api_token')
+    import geoglows
+    data = geoglows.streamflow.available_regions('my_api_token')
 
 available_dates
 ---------------
@@ -135,6 +129,5 @@ day is cached by the API.
 
 .. code-block:: python
 
-    from geoglows.streamflow import available_dates
-
-    data = available_dates('my_api_token')
+    import geoglows
+    data = geoglows.streamflow.available_dates('my_api_token')
