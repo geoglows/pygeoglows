@@ -9,3 +9,5 @@
 conda install -c geoglows geoglows
 ```
 Tools to access and process data coming from the GEOGloWS initiative.
+
+https://geoglows.readthedocs.io

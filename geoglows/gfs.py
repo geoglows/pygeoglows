@@ -23,34 +23,34 @@ def variable_levels(variable, apikey=SAMPLE_TOKEN):
     return json.loads(data)
 
 
-# def point_timeseries(time, variable, lat, lon, apikey=SAMPLE_TOKEN):
-#     params = {
-#         'time': time,
-#         'variable': variable,
-#         'location': [lon, lat]
-#     }
-#     headers = {'Authorization': apikey}
-#     data = requests.get(TETHYS_ENDPOINT + 'timeseries', headers=headers, params=params).text
-#     return json.loads(data)
-#
-#
-# def box_timeseries(time, variable, minlat, maxlat, minlon, maxlon, apikey=SAMPLE_TOKEN):
-#     params = {
-#         'time': time,
-#         'variable': variable,
-#         'location': [minlon, maxlon, minlat, maxlat]
-#     }
-#     headers = {'Authorization': apikey}
-#     data = requests.get(TETHYS_ENDPOINT + 'timeseries', headers=headers, params=params).text
-#     return json.loads(data)
-#
-#
-# def region_timeseries(time, variable, region, apikey=SAMPLE_TOKEN):
-#     params = {
-#         'time': time,
-#         'variable': variable,
-#         'location': region
-#     }
-#     headers = {'Authorization': apikey}
-#     data = requests.get(TETHYS_ENDPOINT + 'timeseries', headers=headers, params=params).text
-#     return json.loads(data)
+def point_timeseries(variable, level, lat, lon, apikey=SAMPLE_TOKEN):
+    params = {
+        'variable': variable,
+        'level': level,
+        'location': [lon, lat]
+    }
+    headers = {'Authorization': apikey}
+    data = requests.get(TETHYS_ENDPOINT + 'timeseries', headers=headers, params=params).text
+    return json.loads(data)
+
+
+def box_timeseries(variable, level, minlat, maxlat, minlon, maxlon, apikey=SAMPLE_TOKEN):
+    params = {
+        'variable': variable,
+        'level': level,
+        'location': [minlon, maxlon, minlat, maxlat]
+    }
+    headers = {'Authorization': apikey}
+    data = requests.get(TETHYS_ENDPOINT + 'timeseries', headers=headers, params=params).text
+    return json.loads(data)
+
+
+def region_timeseries(variable, level, region, apikey=SAMPLE_TOKEN):
+    params = {
+        'variable': variable,
+        'level': level,
+        'location': region
+    }
+    headers = {'Authorization': apikey}
+    data = requests.get(TETHYS_ENDPOINT + 'timeseries', headers=headers, params=params).text
+    return json.loads(data)

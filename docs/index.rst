@@ -7,9 +7,8 @@ initiative.
 	:caption: Table of Contents
 	:name: mastertoc
 
-	geoglows_gfs
-	geoglows_gldas
 	geoglows_streamflow
-	geoglows_series
+	geoglows_gldas
+	geoglows_gfs
 	license
 
