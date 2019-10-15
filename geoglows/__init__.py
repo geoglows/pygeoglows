@@ -6,6 +6,11 @@ from .streamflow import return_periods
 from .streamflow import seasonal_average
 from .streamflow import available_regions
 from .streamflow import available_dates
+from .streamflow import forecast_plot
+from .streamflow import historical_plot
+from .streamflow import daily_avg_plot
+from .streamflow import probabilities_table
+from .streamflow import hydroviewer_forecast
 
 # gldas api functions
 from .gldas import help

@@ -14,9 +14,9 @@ except ImportError as error:
     raise error
 
 AZURE_ENDPOINT = 'http://global-streamflow-prediction.eastus.azurecontainer.io/api/'
-RETURN_FORMATS = ['csv', 'json', 'waterml']
 
 
+# FUNCTIONS THAT CALL THE GLOBAL STREAMFLOW PREDICTION API
 def forecast_stats(reach_id, apikey, return_format='csv'):
     params = {
         'reach_id': reach_id,
@@ -117,9 +117,12 @@ def available_dates(apikey):
     return json.loads(requests.get(AZURE_ENDPOINT + 'ReturnPeriods', headers=headers).text)
 
 
-def forecasted(stats, rperiods, reach_id, outformat='html'):
+# FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
+def forecast_plot(stats, rperiods, reach_id, outformat='json'):
     if not isinstance(stats, pandas.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
+    if outformat not in ['json', 'plotly', 'plotly_html']:
+        raise ValueError('invalid outformat specified. pick json or html')
 
     r2 = rperiods.iloc[3][0]
     r10 = rperiods.iloc[2][0]
@@ -128,128 +131,124 @@ def forecasted(stats, rperiods, reach_id, outformat='html'):
     startdate = dates[0]
     enddate = dates[-1]
 
-    if outformat in ['json', 'JSON', 'dict', 'dictionary']:
-        hires = stats[['datetime', 'high_res (m3/s)']].dropna(axis=0)
-        tmp = stats[['datetime', 'mean (m3/s)']].dropna(axis=0)
-        return {
-            'reach_id': reach_id,
-            'x_ensembles': tmp['datetime'].tolist(),
-            'x_hires': hires['datetime'].tolist(),
-            'ymax': max(stats['max (m3/s)']),
-            'min': list(stats['min (m3/s)'].dropna(axis=0)),
-            'mean': list(stats['mean (m3/s)'].dropna(axis=0)),
-            'max': list(stats['max (m3/s)'].dropna(axis=0)),
-            'stdlow': list(stats['std_dev_range_lower (m3/s)'].dropna(axis=0)),
-            'stdup': list(stats['std_dev_range_upper (m3/s)'].dropna(axis=0)),
-            'hires': list(stats['high_res (m3/s)'].dropna(axis=0)),
-        }
+    hires = stats[['datetime', 'high_res (m3/s)']].dropna(axis=0)
+    ens = stats[['datetime', 'mean (m3/s)']].dropna(axis=0)
+    plot_data = {
+        'reach_id': reach_id,
+        'x_ensembles': ens['datetime'].tolist(),
+        'x_hires': hires['datetime'].tolist(),
+        'ymax': max(stats['max (m3/s)']),
+        'min': list(stats['min (m3/s)'].dropna(axis=0)),
+        'mean': list(stats['mean (m3/s)'].dropna(axis=0)),
+        'max': list(stats['max (m3/s)'].dropna(axis=0)),
+        'stdlow': list(stats['std_dev_range_lower (m3/s)'].dropna(axis=0)),
+        'stdup': list(stats['std_dev_range_upper (m3/s)'].dropna(axis=0)),
+        'hires': list(stats['high_res (m3/s)'].dropna(axis=0)),
+    }
 
-    elif outformat in ['html', 'HTML']:
-        tmp = stats[['datetime', 'mean (m3/s)']].dropna(axis=0)
-        meanplot = Scatter(
-            name='Mean',
-            x=list(tmp['datetime']),
-            y=list(tmp['mean (m3/s)']),
-            line=dict(color='blue'),
-        )
-        tmp = stats[['datetime', 'max (m3/s)']].dropna(axis=0)
-        rangemax = max(stats['max (m3/s)'])
-        maxplot = Scatter(
-            name='Max',
-            x=list(tmp['datetime']),
-            y=list(tmp['max (m3/s)']),
-            fill='tonexty',
-            mode='lines',
-            line=dict(color='rgb(152, 251, 152)', width=0)
-        )
-        tmp = stats[['datetime', 'min (m3/s)']].dropna(axis=0)
-        minplot = Scatter(
-            name='Min',
-            x=list(tmp['datetime']),
-            y=list(tmp['min (m3/s)']),
-            fill=None,
-            mode='lines',
-            line=dict(color='rgb(152, 251, 152)')
-        )
-        tmp = stats[['datetime', 'std_dev_range_lower (m3/s)']].dropna(axis=0)
-        stdlow = Scatter(
-            name='Std. Dev. Lower',
-            x=list(tmp['datetime']),
-            y=list(tmp['std_dev_range_lower (m3/s)']),
-            fill='tonexty',
-            mode='lines',
-            line=dict(color='rgb(152, 251, 152)', width=0)
-        )
-        tmp = stats[['datetime', 'std_dev_range_upper (m3/s)']].dropna(axis=0)
-        stdup = Scatter(
-            name='Std. Dev. Upper',
-            x=list(tmp['datetime']),
-            y=list(tmp['std_dev_range_upper (m3/s)']),
-            fill='tonexty',
-            mode='lines',
-            line={'width': 0, 'color': 'rgb(34, 139, 34)'}
-        )
-        tmp = stats[['datetime', 'high_res (m3/s)']].dropna(axis=0)
-        hires = Scatter(
-            name='Higher Resolution',
-            x=list(tmp['datetime']),
-            y=list(tmp['high_res (m3/s)']),
-            line={'color': 'black'}
-        )
-        layout = Layout(
-            title='Forecasted Streamflow<br>Stream ID: ' + str(reach_id),
-            xaxis={'title': 'Date'},
-            yaxis={
-                'title': 'Streamflow (m<sup>3</sup>/s)',
-                'range': [0, 1.2 * rangemax]
-            },
-            shapes=[
-                go.layout.Shape(
-                    type='rect',
-                    x0=startdate,
-                    x1=enddate,
-                    y0=r2,
-                    y1=r10,
-                    line={'width': 0},
-                    opacity=.4,
-                    fillcolor='yellow'
-                ),
-                go.layout.Shape(
-                    type='rect',
-                    x0=startdate,
-                    x1=enddate,
-                    y0=r10,
-                    y1=r20,
-                    line={'width': 0},
-                    opacity=.4,
-                    fillcolor='red'
-                ),
-                go.layout.Shape(
-                    type='rect',
-                    x0=startdate,
-                    x1=enddate,
-                    y0=r20,
-                    y1=1.2 * rangemax,
-                    line={'width': 0},
-                    opacity=.4,
-                    fillcolor='purple'
-                ),
-            ]
-        )
+    if outformat == 'json':
+        return plot_data
+
+    meanplot = Scatter(
+        name='Mean',
+        x=plot_data['x_ensembles'],
+        y=plot_data['mean'],
+        line=dict(color='blue'),
+    )
+    maxplot = Scatter(
+        name='Max',
+        x=plot_data['x_ensembles'],
+        y=plot_data['max'],
+        fill='tonexty',
+        mode='lines',
+        line=dict(color='rgb(152, 251, 152)', width=0)
+    )
+    minplot = Scatter(
+        name='Min',
+        x=plot_data['x_ensembles'],
+        y=plot_data['min'],
+        fill=None,
+        mode='lines',
+        line=dict(color='rgb(152, 251, 152)')
+    )
+    stdlowplot = Scatter(
+        name='Std. Dev. Lower',
+        x=plot_data['x_ensembles'],
+        y=plot_data['stdlow'],
+        fill='tonexty',
+        mode='lines',
+        line=dict(color='rgb(152, 251, 152)', width=0)
+    )
+    stdupplot = Scatter(
+        name='Std. Dev. Upper',
+        x=plot_data['x_ensembles'],
+        y=plot_data['stdup'],
+        fill='tonexty',
+        mode='lines',
+        line={'width': 0, 'color': 'rgb(34, 139, 34)'}
+    )
+    hires = Scatter(
+        name='Higher Resolution',
+        x=plot_data['x_hires'],
+        y=plot_data['hires'],
+        line={'color': 'black'}
+    )
+    layout = Layout(
+        title='Forecasted Streamflow<br>Stream ID: ' + str(reach_id),
+        xaxis={'title': 'Date'},
+        yaxis={
+            'title': 'Streamflow (m<sup>3</sup>/s)',
+            'range': [0, 1.2 * plot_data['ymax']]
+        },
+        shapes=[
+            go.layout.Shape(
+                type='rect',
+                x0=startdate,
+                x1=enddate,
+                y0=r2,
+                y1=r10,
+                line={'width': 0},
+                opacity=.4,
+                fillcolor='yellow'
+            ),
+            go.layout.Shape(
+                type='rect',
+                x0=startdate,
+                x1=enddate,
+                y0=r10,
+                y1=r20,
+                line={'width': 0},
+                opacity=.4,
+                fillcolor='red'
+            ),
+            go.layout.Shape(
+                type='rect',
+                x0=startdate,
+                x1=enddate,
+                y0=r20,
+                y1=1.2 * plot_data['ymax'],
+                line={'width': 0},
+                opacity=.4,
+                fillcolor='purple'
+            ),
+        ]
+    )
+    if outformat == 'plotly':
+        return Figure([minplot, meanplot, maxplot, stdlowplot, stdupplot, hires], layout=layout)
+    if outformat == 'plotly_html':
         return offplot(
-            Figure([minplot, meanplot, maxplot, stdlow, stdup, hires], layout=layout),
+            Figure([minplot, meanplot, maxplot, stdlowplot, stdupplot, hires], layout=layout),
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
 
-    else:
-        raise ValueError('invalid outformat specified. pick json or html')
 
-
-def historical(hist, rperiods, outformat='json'):
+def historical_plot(hist, rperiods, outformat='plotly'):
     if not isinstance(hist, pandas.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
+    if outformat not in ['json', 'plotly', 'plotly_html']:
+        raise ValueError('invalid outformat specified. pick json or plotly or plotly_html')
 
     r2 = rperiods.iloc[3][0]
     r10 = rperiods.iloc[2][0]
@@ -258,92 +257,101 @@ def historical(hist, rperiods, outformat='json'):
     startdate = dates[0]
     enddate = dates[-1]
 
-    if outformat in ['json', 'JSON', 'dict', 'dictionary']:
+    if outformat == 'json':
+        # todo make the json output
         return
 
-    if outformat in ['html', 'HTML']:
-        layout = Layout(
-            title='Historic Streamflow Simulation',
-            xaxis={
-                'title': 'Date',
-                'hoverformat': '%b %d %Y',
-                'tickformat': '%Y'
-            },
-            yaxis={
-                'title': 'Streamflow (m<sup>3</sup>/s)',
-                'range': [0, 1.2 * max(hist['streamflow (m3/s)'])]
-            },
-            shapes=[
-                go.layout.Shape(
-                    type='rect',
-                    x0=startdate,
-                    x1=enddate,
-                    y0=r2,
-                    y1=r10,
-                    line={'width': 0},
-                    opacity=.4,
-                    fillcolor='yellow'
-                ),
-                go.layout.Shape(
-                    type='rect',
-                    x0=startdate,
-                    x1=enddate,
-                    y0=r10,
-                    y1=r20,
-                    line={'width': 0},
-                    opacity=.4,
-                    fillcolor='red'
-                ),
-                go.layout.Shape(
-                    type='rect',
-                    x0=startdate,
-                    x1=enddate,
-                    y0=r20,
-                    y1=1.2 * 1.2 * max(hist['streamflow (m3/s)']),
-                    line={'width': 0},
-                    opacity=.4,
-                    fillcolor='purple'
-                ),
-            ]
-        )
+    layout = Layout(
+        title='Historic Streamflow Simulation',
+        xaxis={
+            'title': 'Date',
+            'hoverformat': '%b %d %Y',
+            'tickformat': '%Y'
+        },
+        yaxis={
+            'title': 'Streamflow (m<sup>3</sup>/s)',
+            'range': [0, 1.2 * max(hist['streamflow (m3/s)'])]
+        },
+        shapes=[
+            go.layout.Shape(
+                type='rect',
+                x0=startdate,
+                x1=enddate,
+                y0=r2,
+                y1=r10,
+                line={'width': 0},
+                opacity=.4,
+                fillcolor='yellow'
+            ),
+            go.layout.Shape(
+                type='rect',
+                x0=startdate,
+                x1=enddate,
+                y0=r10,
+                y1=r20,
+                line={'width': 0},
+                opacity=.4,
+                fillcolor='red'
+            ),
+            go.layout.Shape(
+                type='rect',
+                x0=startdate,
+                x1=enddate,
+                y0=r20,
+                y1=1.2 * 1.2 * max(hist['streamflow (m3/s)']),
+                line={'width': 0},
+                opacity=.4,
+                fillcolor='purple'
+            ),
+        ]
+    )
+    figure = Figure([Scattergl(x=dates, y=hist['streamflow (m3/s)'].tolist())], layout=layout)
+    if outformat == 'plotly':
+        return figure
+    if outformat == 'plotly_html':
         return offplot(
-            Figure([Scattergl(x=dates, y=hist['streamflow (m3/s)'].tolist())], layout=layout),
-            config={'autosizable': True, 'responsive': True},
-            output_type='div',
-            include_plotlyjs=False)
-
-    raise ValueError('invalid outformat specified. pick json or html')
-
-
-def daily_avg(daily, outformat='html'):
-    if not isinstance(daily, pandas.DataFrame):
-        raise ValueError('Sorry, I only process pandas dataframes right now')
-
-    if outformat in ['json', 'JSON', 'dict', 'dictionary']:
-        return
-
-    if outformat in ['html', 'HTML']:
-        daily['day'] = pandas.to_datetime(daily['day'] + 1, format='%j')
-        layout = Layout(
-            title='Daily Average Streamflow (Historic Simulation)',
-            xaxis={
-                'title': 'Date',
-                'hoverformat': '%b %d (%j)',
-                'tickformat': '%b'
-            },
-            yaxis={
-                'title': 'Streamflow (m<sup>3</sup>/s)',
-                'range': [0, 1.2 * max(daily['streamflow_avg (m3/s)'])]
-            },
-        )
-        return offplot(
-            Figure([Scatter(x=daily['day'].tolist(), y=daily['streamflow_avg (m3/s)'].tolist())], layout=layout),
+            figure,
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
+    return
 
-    raise ValueError('invalid outformat specified. pick json or html')
+
+def daily_avg_plot(daily, outformat='plotly'):
+    if not isinstance(daily, pandas.DataFrame):
+        raise ValueError('Sorry, I only process pandas dataframes right now')
+    if outformat not in ['json', 'plotly', 'plotly_html']:
+        raise ValueError('invalid outformat specified. pick json or plotly or plotly_html')
+
+    if outformat == 'json':
+        # todo make the json output
+        return
+
+    daily['day'] = pandas.to_datetime(daily['day'] + 1, format='%j')
+    layout = Layout(
+        title='Daily Average Streamflow (Historic Simulation)',
+        xaxis={
+            'title': 'Date',
+            'hoverformat': '%b %d (%j)',
+            'tickformat': '%b'
+        },
+        yaxis={
+            'title': 'Streamflow (m<sup>3</sup>/s)',
+            'range': [0, 1.2 * max(daily['streamflow_avg (m3/s)'])]
+        },
+    )
+    figure = Figure([Scatter(x=daily['day'].tolist(), y=daily['streamflow_avg (m3/s)'].tolist())], layout=layout)
+    if outformat == 'plotly':
+        return figure
+    if outformat == 'plotly_html':
+        return offplot(
+            figure,
+            config={'autosizable': True, 'responsive': True},
+            output_type='div',
+            include_plotlyjs=False
+        )
+    return
 
 
 def probabilities_table(stats, ensembles, rperiods):
@@ -387,6 +395,7 @@ def probabilities_table(stats, ensembles, rperiods):
         return jinja2.Template(template.read()).render(days=days, r2=r2, r10=r10, r20=r20)
 
 
+# CUSTOM FUNCTIONS FOR IMPLEMENTATION IN A HYDROVIEWER
 def hydroviewer_forecast(reach_id, apikey):
     # make all the API calls asynchronously with a pool
     with multiprocessing.Pool(3) as pl:
@@ -398,4 +407,6 @@ def hydroviewer_forecast(reach_id, apikey):
         stats = stats.get()
         ensembles = ensembles.get()
         rperiods = rperiods.get()
-    return forecasted(stats, rperiods, reach_id) + probabilities_table(stats, ensembles, rperiods)
+    fp = forecast_plot(stats, rperiods, reach_id, outformat='plotly_html')
+    pt = probabilities_table(stats, ensembles, rperiods)
+    return fp + pt
