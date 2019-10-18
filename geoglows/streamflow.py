@@ -56,7 +56,6 @@ def forecast_ensembles(reach_id, apikey, return_format='csv'):
 def historic_simulation(reach_id, apikey, return_format='csv'):
     params = {
         'reach_id': reach_id,
-        'region': 'south_asia-mainland',
         'return_format': return_format
     }
     headers = {'Ocp-Apim-Subscription-Key': apikey}
@@ -74,7 +73,6 @@ def historic_simulation(reach_id, apikey, return_format='csv'):
 def seasonal_average(reach_id, apikey, return_format='csv'):
     params = {
         'reach_id': reach_id,
-        'region': 'south_asia-mainland',
         'return_format': return_format
     }
     headers = {'Ocp-Apim-Subscription-Key': apikey}
@@ -92,7 +90,6 @@ def seasonal_average(reach_id, apikey, return_format='csv'):
 def return_periods(reach_id, apikey, return_format='csv'):
     params = {
         'reach_id': reach_id,
-        'region': 'south_asia-mainland',
         'return_format': return_format
     }
     headers = {'Ocp-Apim-Subscription-Key': apikey}

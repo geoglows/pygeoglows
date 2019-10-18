@@ -2,18 +2,35 @@
 geoglows.streamflow
 ===================
 
-API Functions
-~~~~~~~~~~~~~
+The streamflow module provides a series of functions for requesting forecasted and historical data from the Global
+Streamflow Prediction Service (GSP). Data is available from this service through a REST API. Simply put, a REST API is
+a way to get information over the internet without using a web browser. These are designated `GSP REST API Functions`_.
 
-The streamflow module contains functions that will request data from the Global Streamflow Prediction service sponsored
-by Microsoft's AI for Earth program. The functions in this package directly parallel the methods available from the
-API.
+This module also contains a series of functions that will process the data from the GSP API. These produce
+dictionaries, plotly python objects (compatible with showing plots in notebooks), or plotly html code to use in web
+applications. These are designated `Timeseries Processor Functions`_.
+
+Basics of the GSP:  The GSP Service provides access to the results of a hydrologic model that is run each day. The
+model is based on a group of unique weather forecasts known as an ensemble. Each unique precipitation forecast, known
+as an ensemble member, produces a unique streamflow forecast. There are 52 members of the ensemble that drives the GSP
+each day. The GSP also uses the ERA Interim historical precipitation dataset to produce hindcasted streamflow on each
+river.
+
+GSP REST API Functions
+~~~~~~~~~~~~~~~~~~~~~~
+
+The GSP REST API functions request data from the Global Streamflow Prediction Service sponsored by Microsoft's AI for
+Earth program. The functions in this package directly parallel the methods available from the API. In general, a method
+requires an ID, sometimes called common id (COMID) or reach id, for a specific stream. This ID is unique to the stream
+network configured for the GSP Service. You can get this using the
+`Streamflow Services web app <https://tethys.byu.edu/apps/streamflowservices>`_ which has a map interface where you can
+click on a stream and see it's identifier. For more information about the GSP API's methods,
+`read the documentation <https://github.com/msouff/gsp_rest_api/blob/master/swagger_doc.yaml>`_
 
 forecast_stats
 --------------
-Retrieves statistics of the ensemble-forecasted streamflow of a specific reach_id. The forecasted streamflow is based
-on an ensemble of 52 members. The statistics include min, mean, max, one standard deviation above and below the mean,
-and the high resolution forecast.
+Retrieves statistics of the forecasted streamflow in a reach from each of the precipitation forecasts. The statistics
+include min, mean, max, one standard deviation above and below the mean, and the high resolution forecast.
 
 +-----------------+--------------------------------------------------------+--------------------------+
 | Parameter       | Description                                            | Examples                 |
@@ -135,11 +152,10 @@ day is cached by the API.
     import geoglows
     data = geoglows.streamflow.available_dates('my_api_token')
 
-Series Processors
-~~~~~~~~~~~~~~~~~
+Timeseries Processor Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The streamflow module also contains functions that will turn the pandas dataframes generated from the API functions
-into a plotly graph or dictionary containing a plotable series of values.
+The following functions turn the results of the API functions into plots or easily plotable data
 
 forecasted
 ----------

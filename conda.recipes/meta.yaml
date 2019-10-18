@@ -1,9 +1,9 @@
 package:
   name: geoglows
-  version: 0.0.2
+  version: 0.0.3
 
 build:
-  number: 2
+  number: 0.0.3
 
 requirements:
   build:
