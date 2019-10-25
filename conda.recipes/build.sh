@@ -1,1 +1,1 @@
-echo "building"
+$PYTHON setup.py install
