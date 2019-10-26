@@ -1,1 +1,2 @@
-ECHO "building"
+ECHO "building geoglows"
+%PYTHON% setup.py install

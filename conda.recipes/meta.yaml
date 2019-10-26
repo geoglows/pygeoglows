@@ -1,9 +1,10 @@
 package:
   name: geoglows
-  version: 0.0.3
+  version: 1
 
 build:
-  number: 0.0.3
+  noarch: python
+  number: 1
 
 source:
   path: ../
@@ -32,6 +33,7 @@ test:
     - plotly
     - pandas
     - jinja2
+    - geoglows
 
 extra:
   recipe-maintainers:
