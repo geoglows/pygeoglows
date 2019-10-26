@@ -1,10 +1,10 @@
 package:
   name: geoglows
-  version: 1
+  version: 0.0.1
 
 build:
   noarch: python
-  number: 1
+  number: 0.0.1
 
 source:
   path: ../
@@ -13,14 +13,11 @@ requirements:
   build:
     - python
   run:
-    - python>=3.7
-    - pandas>=0.25
+    - python>=3
+    - pandas
     - plotly>=4
     - requests>=2
     - jinja2>=2.10
-    - jupyter
-    - sphinx
-    - sphinx_rtd_theme
 
 about:
   summary: Tools to access and process data from the GEOGloWS initiative
