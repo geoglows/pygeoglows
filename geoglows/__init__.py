@@ -1,4 +1,3 @@
-from geoglows import *
-from .streamflow import *
-from .gldas import *
-from .gfs import *
+import geoglows.streamflow
+import geoglows.gldas
+import geoglows.gfs

@@ -1,9 +1,11 @@
+{% set data = load_setup_py_data() %}
+
 package:
   name: geoglows
-  version: 0.0.1
+  version: {{ data['version'] }}
 
 build:
-  string: dev8
+  string: 1
   noarch: python
   preserve_egg_dir: True
 
@@ -21,9 +23,12 @@ requirements:
     - jinja2>=2.10
 
 about:
-  summary: Tools to access and process data from the GEOGloWS initiative
-  license: BSD-3-Clause
+  home: {{ data['url'] }}
+  description: {{ data['description'] }}
+  license: {{ data['license'] }}
   license_family: BSD
+  doc_url: https://geoglows.readthedocs.io
+  dev_url: https://github.com/rileyhales/geoglows
 
 test:
   imports:
