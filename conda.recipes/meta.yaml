@@ -3,11 +3,12 @@ package:
   version: 0.0.1
 
 build:
+  string: dev8
   noarch: python
-  number: 0.0.1
+  preserve_egg_dir: True
 
 source:
-  path: ../
+  path: ..
 
 requirements:
   build:
@@ -33,5 +34,7 @@ test:
     - geoglows
 
 extra:
+  copy_test_source_files: true
+  final: true
   recipe-maintainers:
     - rileyhales

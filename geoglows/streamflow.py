@@ -388,7 +388,7 @@ def probabilities_table(stats, ensembles, rperiods):
         r10.append(round(num10 * 100 / 52))
         r20.append(round(num20 * 100 / 52))
 
-    path = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'templates', 'probabilities_table.html'))
+    path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates', 'probabilities_table.html'))
     with open(path) as template:
         return jinja2.Template(template.read()).render(days=days, r2=r2, r10=r10, r20=r20)
 

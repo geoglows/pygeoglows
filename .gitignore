@@ -3,3 +3,5 @@ _build
 build
 .DS_Store
 .ipynb_checkpoints
+geoglows.egg-info
+dist
