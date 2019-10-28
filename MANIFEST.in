@@ -1,0 +1,2 @@
+include geoglows/notebooks/*.ipynb
+include geoglows/templates/*.html

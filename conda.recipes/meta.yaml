@@ -2,10 +2,19 @@
 
 package:
   name: geoglows
-  version: {{ data['version'] }}
+  version: 0.1.0
+
+about:
+  home: https://geoglows.org
+  author: Riley Hales
+  description: Package for accessing data and APIs developed for the GEOGloWS initiative
+  license: BSD 3-Clause License
+  license_family: BSD
+  doc_url: https://geoglows.readthedocs.io
+  dev_url: https://github.com/rileyhales/geoglows
 
 build:
-  string: 1
+  string: b5
   noarch: python
   preserve_egg_dir: True
 
@@ -22,13 +31,8 @@ requirements:
     - requests>=2
     - jinja2>=2.10
 
-about:
-  home: {{ data['url'] }}
-  description: {{ data['description'] }}
-  license: {{ data['license'] }}
-  license_family: BSD
-  doc_url: https://geoglows.readthedocs.io
-  dev_url: https://github.com/rileyhales/geoglows
+outputs:
+  - name: geoglows
 
 test:
   imports:
