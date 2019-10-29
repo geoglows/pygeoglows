@@ -3,5 +3,6 @@ _build
 build
 .DS_Store
 .ipynb_checkpoints
+dev.ipynb
 geoglows.egg-info
 dist

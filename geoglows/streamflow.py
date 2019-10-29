@@ -13,18 +13,19 @@ try:
 except ImportError as error:
     raise error
 
-AZURE_ENDPOINT = 'http://global-streamflow-prediction.eastus.azurecontainer.io/api/'
+AI4E_ENDPOINT = 'http://aiforearth.azure-api.net/streamflow/'
+GSPAPI_ENDPOINT = 'http://global-streamflow-prediction.eastus.azurecontainer.io/api/'
+BYU_ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
 
 
 # FUNCTIONS THAT CALL THE GLOBAL STREAMFLOW PREDICTION API
-def forecast_stats(reach_id, apikey, return_format='csv'):
+def forecast_stats(reach_id, apikey, return_format='csv', api_source=AI4E_ENDPOINT):
     params = {
         'reach_id': reach_id,
         'return_format': return_format
     }
     headers = {'Ocp-Apim-Subscription-Key': apikey}
-
-    data = requests.get(AZURE_ENDPOINT + 'ForecastStats', headers=headers, params=params).text
+    data = requests.get(api_source + 'ForecastStats/', headers=headers, params=params).text
 
     if return_format == 'csv':
         return pandas.read_csv(StringIO(data))
@@ -34,14 +35,13 @@ def forecast_stats(reach_id, apikey, return_format='csv'):
         return data
 
 
-def forecast_ensembles(reach_id, apikey, return_format='csv'):
+def forecast_ensembles(reach_id, apikey, return_format='csv', api_source=AI4E_ENDPOINT):
     params = {
         'reach_id': reach_id,
         'return_format': return_format
     }
     headers = {'Ocp-Apim-Subscription-Key': apikey}
-
-    data = requests.get(AZURE_ENDPOINT + 'ForecastEnsembles', headers=headers, params=params).text
+    data = requests.get(api_source + 'ForecastEnsembles/', headers=headers, params=params).text
 
     if return_format == 'csv':
         tmp = pandas.read_csv(StringIO(data), index_col='datetime')
@@ -53,14 +53,13 @@ def forecast_ensembles(reach_id, apikey, return_format='csv'):
         return data
 
 
-def historic_simulation(reach_id, apikey, return_format='csv'):
+def historic_simulation(reach_id, apikey, return_format='csv', api_source=AI4E_ENDPOINT):
     params = {
         'reach_id': reach_id,
         'return_format': return_format
     }
     headers = {'Ocp-Apim-Subscription-Key': apikey}
-
-    data = requests.get(AZURE_ENDPOINT + 'HistoricSimulation', headers=headers, params=params).text
+    data = requests.get(api_source + 'HistoricSimulation/', headers=headers, params=params).text
 
     if return_format == 'csv':
         return pandas.read_csv(StringIO(data))
@@ -70,14 +69,13 @@ def historic_simulation(reach_id, apikey, return_format='csv'):
         return data
 
 
-def seasonal_average(reach_id, apikey, return_format='csv'):
+def seasonal_average(reach_id, apikey, return_format='csv', api_source=AI4E_ENDPOINT):
     params = {
         'reach_id': reach_id,
         'return_format': return_format
     }
     headers = {'Ocp-Apim-Subscription-Key': apikey}
-
-    data = requests.get(AZURE_ENDPOINT + 'SeasonalAverage', headers=headers, params=params).text
+    data = requests.get(api_source + 'SeasonalAverage/', headers=headers, params=params).text
 
     if return_format == 'csv':
         return pandas.read_csv(StringIO(data))
@@ -87,14 +85,13 @@ def seasonal_average(reach_id, apikey, return_format='csv'):
         return data
 
 
-def return_periods(reach_id, apikey, return_format='csv'):
+def return_periods(reach_id, apikey, return_format='csv', api_source=AI4E_ENDPOINT):
     params = {
         'reach_id': reach_id,
         'return_format': return_format
     }
     headers = {'Ocp-Apim-Subscription-Key': apikey}
-
-    data = requests.get(AZURE_ENDPOINT + 'ReturnPeriods', headers=headers, params=params).text
+    data = requests.get(api_source + 'ReturnPeriods/', headers=headers, params=params).text
 
     if return_format == 'csv':
         return pandas.read_csv(StringIO(data), index_col='return period')
@@ -104,14 +101,14 @@ def return_periods(reach_id, apikey, return_format='csv'):
         return data
 
 
-def available_regions(apikey):
+def available_regions(apikey, api_source=AI4E_ENDPOINT):
     headers = {'Ocp-Apim-Subscription-Key': apikey}
-    return json.loads(requests.get(AZURE_ENDPOINT + 'AvailableRegions', headers=headers).text)
+    return json.loads(requests.get(api_source + 'AvailableRegions/', headers=headers).text)
 
 
-def available_dates(apikey):
+def available_dates(apikey, api_source=AI4E_ENDPOINT):
     headers = {'Ocp-Apim-Subscription-Key': apikey}
-    return json.loads(requests.get(AZURE_ENDPOINT + 'ReturnPeriods', headers=headers).text)
+    return json.loads(requests.get(api_source + 'ReturnPeriods/', headers=headers).text)
 
 
 # FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
@@ -408,3 +405,15 @@ def hydroviewer_forecast(reach_id, apikey):
     fp = forecast_plot(stats, rperiods, reach_id, outformat='plotly_html')
     pt = probabilities_table(stats, ensembles, rperiods)
     return fp + pt
+
+
+def hydroviewer_historical(reach_id, apikey):
+    # make all the API calls asynchronously with a pool
+    with multiprocessing.Pool(2) as pl:
+        hist = pl.apply_async(historic_simulation, (reach_id, apikey))
+        rperiods = pl.apply_async(return_periods, (reach_id, apikey))
+        pl.close()
+        pl.join()
+        hist = hist.get()
+        rperiods = rperiods.get()
+    return historical_plot(hist, rperiods, outformat='plotly_html')

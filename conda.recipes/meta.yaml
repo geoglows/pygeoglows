@@ -1,20 +1,18 @@
-{% set data = load_setup_py_data() %}
-
 package:
   name: geoglows
-  version: 0.1.0
+  version: 0.2.0
 
 about:
-  home: https://geoglows.org
   author: Riley Hales
   description: Package for accessing data and APIs developed for the GEOGloWS initiative
   license: BSD 3-Clause License
   license_family: BSD
+  home: https://geoglows.org
   doc_url: https://geoglows.readthedocs.io
   dev_url: https://github.com/rileyhales/geoglows
 
 build:
-  string: b5
+  string: release
   noarch: python
   preserve_egg_dir: True
 
