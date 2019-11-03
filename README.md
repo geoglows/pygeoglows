@@ -5,9 +5,19 @@
 [![Anaconda-Server Badge](https://anaconda.org/geoglows/geoglows/badges/downloads.svg)](https://anaconda.org/geoglows/geoglows)
 [![Documentation Status](https://readthedocs.org/projects/geoglows/badge/?version=latest)](https://geoglows.readthedocs.io/en/latest/?badge=latest)
 
+[Visit the Anaconda Cloud page](https://anaconda.org/geoglows/geoglows)
 ```bash
 conda install -c geoglows geoglows
 ```
+
+Also available on pypi
+
+[Visit the PyPi page](https://pypi.org/project/geoglows)
+
+```bash
+pip install geoglows
+```
+
 Tools to access and process data coming from the GEOGloWS initiative.
 
 https://geoglows.readthedocs.io

@@ -171,19 +171,19 @@ Timeseries Processor Functions
 
 The following functions turn the results of the API functions into plots or easily plotable data
 
-forecasted
-----------
+forecast_plot
+-------------
 Processes the dataframe results of ``streamflow.forecast_stats``, ``streamflow.forecast_ensembles``, and
 ``streamflow.return_periods`` into a dictionary of the series needed to plot with plotly, or the plotly generated html
 code.
 
-historical
-----------
+historic_plot
+-------------
 Processes the results of ``streamflow.historic_simulation`` and ``streamflow.return_periods`` into a dictionary of the
 series needed to plot with plotly, or the plotly generated html code.
 
-daily_avg
----------
+daily_avg_plot
+--------------
 Processes the results of ``streamflow.seasonal_average`` into a dictionary of the series needed to plot with plotly, or
 the plotly generated html code.
 
@@ -195,6 +195,14 @@ exceeding the return period flow on each day of the forecast.
 
 hydroviewer_forecast
 --------------------
-The hydroviewer function returns the HTML needed by the Hydroviewer and Streamflow Services Tethys applications. It
-uses the multiprocessing Pool class to asynchronously make all the streamflow api calls. This means the user only needs
-to wait as long as the slowest API response rather than the combined time of each API call.
+The hydroviewer forecast function returns the HTML needed for a plotly graph and a probabilities table which are used
+by the Hydroviewer and Streamflow Services Tethys applications. It uses the multiprocessing Pool class to
+asynchronously make all the streamflow api calls. This means the user only needs to wait as long as the slowest API
+response rather than the combined time of each API call.
+
+hydroviewer_historical
+----------------------
+The hydroviewer historical function returns the HTML needed for a plotly graph used by the Hydroviewer and Streamflow
+Services Tethys applications. It uses the multiprocessing Pool class to asynchronously make all the streamflow api
+calls. This means the user only needs to wait as long as the slowest API response rather than the combined time of
+each API call.
