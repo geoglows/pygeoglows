@@ -112,7 +112,7 @@ def available_dates(apikey, api_source=AI4E_ENDPOINT):
 
 
 # FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
-def forecast_plot(stats, rperiods, reach_id, outformat='json'):
+def forecast_plot(stats, rperiods, reach_id, outformat='plotly'):
     if not isinstance(stats, pandas.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['json', 'plotly', 'plotly_html']:
@@ -131,7 +131,7 @@ def forecast_plot(stats, rperiods, reach_id, outformat='json'):
         'reach_id': reach_id,
         'x_ensembles': ens['datetime'].tolist(),
         'x_hires': hires['datetime'].tolist(),
-        'ymax': max(stats['max (m3/s)']),
+        'y_max': max(stats['max (m3/s)']),
         'min': list(stats['min (m3/s)'].dropna(axis=0)),
         'mean': list(stats['mean (m3/s)'].dropna(axis=0)),
         'max': list(stats['max (m3/s)'].dropna(axis=0)),
@@ -161,7 +161,7 @@ def forecast_plot(stats, rperiods, reach_id, outformat='json'):
         name='Min',
         x=plot_data['x_ensembles'],
         y=plot_data['min'],
-        fill=None,
+        fill='tonexty',
         mode='lines',
         line=dict(color='rgb(152, 251, 152)')
     )
@@ -192,7 +192,7 @@ def forecast_plot(stats, rperiods, reach_id, outformat='json'):
         xaxis={'title': 'Date'},
         yaxis={
             'title': 'Streamflow (m<sup>3</sup>/s)',
-            'range': [0, 1.2 * plot_data['ymax']]
+            'range': [0, 1.2 * plot_data['y_max']]
         },
         shapes=[
             go.layout.Shape(
@@ -220,7 +220,7 @@ def forecast_plot(stats, rperiods, reach_id, outformat='json'):
                 x0=startdate,
                 x1=enddate,
                 y0=r20,
-                y1=1.2 * plot_data['ymax'],
+                y1=1.2 * plot_data['y_max'],
                 line={'width': 0},
                 opacity=.4,
                 fillcolor='purple'
@@ -232,6 +232,108 @@ def forecast_plot(stats, rperiods, reach_id, outformat='json'):
     if outformat == 'plotly_html':
         return offplot(
             Figure([minplot, meanplot, maxplot, stdlowplot, stdupplot, hires], layout=layout),
+            config={'autosizable': True, 'responsive': True},
+            output_type='div',
+            include_plotlyjs=False
+        )
+
+
+def ensembles_plot(ensembles, rperiods, reach_id, outformat='plotly'):
+    # be sure they gave you the kind of information you need
+    if not isinstance(ensembles, pandas.DataFrame):
+        raise ValueError('Sorry, I only process pandas dataframes right now')
+    if outformat not in ['json', 'plotly', 'plotly_html']:
+        raise ValueError('invalid outformat specified. pick json or html')
+
+    # variables to determine the maximum flow and hold all the scatter plot lines
+    max_flows = []
+    scatters = []
+
+    # determine the threshold values for return periods and the start/end dates so we can plot them
+    r2 = rperiods.iloc[3][0]
+    r10 = rperiods.iloc[2][0]
+    r20 = rperiods.iloc[1][0]
+    dates = ensembles.index.tolist()
+    startdate = dates[0]
+    enddate = dates[-1]
+
+    # process the series' components and store them in a dictionary
+    plot_data = {
+        'reach_id': reach_id,
+        'x_1-51': ensembles['ensemble_01 (m3/s)'].dropna(axis=0).index.tolist(),
+        'x_52': ensembles['ensemble_52 (m3/s)'].dropna(axis=0).index.tolist()
+    }
+
+    # add a dictionary entry for each of the ensemble members. the key for each series is the integer ensemble number
+    for ensemble in ensembles.columns:
+        plot_data[int(ensemble[9:11])] = ensembles[ensemble].dropna(axis=0).tolist()
+        max_flows.append(max(plot_data[int(ensemble[9:11])]))
+    plot_data['y_max'] = max(max_flows)
+
+    if outformat == 'json':
+        return plot_data
+
+    # create the high resolution line (ensemble 52)
+    scatters.append(Scatter(
+        name='High Resolution',
+        x=plot_data['x_52'],
+        y=plot_data[52],
+        line=dict(color='black')
+    ))
+    # create a line for the rest of the ensembles (1-51)
+    for i in range(1, 52):
+        scatters.append(Scatter(
+            name='Ensemble ' + str(i),
+            x=plot_data['x_1-51'],
+            y=plot_data[i],
+        ))
+
+    # define a layout for the plot
+    layout = Layout(
+        title='Ensemble Predicted Streamflow<br>Stream ID: ' + str(reach_id),
+        xaxis={'title': 'Date'},
+        yaxis={
+            'title': 'Streamflow (m<sup>3</sup>/s)',
+            'range': [0, 1.2 * plot_data['y_max']]
+        },
+        shapes=[
+            go.layout.Shape(
+                type='rect',
+                x0=startdate,
+                x1=enddate,
+                y0=r2,
+                y1=r10,
+                line={'width': 0},
+                opacity=.4,
+                fillcolor='yellow'
+            ),
+            go.layout.Shape(
+                type='rect',
+                x0=startdate,
+                x1=enddate,
+                y0=r10,
+                y1=r20,
+                line={'width': 0},
+                opacity=.4,
+                fillcolor='red'
+            ),
+            go.layout.Shape(
+                type='rect',
+                x0=startdate,
+                x1=enddate,
+                y0=r20,
+                y1=1.2 * plot_data['y_max'],
+                line={'width': 0},
+                opacity=.4,
+                fillcolor='purple'
+            ),
+        ]
+    )
+    if outformat == 'plotly':
+        return Figure(scatters, layout=layout)
+    if outformat == 'plotly_html':
+        return offplot(
+            Figure(scatters, layout=layout),
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
@@ -312,7 +414,7 @@ def historical_plot(hist, rperiods, outformat='plotly'):
     return
 
 
-def daily_avg_plot(daily, outformat='plotly'):
+def seasonal_plot(daily, outformat='plotly'):
     if not isinstance(daily, pandas.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['json', 'plotly', 'plotly_html']:
