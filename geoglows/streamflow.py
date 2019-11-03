@@ -7,7 +7,7 @@ try:
     import os
     import multiprocessing
     from plotly.offline import plot as offplot
-    from plotly.graph_objs import Scatter, Scattergl, Layout, Figure
+    from plotly.graph_objs import Scatter, Layout, Figure
     import plotly.graph_objs as go
     from io import StringIO
 except ImportError as error:
@@ -118,19 +118,14 @@ def forecast_plot(stats, rperiods, reach_id, outformat='plotly'):
     if outformat not in ['json', 'plotly', 'plotly_html']:
         raise ValueError('invalid outformat specified. pick json or html')
 
-    r2 = rperiods.iloc[3][0]
-    r10 = rperiods.iloc[2][0]
-    r20 = rperiods.iloc[1][0]
     dates = stats['datetime'].tolist()
     startdate = dates[0]
     enddate = dates[-1]
 
-    hires = stats[['datetime', 'high_res (m3/s)']].dropna(axis=0)
-    ens = stats[['datetime', 'mean (m3/s)']].dropna(axis=0)
     plot_data = {
         'reach_id': reach_id,
-        'x_ensembles': ens['datetime'].tolist(),
-        'x_hires': hires['datetime'].tolist(),
+        'x_ensembles': stats[['datetime', 'mean (m3/s)']].dropna(axis=0)['datetime'].tolist(),
+        'x_hires':  stats[['datetime', 'high_res (m3/s)']].dropna(axis=0)['datetime'].tolist(),
         'y_max': max(stats['max (m3/s)']),
         'min': list(stats['min (m3/s)'].dropna(axis=0)),
         'mean': list(stats['mean (m3/s)'].dropna(axis=0)),
@@ -138,6 +133,9 @@ def forecast_plot(stats, rperiods, reach_id, outformat='plotly'):
         'stdlow': list(stats['std_dev_range_lower (m3/s)'].dropna(axis=0)),
         'stdup': list(stats['std_dev_range_upper (m3/s)'].dropna(axis=0)),
         'hires': list(stats['high_res (m3/s)'].dropna(axis=0)),
+        'r2': rperiods.iloc[3][0],
+        'r10': rperiods.iloc[2][0],
+        'r20': rperiods.iloc[1][0],
     }
 
     if outformat == 'json':
@@ -161,7 +159,7 @@ def forecast_plot(stats, rperiods, reach_id, outformat='plotly'):
         name='Min',
         x=plot_data['x_ensembles'],
         y=plot_data['min'],
-        fill='tonexty',
+        fill=None,
         mode='lines',
         line=dict(color='rgb(152, 251, 152)')
     )
@@ -199,8 +197,8 @@ def forecast_plot(stats, rperiods, reach_id, outformat='plotly'):
                 type='rect',
                 x0=startdate,
                 x1=enddate,
-                y0=r2,
-                y1=r10,
+                y0=plot_data['r2'],
+                y1=plot_data['r10'],
                 line={'width': 0},
                 opacity=.4,
                 fillcolor='yellow'
@@ -209,8 +207,8 @@ def forecast_plot(stats, rperiods, reach_id, outformat='plotly'):
                 type='rect',
                 x0=startdate,
                 x1=enddate,
-                y0=r10,
-                y1=r20,
+                y0=plot_data['r10'],
+                y1=plot_data['r20'],
                 line={'width': 0},
                 opacity=.4,
                 fillcolor='red'
@@ -219,23 +217,25 @@ def forecast_plot(stats, rperiods, reach_id, outformat='plotly'):
                 type='rect',
                 x0=startdate,
                 x1=enddate,
-                y0=r20,
-                y1=1.2 * plot_data['y_max'],
+                y0=plot_data['r20'],
+                y1=1.2 * plot_data['r20'],
                 line={'width': 0},
                 opacity=.4,
                 fillcolor='purple'
             ),
         ]
     )
+    figure = Figure([minplot, stdlowplot, stdupplot, maxplot, meanplot, hires], layout=layout)
     if outformat == 'plotly':
-        return Figure([minplot, meanplot, maxplot, stdlowplot, stdupplot, hires], layout=layout)
+        return figure
     if outformat == 'plotly_html':
         return offplot(
-            Figure([minplot, meanplot, maxplot, stdlowplot, stdupplot, hires], layout=layout),
+            figure,
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
+    return
 
 
 def ensembles_plot(ensembles, rperiods, reach_id, outformat='plotly'):
@@ -250,9 +250,6 @@ def ensembles_plot(ensembles, rperiods, reach_id, outformat='plotly'):
     scatters = []
 
     # determine the threshold values for return periods and the start/end dates so we can plot them
-    r2 = rperiods.iloc[3][0]
-    r10 = rperiods.iloc[2][0]
-    r20 = rperiods.iloc[1][0]
     dates = ensembles.index.tolist()
     startdate = dates[0]
     enddate = dates[-1]
@@ -261,7 +258,10 @@ def ensembles_plot(ensembles, rperiods, reach_id, outformat='plotly'):
     plot_data = {
         'reach_id': reach_id,
         'x_1-51': ensembles['ensemble_01 (m3/s)'].dropna(axis=0).index.tolist(),
-        'x_52': ensembles['ensemble_52 (m3/s)'].dropna(axis=0).index.tolist()
+        'x_52': ensembles['ensemble_52 (m3/s)'].dropna(axis=0).index.tolist(),
+        'r2': rperiods.iloc[3][0],
+        'r10': rperiods.iloc[2][0],
+        'r20': rperiods.iloc[1][0],
     }
 
     # add a dictionary entry for each of the ensemble members. the key for each series is the integer ensemble number
@@ -301,8 +301,8 @@ def ensembles_plot(ensembles, rperiods, reach_id, outformat='plotly'):
                 type='rect',
                 x0=startdate,
                 x1=enddate,
-                y0=r2,
-                y1=r10,
+                y0=plot_data['r2'],
+                y1=plot_data['r10'],
                 line={'width': 0},
                 opacity=.4,
                 fillcolor='yellow'
@@ -311,8 +311,8 @@ def ensembles_plot(ensembles, rperiods, reach_id, outformat='plotly'):
                 type='rect',
                 x0=startdate,
                 x1=enddate,
-                y0=r10,
-                y1=r20,
+                y0=plot_data['r10'],
+                y1=plot_data['r20'],
                 line={'width': 0},
                 opacity=.4,
                 fillcolor='red'
@@ -321,44 +321,51 @@ def ensembles_plot(ensembles, rperiods, reach_id, outformat='plotly'):
                 type='rect',
                 x0=startdate,
                 x1=enddate,
-                y0=r20,
-                y1=1.2 * plot_data['y_max'],
+                y0=plot_data['r20'],
+                y1=1.2 * plot_data['r20'],
                 line={'width': 0},
                 opacity=.4,
                 fillcolor='purple'
             ),
         ]
     )
+    figure = Figure(scatters, layout=layout)
     if outformat == 'plotly':
-        return Figure(scatters, layout=layout)
+        return figure
     if outformat == 'plotly_html':
         return offplot(
-            Figure(scatters, layout=layout),
+            figure,
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
+    return
 
 
-def historical_plot(hist, rperiods, outformat='plotly'):
+def historical_plot(hist, rperiods, reach_id, outformat='plotly'):
     if not isinstance(hist, pandas.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['json', 'plotly', 'plotly_html']:
         raise ValueError('invalid outformat specified. pick json or plotly or plotly_html')
 
-    r2 = rperiods.iloc[3][0]
-    r10 = rperiods.iloc[2][0]
-    r20 = rperiods.iloc[1][0]
     dates = hist['datetime'].tolist()
     startdate = dates[0]
     enddate = dates[-1]
 
+    plot_data = {
+        'reach_id': reach_id,
+        'x': dates,
+        'y': hist['streamflow (m3/s)'].tolist(),
+        'r2': rperiods.iloc[3][0],
+        'r10': rperiods.iloc[2][0],
+        'r20': rperiods.iloc[1][0],
+    }
+
     if outformat == 'json':
-        # todo make the json output
-        return
+        return plot_data
 
     layout = Layout(
-        title='Historic Streamflow Simulation',
+        title='Historic Streamflow Simulation<br>Stream ID: ' + str(reach_id),
         xaxis={
             'title': 'Date',
             'hoverformat': '%b %d %Y',
@@ -373,8 +380,8 @@ def historical_plot(hist, rperiods, outformat='plotly'):
                 type='rect',
                 x0=startdate,
                 x1=enddate,
-                y0=r2,
-                y1=r10,
+                y0=plot_data['r2'],
+                y1=plot_data['r10'],
                 line={'width': 0},
                 opacity=.4,
                 fillcolor='yellow'
@@ -383,8 +390,8 @@ def historical_plot(hist, rperiods, outformat='plotly'):
                 type='rect',
                 x0=startdate,
                 x1=enddate,
-                y0=r10,
-                y1=r20,
+                y0=plot_data['r10'],
+                y1=plot_data['r20'],
                 line={'width': 0},
                 opacity=.4,
                 fillcolor='red'
@@ -393,15 +400,15 @@ def historical_plot(hist, rperiods, outformat='plotly'):
                 type='rect',
                 x0=startdate,
                 x1=enddate,
-                y0=r20,
-                y1=1.2 * 1.2 * max(hist['streamflow (m3/s)']),
+                y0=plot_data['r20'],
+                y1=1.2 * plot_data['r20'],
                 line={'width': 0},
                 opacity=.4,
                 fillcolor='purple'
             ),
         ]
     )
-    figure = Figure([Scattergl(x=dates, y=hist['streamflow (m3/s)'].tolist())], layout=layout)
+    figure = Figure([Scatter(x=plot_data['x'], y=plot_data['y'])], layout=layout)
     if outformat == 'plotly':
         return figure
     if outformat == 'plotly_html':
@@ -414,19 +421,25 @@ def historical_plot(hist, rperiods, outformat='plotly'):
     return
 
 
-def seasonal_plot(daily, outformat='plotly'):
-    if not isinstance(daily, pandas.DataFrame):
+def seasonal_plot(seasonal, reach_id, outformat='plotly'):
+    if not isinstance(seasonal, pandas.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['json', 'plotly', 'plotly_html']:
         raise ValueError('invalid outformat specified. pick json or plotly or plotly_html')
 
-    if outformat == 'json':
-        # todo make the json output
-        return
+    seasonal['day'] = pandas.to_datetime(seasonal['day'] + 1, format='%j')
 
-    daily['day'] = pandas.to_datetime(daily['day'] + 1, format='%j')
+    plot_data = {
+        'reach_id': reach_id,
+        'x': seasonal['day'].tolist(),
+        'y': seasonal['streamflow_avg (m3/s)'].tolist(),
+    }
+
+    if outformat == 'json':
+        return plot_data
+
     layout = Layout(
-        title='Daily Average Streamflow (Historic Simulation)',
+        title='Daily Average Streamflow (Historic Simulation)<br>Stream ID: ' + str(reach_id),
         xaxis={
             'title': 'Date',
             'hoverformat': '%b %d (%j)',
@@ -434,10 +447,10 @@ def seasonal_plot(daily, outformat='plotly'):
         },
         yaxis={
             'title': 'Streamflow (m<sup>3</sup>/s)',
-            'range': [0, 1.2 * max(daily['streamflow_avg (m3/s)'])]
+            'range': [0, 1.2 * max(plot_data['y'])]
         },
     )
-    figure = Figure([Scatter(x=daily['day'].tolist(), y=daily['streamflow_avg (m3/s)'].tolist())], layout=layout)
+    figure = Figure([Scatter(x=plot_data['x'], y=plot_data['y'])], layout=layout)
     if outformat == 'plotly':
         return figure
     if outformat == 'plotly_html':

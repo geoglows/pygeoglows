@@ -6,7 +6,7 @@ try:
 except ImportError as error:
     raise error
 
-TETHYS_ENDPOINT = 'https://tethys.byu.edu/apps/gldas/api/'
+TETHYS_ENDPOINT = 'https://tethys.byu.edu/apps/gfs/api/'
 SAMPLE_TOKEN = 'Token 6836afb1cc45752e8e4541595c6d32a68a4d70d4'
 
 

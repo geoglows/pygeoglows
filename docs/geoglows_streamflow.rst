@@ -169,29 +169,117 @@ day is cached by the API.
 Timeseries Processor Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The following functions turn the results of the API functions into plots or easily plotable data
+The following functions turn the results of the API functions into plots or easily plotable data.
 
 forecast_plot
 -------------
 Processes the dataframe results of ``streamflow.forecast_stats``, ``streamflow.forecast_ensembles``, and
-``streamflow.return_periods`` into a dictionary of the series needed to plot with plotly, or the plotly generated html
-code.
+``streamflow.return_periods`` into a dictionary of the series needed to plot with plotly, a plotly python object or
+plotly generated html code.
+
++----------------------+--------------------------------------------------------+--------------------------+
+| Parameter            | Description                                            | Examples                 |
++======================+========================================================+==========================+
+| stats (required)     | The dataframe returned by `forecast_stats`_            | pandas.DataFrame         |
++----------------------+--------------------------------------------------------+--------------------------+
+| rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
++----------------------+--------------------------------------------------------+--------------------------+
+| reach_id (required)  | The reach id to display on the graph title             | 123456789                |
++----------------------+--------------------------------------------------------+--------------------------+
+| outformat            | format for the plot: json, plotly, plotly_html         | default: plotly          |
++----------------------+--------------------------------------------------------+--------------------------+
+
+.. code-block:: python
+
+    import geoglows
+    data = geoglows.streamflow.forecast_plot(stats, rperiods, 123456789, outformat='json')
+
+ensembles_plot
+--------------
+Processes the dataframe results of ``streamflow.forecast_ensembles`` and ``streamflow.return_periods`` into a
+dictionary of the series needed to plot with plotly, a plotly python object or plotly generated html code.
+
++----------------------+--------------------------------------------------------+--------------------------+
+| Parameter            | Description                                            | Examples                 |
++======================+========================================================+==========================+
+| ensembles (required) | The dataframe returned by `forecast_ensembles`_        | pandas.DataFrame         |
++----------------------+--------------------------------------------------------+--------------------------+
+| rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
++----------------------+--------------------------------------------------------+--------------------------+
+| reach_id (required)  | The reach id to display on the graph title             | 123456789                |
++----------------------+--------------------------------------------------------+--------------------------+
+| outformat            | format for the plot: json, plotly, plotly_html         | default: plotly          |
++----------------------+--------------------------------------------------------+--------------------------+
+
+.. code-block:: python
+
+    import geoglows
+    data = geoglows.streamflow.ensembles_plot(stats, rperiods, 123456789, outformat='json')
 
 historic_plot
 -------------
 Processes the results of ``streamflow.historic_simulation`` and ``streamflow.return_periods`` into a dictionary of the
 series needed to plot with plotly, or the plotly generated html code.
 
-daily_avg_plot
---------------
++----------------------+--------------------------------------------------------+--------------------------+
+| Parameter            | Description                                            | Examples                 |
++======================+========================================================+==========================+
+| hist (required)      | The dataframe returned by `historic_simulation`_       | pandas.DataFrame         |
++----------------------+--------------------------------------------------------+--------------------------+
+| rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
++----------------------+--------------------------------------------------------+--------------------------+
+| reach_id (required)  | The reach id to display on the graph title             | 123456789                |
++----------------------+--------------------------------------------------------+--------------------------+
+| outformat            | format for the plot: json, plotly, plotly_html         | default: plotly          |
++----------------------+--------------------------------------------------------+--------------------------+
+
+.. code-block:: python
+
+    import geoglows
+    data = geoglows.streamflow.historic_plot(hist, rperiods, 123456789, outformat='json')
+
+seasonal_plot
+-------------
 Processes the results of ``streamflow.seasonal_average`` into a dictionary of the series needed to plot with plotly, or
 the plotly generated html code.
+
++----------------------+--------------------------------------------------------+--------------------------+
+| Parameter            | Description                                            | Examples                 |
++======================+========================================================+==========================+
+| seasonal (required)  | The dataframe returned by `seasonal_average`_          | pandas.DataFrame         |
++----------------------+--------------------------------------------------------+--------------------------+
+| rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
++----------------------+--------------------------------------------------------+--------------------------+
+| reach_id (required)  | The reach id to display on the graph title             | 123456789                |
++----------------------+--------------------------------------------------------+--------------------------+
+| outformat            | format for the plot: json, plotly, plotly_html         | default: plotly          |
++----------------------+--------------------------------------------------------+--------------------------+
+
+.. code-block:: python
+
+    import geoglows
+    data = geoglows.streamflow.seasonal_plot(seasonal, rperiods, 123456789, outformat='json')
 
 probabilities_table
 -------------------
 Processes the results of ``streamflow.forecast_stats``, ``streamflow.forecast_ensembles``, and
 ``streamflow.return_periods`` and uses flask template rendering to generate html code that shows the probabilities of
 exceeding the return period flow on each day of the forecast.
+
++----------------------+--------------------------------------------------------+--------------------------+
+| Parameter            | Description                                            | Examples                 |
++======================+========================================================+==========================+
+| stats (required)     | The dataframe returned by `forecast_stats`_            | pandas.DataFrame         |
++----------------------+--------------------------------------------------------+--------------------------+
+| ensembles (required) | The dataframe returned by `forecast_ensembles`_        | pandas.DataFrame         |
++----------------------+--------------------------------------------------------+--------------------------+
+| rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
++----------------------+--------------------------------------------------------+--------------------------+
+
+.. code-block:: python
+
+    import geoglows
+    data = geoglows.streamflow.probabilities_table(stats, ensembles, rperiods)
 
 hydroviewer_forecast
 --------------------

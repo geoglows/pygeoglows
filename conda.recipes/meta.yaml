@@ -1,6 +1,6 @@
 package:
   name: geoglows
-  version: 0.2.2
+  version: 0.3.0
 
 about:
   author: Riley Hales
@@ -12,7 +12,7 @@ about:
   dev_url: https://github.com/rileyhales/geoglows
 
 build:
-  string: pypi_integrate
+  string: r1
   noarch: python
   preserve_egg_dir: True
 

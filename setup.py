@@ -6,7 +6,7 @@ with open("README.md", "r") as readme:
 setup(
     name='geoglows',
     packages=['geoglows'],
-    version='0.2.3',
+    version='0.3.0',
     description='Package for accessing data and APIs developed for the GEOGloWS initiative',
     long_description=long_description,
     long_description_content_type="text/markdown",
