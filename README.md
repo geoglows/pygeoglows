@@ -4,6 +4,7 @@
 [![Anaconda-Server Badge](https://anaconda.org/geoglows/geoglows/badges/installer/conda.svg)](https://conda.anaconda.org/rileyhales)
 [![Anaconda-Server Badge](https://anaconda.org/geoglows/geoglows/badges/downloads.svg)](https://anaconda.org/geoglows/geoglows)
 [![Documentation Status](https://readthedocs.org/projects/geoglows/badge/?version=latest)](https://geoglows.readthedocs.io/en/latest/?badge=latest)
+[![PyPI](https://img.shields.io/pypi/v/geoglows)](https://pypi.org/project/geoglows)
 
 [Visit the Anaconda Cloud page](https://anaconda.org/geoglows/geoglows)
 ```bash
