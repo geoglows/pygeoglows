@@ -37,17 +37,18 @@ include min, mean, max, one standard deviation above and below the mean, and the
 +======================+========================================================+==========================+
 | reach_id (required)  | The ID of a stream.                                    | 2004351 (integer)        |
 +----------------------+--------------------------------------------------------+--------------------------+
-| apikey (required)    | An API token used to make the request                  | 'alpha_numeric_string'   |
+| api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
++----------------------+--------------------------------------------------------+--------------------------+
+| api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
 +----------------------+--------------------------------------------------------+--------------------------+
 | return_format        | csv (pandas DF), json (dictionary), waterml (string)   | default: csv             |
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
-+----------------------+--------------------------------------------------------+--------------------------+
+
 
 .. code-block:: python
 
     import geoglows
-    data = geoglows.streamflow.forecast_stats(12341234, 'my_api_token', return_format='csv')
+    data = geoglows.streamflow.forecast_stats(12341234)
 
 forecast_ensembles
 ------------------
@@ -58,17 +59,17 @@ Returns a table of the forecasted streamflow made by each of the 52 members.
 +======================+========================================================+==========================+
 | reach_id (required)  | The ID of a stream.                                    | 2004351 (integer)        |
 +----------------------+--------------------------------------------------------+--------------------------+
-| apikey (required)    | An API token used to make the request                  | 'alpha_numeric_string'   |
+| api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
++----------------------+--------------------------------------------------------+--------------------------+
+| api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
 +----------------------+--------------------------------------------------------+--------------------------+
 | return_format        | csv (pandas DF), json (dictionary), waterml (string)   | default: csv             |
-+----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
 
     import geoglows
-    data = geoglows.streamflow.forecast_ensembles(12341234, 'my_api_token', return_format='csv')
+    data = geoglows.streamflow.forecast_ensembles(12341234)
 
 historic_simulation
 -------------------
@@ -79,17 +80,17 @@ Returns a timeseries of simulated streamflow for the reach based on the ERA Inte
 +======================+========================================================+==========================+
 | reach_id (required)  | The ID of a stream.                                    | 2004351 (integer)        |
 +----------------------+--------------------------------------------------------+--------------------------+
-| apikey (required)    | An API token used to make the request                  | 'alpha_numeric_string'   |
+| api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
++----------------------+--------------------------------------------------------+--------------------------+
+| api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
 +----------------------+--------------------------------------------------------+--------------------------+
 | return_format        | csv (pandas DF), json (dictionary), waterml (string)   | default: csv             |
-+----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
 
     import geoglows
-    data = geoglows.streamflow.historic_simulation(12341234, 'my_api_token', return_format='csv')
+    data = geoglows.streamflow.historic_simulation(12341234)
 
 seasonal_average
 ----------------
@@ -100,17 +101,17 @@ Returns a timeseries of the average streamflow for each day of the year based on
 +======================+========================================================+==========================+
 | reach_id (required)  | The ID of a stream.                                    | 2004351 (integer)        |
 +----------------------+--------------------------------------------------------+--------------------------+
-| apikey (required)    | An API token used to make the request                  | 'alpha_numeric_string'   |
+| api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
++----------------------+--------------------------------------------------------+--------------------------+
+| api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
 +----------------------+--------------------------------------------------------+--------------------------+
 | return_format        | csv (pandas DF), json (dictionary), waterml (string)   | default: csv             |
-+----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
 
     import geoglows
-    data = geoglows.streamflow.seasonal_average(12341234, 'my_api_token', return_format='csv')
+    data = geoglows.streamflow.seasonal_average(12341234)
 
 return_periods
 --------------
@@ -121,15 +122,37 @@ Returns a dictionary with the streamflows corresponding to a 2, 10, and 20 year 
 +======================+========================================================+==========================+
 | reach_id (required)  | The ID of a stream.                                    | 2004351 (integer)        |
 +----------------------+--------------------------------------------------------+--------------------------+
-| apikey (required)    | An API token used to make the request                  | 'alpha_numeric_string'   |
-+----------------------+--------------------------------------------------------+--------------------------+
 | api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
++----------------------+--------------------------------------------------------+--------------------------+
+| api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
++----------------------+--------------------------------------------------------+--------------------------+
+| return_format        | csv (pandas DF), json (dictionary), waterml (string)   | default: csv             |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
 
     import geoglows
-    data = geoglows.streamflow.return_periods(12341234, 'my_api_token')
+    data = geoglows.streamflow.return_periods(12341234)
+
+available_dates
+---------------
+Returns the date of the dates of forecasts currently available from the API. Currently, only the most recent/current
+day is cached by the API. Returns a dictionary.
+
++----------------------+--------------------------------------------------------+--------------------------+
+| Parameter            | Description                                            | Examples                 |
++======================+========================================================+==========================+
+| region (required)    | The name of a global region from `available_regions`_  | europe-geoglows          |
++----------------------+--------------------------------------------------------+--------------------------+
+| api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
++----------------------+--------------------------------------------------------+--------------------------+
+| api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
++----------------------+--------------------------------------------------------+--------------------------+
+
+.. code-block:: python
+
+    import geoglows
+    data = geoglows.streamflow.available_dates('europe-geoglows')
 
 available_regions
 -----------------
@@ -138,7 +161,7 @@ Returns a dictionary with a list of the names of regions currently supported by 
 +----------------------+--------------------------------------------------------+--------------------------+
 | Parameter            | Description                                            | Examples                 |
 +======================+========================================================+==========================+
-| apikey (required)    | An API token used to make the request                  | 'alpha_numeric_string'   |
+| api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
 +----------------------+--------------------------------------------------------+--------------------------+
 | api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
 +----------------------+--------------------------------------------------------+--------------------------+
@@ -146,25 +169,7 @@ Returns a dictionary with a list of the names of regions currently supported by 
 .. code-block:: python
 
     import geoglows
-    data = geoglows.streamflow.available_regions('my_api_token')
-
-available_dates
----------------
-Returns the date of the dates of forecasts currently available from the API. Currently, only the most recent/current
-day is cached by the API.
-
-+----------------------+--------------------------------------------------------+--------------------------+
-| Parameter            | Description                                            | Examples                 |
-+======================+========================================================+==========================+
-| apikey (required)    | An API token used to make the request                  | 'alpha_numeric_string'   |
-+----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
-+----------------------+--------------------------------------------------------+--------------------------+
-
-.. code-block:: python
-
-    import geoglows
-    data = geoglows.streamflow.available_dates('my_api_token')
+    data = geoglows.streamflow.available_regions()
 
 Timeseries Processor Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

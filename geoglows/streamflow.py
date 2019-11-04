@@ -19,12 +19,12 @@ BYU_ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
 
 
 # FUNCTIONS THAT CALL THE GLOBAL STREAMFLOW PREDICTION API
-def forecast_stats(reach_id, apikey, return_format='csv', api_source=AI4E_ENDPOINT):
+def forecast_stats(reach_id, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
     params = {
         'reach_id': reach_id,
         'return_format': return_format
     }
-    headers = {'Ocp-Apim-Subscription-Key': apikey}
+    headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'ForecastStats/', headers=headers, params=params).text
 
     if return_format == 'csv':
@@ -35,12 +35,12 @@ def forecast_stats(reach_id, apikey, return_format='csv', api_source=AI4E_ENDPOI
         return data
 
 
-def forecast_ensembles(reach_id, apikey, return_format='csv', api_source=AI4E_ENDPOINT):
+def forecast_ensembles(reach_id, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
     params = {
         'reach_id': reach_id,
         'return_format': return_format
     }
-    headers = {'Ocp-Apim-Subscription-Key': apikey}
+    headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'ForecastEnsembles/', headers=headers, params=params).text
 
     if return_format == 'csv':
@@ -53,12 +53,12 @@ def forecast_ensembles(reach_id, apikey, return_format='csv', api_source=AI4E_EN
         return data
 
 
-def historic_simulation(reach_id, apikey, return_format='csv', api_source=AI4E_ENDPOINT):
+def historic_simulation(reach_id, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
     params = {
         'reach_id': reach_id,
         'return_format': return_format
     }
-    headers = {'Ocp-Apim-Subscription-Key': apikey}
+    headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'HistoricSimulation/', headers=headers, params=params).text
 
     if return_format == 'csv':
@@ -69,12 +69,12 @@ def historic_simulation(reach_id, apikey, return_format='csv', api_source=AI4E_E
         return data
 
 
-def seasonal_average(reach_id, apikey, return_format='csv', api_source=AI4E_ENDPOINT):
+def seasonal_average(reach_id, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
     params = {
         'reach_id': reach_id,
         'return_format': return_format
     }
-    headers = {'Ocp-Apim-Subscription-Key': apikey}
+    headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'SeasonalAverage/', headers=headers, params=params).text
 
     if return_format == 'csv':
@@ -85,12 +85,12 @@ def seasonal_average(reach_id, apikey, return_format='csv', api_source=AI4E_ENDP
         return data
 
 
-def return_periods(reach_id, apikey, return_format='csv', api_source=AI4E_ENDPOINT):
+def return_periods(reach_id, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
     params = {
         'reach_id': reach_id,
         'return_format': return_format
     }
-    headers = {'Ocp-Apim-Subscription-Key': apikey}
+    headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'ReturnPeriods/', headers=headers, params=params).text
 
     if return_format == 'csv':
@@ -101,14 +101,15 @@ def return_periods(reach_id, apikey, return_format='csv', api_source=AI4E_ENDPOI
         return data
 
 
-def available_regions(apikey, api_source=AI4E_ENDPOINT):
-    headers = {'Ocp-Apim-Subscription-Key': apikey}
+def available_dates(region, api_source=BYU_ENDPOINT, api_key=None):
+    params = {'region': region}
+    headers = {'Ocp-Apim-Subscription-Key': api_key}
+    return json.loads(requests.get(api_source + 'AvailableDates/', headers=headers, params=params).text)
+
+
+def available_regions(api_source=BYU_ENDPOINT, api_key=None):
+    headers = {'Ocp-Apim-Subscription-Key': api_key}
     return json.loads(requests.get(api_source + 'AvailableRegions/', headers=headers).text)
-
-
-def available_dates(apikey, api_source=AI4E_ENDPOINT):
-    headers = {'Ocp-Apim-Subscription-Key': apikey}
-    return json.loads(requests.get(api_source + 'ReturnPeriods/', headers=headers).text)
 
 
 # FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
@@ -506,12 +507,12 @@ def probabilities_table(stats, ensembles, rperiods):
 
 
 # CUSTOM FUNCTIONS FOR IMPLEMENTATION IN A HYDROVIEWER
-def hydroviewer_forecast(reach_id, apikey):
+def hydroviewer_forecast(reach_id, api_key):
     # make all the API calls asynchronously with a pool
     with multiprocessing.Pool(3) as pl:
-        stats = pl.apply_async(forecast_stats, (reach_id, apikey))
-        ensembles = pl.apply_async(forecast_ensembles, (reach_id, apikey))
-        rperiods = pl.apply_async(return_periods, (reach_id, apikey))
+        stats = pl.apply_async(forecast_stats, (reach_id, api_key))
+        ensembles = pl.apply_async(forecast_ensembles, (reach_id, api_key))
+        rperiods = pl.apply_async(return_periods, (reach_id, api_key))
         pl.close()
         pl.join()
         stats = stats.get()
@@ -522,11 +523,11 @@ def hydroviewer_forecast(reach_id, apikey):
     return fp + pt
 
 
-def hydroviewer_historical(reach_id, apikey):
+def hydroviewer_historical(reach_id, api_key):
     # make all the API calls asynchronously with a pool
     with multiprocessing.Pool(2) as pl:
-        hist = pl.apply_async(historic_simulation, (reach_id, apikey))
-        rperiods = pl.apply_async(return_periods, (reach_id, apikey))
+        hist = pl.apply_async(historic_simulation, (reach_id, api_key))
+        rperiods = pl.apply_async(return_periods, (reach_id, api_key))
         pl.close()
         pl.join()
         hist = hist.get()
