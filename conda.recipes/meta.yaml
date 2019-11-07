@@ -1,6 +1,6 @@
 package:
   name: geoglows
-  version: 0.3.0
+  version: 0.4
 
 about:
   author: Riley Hales
@@ -12,7 +12,7 @@ about:
   dev_url: https://github.com/rileyhales/geoglows
 
 build:
-  string: r1
+  string: beta1
   noarch: python
   preserve_egg_dir: True
 
@@ -28,6 +28,7 @@ requirements:
     - plotly>=4
     - requests>=2
     - jinja2>=2.10
+    - shapely
 
 outputs:
   - name: geoglows
@@ -38,6 +39,7 @@ test:
     - plotly
     - pandas
     - jinja2
+    - shapely
     - geoglows
 
 extra:
