@@ -23,9 +23,18 @@ BYU_ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
 
 
 # FUNCTIONS THAT CALL THE GLOBAL STREAMFLOW PREDICTION API
-def forecast_stats(reach_id, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
-    # build and execute a request to the api with the user's parameters
+def forecast_stats(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
+    # check that a reach_id or a lat&lon were provided
+    if not reach_id:
+        if lat is not None and lon is not None:
+            check = reach_from_latlon(lat, lon)
+            if 'error' in check.keys():
+                raise Exception('no reach_id was found near that lat/lon')
+            reach_id = check['reach_id']
+        else:
+            raise Exception('provide a reach_id or both a lat and lon value')
     params = {'reach_id': reach_id, 'return_format': return_format}
+    # build and execute a request to the api with the user's parameters
     headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'ForecastStats/', headers=headers, params=params).text
 
@@ -37,9 +46,18 @@ def forecast_stats(reach_id, api_source=BYU_ENDPOINT, api_key=None, return_forma
         return data
 
 
-def forecast_ensembles(reach_id, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
-    # build and execute a request to the api with the user's parameters
+def forecast_ensembles(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
+    # check that a reach_id or a lat&lon were provided
+    if not reach_id:
+        if lat is not None and lon is not None:
+            check = reach_from_latlon(lat, lon)
+            if 'error' in check.keys():
+                raise Exception('no reach_id was found near that lat/lon')
+            reach_id = check['reach_id']
+        else:
+            raise Exception('provide a reach_id or both a lat and lon value')
     params = {'reach_id': reach_id, 'return_format': return_format}
+    # build and execute a request to the api with the user's parameters
     headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'ForecastEnsembles/', headers=headers, params=params).text
 
@@ -53,9 +71,18 @@ def forecast_ensembles(reach_id, api_source=BYU_ENDPOINT, api_key=None, return_f
         return data
 
 
-def historic_simulation(reach_id, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
-    # build and execute a request to the api with the user's parameters
+def historic_simulation(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
+    # check that a reach_id or a lat&lon were provided
+    if not reach_id:
+        if lat is not None and lon is not None:
+            check = reach_from_latlon(lat, lon)
+            if 'error' in check.keys():
+                raise Exception('no reach_id was found near that lat/lon')
+            reach_id = check['reach_id']
+        else:
+            raise Exception('provide a reach_id or both a lat and lon value')
     params = {'reach_id': reach_id, 'return_format': return_format}
+    # build and execute a request to the api with the user's parameters
     headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'HistoricSimulation/', headers=headers, params=params).text
 
@@ -67,9 +94,18 @@ def historic_simulation(reach_id, api_source=BYU_ENDPOINT, api_key=None, return_
         return data
 
 
-def seasonal_average(reach_id, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
-    # build and execute a request to the api with the user's parameters
+def seasonal_average(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
+    # check that a reach_id or a lat&lon were provided
+    if not reach_id:
+        if lat is not None and lon is not None:
+            check = reach_from_latlon(lat, lon)
+            if 'error' in check.keys():
+                raise Exception('no reach_id was found near that lat/lon')
+            reach_id = check['reach_id']
+        else:
+            raise Exception('provide a reach_id or both a lat and lon value')
     params = {'reach_id': reach_id, 'return_format': return_format}
+    # build and execute a request to the api with the user's parameters
     headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'SeasonalAverage/', headers=headers, params=params).text
 
@@ -81,9 +117,18 @@ def seasonal_average(reach_id, api_source=BYU_ENDPOINT, api_key=None, return_for
         return data
 
 
-def return_periods(reach_id, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
-    # build and execute a request to the api with the user's parameters
+def return_periods(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
+    # check that a reach_id or a lat&lon were provided
+    if not reach_id:
+        if lat is not None and lon is not None:
+            check = reach_from_latlon(lat, lon)
+            if 'error' in check.keys():
+                raise Exception('no reach_id was found near that lat/lon')
+            reach_id = check['reach_id']
+        else:
+            raise Exception('provide a reach_id or both a lat and lon value')
     params = {'reach_id': reach_id, 'return_format': return_format}
+    # build and execute a request to the api with the user's parameters
     headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'ReturnPeriods/', headers=headers, params=params).text
 
@@ -95,7 +140,7 @@ def return_periods(reach_id, api_source=BYU_ENDPOINT, api_key=None, return_forma
         return data
 
 
-def available_dates(region=None, reach_id=None, api_source=BYU_ENDPOINT, api_key=None):
+def available_dates(reach_id=None, region=None, api_source=BYU_ENDPOINT, api_key=None):
     # you need a region for the api call, so the user needs to provide one or a valid reach_id to get it from
     if region:
         params = {'region': region}
