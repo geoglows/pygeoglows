@@ -17,9 +17,11 @@ Project <http://www.geoglows.org>`_.
 .. toctree::
 	:caption: Table of Contents
 	:name: mastertoc
+	:maxdepth: 4
 
 	geoglows_streamflow
 	geoglows_gldas
 	geoglows_gfs
+	dev_notes
 	license
 
