@@ -561,9 +561,10 @@ def reach_from_latlon(lat, lon):
     # store the best matching stream using a named tuple for easy comparisons/management
     StreamResult = namedtuple('Stream', 'reach_id, region, distance')
     stream_result = StreamResult(None, None, math.inf)
+    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'delineation_data'))
 
     # open the bounding boxes csv, figure out which regions the point lies within
-    bb_csv = pandas.read_csv('delineation_data/bounding_boxes.csv', index_col='region')
+    bb_csv = pandas.read_csv(os.path.join(base_path, 'bounding_boxes.csv'), index_col='region')
     for row in bb_csv.iterrows():
         bbox = box(row[1][0], row[1][1], row[1][2], row[1][3])
         if point.within(bbox):
@@ -580,8 +581,7 @@ def reach_from_latlon(lat, lon):
             pass
 
         # open the region csv, find the closest reach_id
-        df = pandas.read_csv(
-            f"delineation_data/{region}/comid_lat_lon_z.csv", sep=',', header=0, index_col=0)
+        df = pandas.read_csv(os.path.join(base_path, region, 'comid_lat_lon_z.csv'), sep=',', header=0, index_col=0)
         points_df = df.loc[:, "Lat":"Lon"].apply(Point, axis=1)
         multi_pt = MultiPoint(points_df.tolist())
         nearest_pt = nearest_points(point, multi_pt)
