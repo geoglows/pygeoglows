@@ -2,30 +2,23 @@
 geoglows.streamflow
 ===================
 
-The streamflow module provides a series of functions for requesting forecasted and historical data from the Global
-Streamflow Prediction Service (GSP). Data is available from this service through a REST API. Simply put, a REST API is
-a way to get information over the internet without using a web browser. These are designated `GSP REST API Functions`_.
+The streamflow module contains functions for getting streamflow data from the GEOGloWS model (`REST API Functions`_),
+for turning them into useful plots (`Series Processing Functions`_), and some additional `Utilities`_. Also check the
+`FAQ`_ section.
 
-This module also contains a series of functions that will process the data from the GSP API. These produce
-dictionaries, plotly python objects (compatible with showing plots in notebooks), or plotly html code to use in web
-applications. These are designated `Timeseries Processor Functions`_.
+REST API Functions
+~~~~~~~~~~~~~~~~~~
+The streamflow module provides a series of functions for requesting forecasted and historical data from the GEOGloWS
+ECMWF Streamflow Service. This data is available from this service through a REST API. Simply put, a REST API is a way
+to get information over the internet without using a web browser.
 
-Basics of the GSP:  The GSP Service provides access to the results of a hydrologic model that is run each day. The
-model is based on a group of unique weather forecasts known as an ensemble. Each unique precipitation forecast, known
-as an ensemble member, produces a unique streamflow forecast. There are 52 members of the ensemble that drives the GSP
-each day. The GSP also uses the ERA Interim historical precipitation dataset to produce hindcasted streamflow on each
-river.
+The API is currently available from a BYU endpoint and 2 endpoints through Microsoft Azure. These endpoints are string
+variables called BYU_ENDPOINT, AI4E_ENDPOINT (requires the api_key parameter) and CONTAINER_ENDPOINT.
 
-GSP REST API Functions
-~~~~~~~~~~~~~~~~~~~~~~
+In general, a method requires an ID, called the reach_id or common id (COMID), for a specific stream. This ID is unique
+to the stream network configured for this Service. It is arbitrarily assigned so that there is a way to keep data
+organized. Get it using the `latlon_to_reach`_ function.
 
-The GSP REST API functions request data from the Global Streamflow Prediction Service sponsored by Microsoft's AI for
-Earth program. The functions in this package directly parallel the methods available from the API. In general, a method
-requires an ID, sometimes called common id (COMID) or reach id, for a specific stream. This ID is unique to the stream
-network configured for the GSP Service. You can get this using the
-`Streamflow Services web app <https://tethys.byu.edu/apps/streamflowservices>`_ which has a map interface where you can
-click on a stream and see it's identifier. For more information about the GSP API's methods,
-`read the documentation <https://github.com/msouff/gsp_rest_api/blob/master/swagger_doc.yaml>`_
 
 forecast_stats
 --------------
@@ -35,20 +28,24 @@ include min, mean, max, one standard deviation above and below the mean, and the
 +----------------------+--------------------------------------------------------+--------------------------+
 | Parameter            | Description                                            | Examples                 |
 +======================+========================================================+==========================+
-| reach_id (required)  | The ID of a stream.                                    | 2004351 (integer)        |
+| reach_id (recommend) | The ID of a stream.                                    | 204351 (integer)         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
+| lat, lon (optional)  | Use lat AND lon instead of reach_id                    | lat=10, lon=10 (integer) |
++----------------------+--------------------------------------------------------+--------------------------+
+| api_source           | the api endpoint to make requests from                 | default: BYU_ENDPOINT    |
 +----------------------+--------------------------------------------------------+--------------------------+
 | api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
 +----------------------+--------------------------------------------------------+--------------------------+
-| return_format        | csv (pandas DF), json (dictionary), waterml (string)   | default: csv             |
+| return_format        | pandas (df), json (dictionary), waterml (string)       | default: pandas          |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 
 .. code-block:: python
 
-    import geoglows
+    # using a reach_id
     data = geoglows.streamflow.forecast_stats(12341234)
+    # using lat and lon as keyword arguments instead of reach_id
+    data = geoglows.streamflow.forecast_stats(lat=10, lon=10)
 
 forecast_ensembles
 ------------------
@@ -57,19 +54,23 @@ Returns a table of the forecasted streamflow made by each of the 52 members.
 +----------------------+--------------------------------------------------------+--------------------------+
 | Parameter            | Description                                            | Examples                 |
 +======================+========================================================+==========================+
-| reach_id (required)  | The ID of a stream.                                    | 2004351 (integer)        |
+| reach_id (recommend) | The ID of a stream.                                    | 204351 (integer)         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
+| lat, lon (optional)  | Use lat AND lon instead of reach_id                    | lat=10, lon=10 (integer) |
++----------------------+--------------------------------------------------------+--------------------------+
+| api_source           | the api endpoint to make requests from                 | default: BYU_ENDPOINT    |
 +----------------------+--------------------------------------------------------+--------------------------+
 | api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
 +----------------------+--------------------------------------------------------+--------------------------+
-| return_format        | csv (pandas DF), json (dictionary), waterml (string)   | default: csv             |
+| return_format        | pandas (df), json (dictionary), waterml (string)       | default: pandas          |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
 
-    import geoglows
+    # using a reach_id
     data = geoglows.streamflow.forecast_ensembles(12341234)
+    # using lat and lon as keyword arguments instead of reach_id
+    data = geoglows.streamflow.forecast_ensembles(lat=10, lon=10)
 
 historic_simulation
 -------------------
@@ -78,19 +79,23 @@ Returns a timeseries of simulated streamflow for the reach based on the ERA Inte
 +----------------------+--------------------------------------------------------+--------------------------+
 | Parameter            | Description                                            | Examples                 |
 +======================+========================================================+==========================+
-| reach_id (required)  | The ID of a stream.                                    | 2004351 (integer)        |
+| reach_id (recommend) | The ID of a stream.                                    | 204351 (integer)         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
+| lat, lon (optional)  | Use lat AND lon instead of reach_id                    | lat=10, lon=10 (integer) |
++----------------------+--------------------------------------------------------+--------------------------+
+| api_source           | the api endpoint to make requests from                 | default: BYU_ENDPOINT    |
 +----------------------+--------------------------------------------------------+--------------------------+
 | api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
 +----------------------+--------------------------------------------------------+--------------------------+
-| return_format        | csv (pandas DF), json (dictionary), waterml (string)   | default: csv             |
+| return_format        | pandas (df), json (dictionary), waterml (string)       | default: pandas          |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
 
-    import geoglows
-    data = geoglows.streamflow.historic_simulation(12341234)
+   # using a reach_id
+   data = geoglows.streamflow.historic_simulation(12341234)
+   # using lat and lon as keyword arguments instead of reach_id
+   data = geoglows.streamflow.historic_simulation(lat=10, lon=10)
 
 seasonal_average
 ----------------
@@ -99,19 +104,23 @@ Returns a timeseries of the average streamflow for each day of the year based on
 +----------------------+--------------------------------------------------------+--------------------------+
 | Parameter            | Description                                            | Examples                 |
 +======================+========================================================+==========================+
-| reach_id (required)  | The ID of a stream.                                    | 2004351 (integer)        |
+| reach_id (recommend) | The ID of a stream.                                    | 204351 (integer)         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
+| lat, lon (optional)  | Use lat AND lon instead of reach_id                    | lat=10, lon=10 (integer) |
++----------------------+--------------------------------------------------------+--------------------------+
+| api_source           | the api endpoint to make requests from                 | default: BYU_ENDPOINT    |
 +----------------------+--------------------------------------------------------+--------------------------+
 | api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
 +----------------------+--------------------------------------------------------+--------------------------+
-| return_format        | csv (pandas DF), json (dictionary), waterml (string)   | default: csv             |
+| return_format        | pandas (df), json (dictionary), waterml (string)       | default: pandas          |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
 
-    import geoglows
-    data = geoglows.streamflow.seasonal_average(12341234)
+   # using a reach_id
+   data = geoglows.streamflow.seasonal_average(12341234)
+   # using lat and lon as keyword arguments instead of reach_id
+   data = geoglows.streamflow.seasonal_average(lat=10, lon=10)
 
 return_periods
 --------------
@@ -120,39 +129,45 @@ Returns a dictionary with the streamflows corresponding to a 2, 10, and 20 year 
 +----------------------+--------------------------------------------------------+--------------------------+
 | Parameter            | Description                                            | Examples                 |
 +======================+========================================================+==========================+
-| reach_id (required)  | The ID of a stream.                                    | 2004351 (integer)        |
+| reach_id (recommend) | The ID of a stream.                                    | 204351 (integer)         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
+| lat, lon (optional)  | Use lat AND lon instead of reach_id                    | lat=10, lon=10 (integer) |
++----------------------+--------------------------------------------------------+--------------------------+
+| api_source           | the api endpoint to make requests from                 | default: BYU_ENDPOINT    |
 +----------------------+--------------------------------------------------------+--------------------------+
 | api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
 +----------------------+--------------------------------------------------------+--------------------------+
-| return_format        | csv (pandas DF), json (dictionary), waterml (string)   | default: csv             |
+| return_format        | pandas (df), json (dictionary), waterml (string)       | default: pandas          |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
 
-    import geoglows
-    data = geoglows.streamflow.return_periods(12341234)
+   # using a reach_id
+   data = geoglows.streamflow.return_periods(12341234)
+   # using lat and lon as keyword arguments instead of reach_id
+   data = geoglows.streamflow.return_periods(lat=10, lon=10)
 
 available_dates
 ---------------
-Returns the date of the dates of forecasts currently available from the API. Currently, only the most recent/current
-day is cached by the API. Returns a dictionary.
+Returns the dates of forecasts currently available from the GEOGloWS model. Currently, only the most recent/current day
+is cached by the API. Returns a dictionary. You need to specify either a region or a reach_id.
 
 +----------------------+--------------------------------------------------------+--------------------------+
 | Parameter            | Description                                            | Examples                 |
 +======================+========================================================+==========================+
-| region (required)    | The name of a global region from `available_regions`_  | europe-geoglows          |
+| region (option 1)    | The name of a global region from `available_regions`_  | europe-geoglows          |
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
+| reach_id (option 2)  | A valid reach_id                                       | 204351                   |
++----------------------+--------------------------------------------------------+--------------------------+
+| api_source           | the api endpoint to make requests from                 | default: BYU_ENDPOINT    |
 +----------------------+--------------------------------------------------------+--------------------------+
 | api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
 
-    import geoglows
-    data = geoglows.streamflow.available_dates('europe-geoglows')
+    data = geoglows.streamflow.available_dates('europe-geoglows')   # using a region name
+    data = geoglows.streamflow.available_dates(204351)   # using a reach_id
 
 available_regions
 -----------------
@@ -163,18 +178,18 @@ Returns a dictionary with a list of the names of regions currently supported by 
 +======================+========================================================+==========================+
 | api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: AI4E_ENDPOINT   |
+| api_source           | the api endpoint to make requests from                 | default: BYU_ENDPOINT    |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
 
-    import geoglows
     data = geoglows.streamflow.available_regions()
 
-Timeseries Processor Functions
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The following functions turn the results of the API functions into plots or easily plotable data.
+Series Processing Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+The following functions turn the results of the API functions into plots or easily plotable data. These produce
+dictionaries, plotly python objects (compatible with showing plots in notebooks), or plotly html code to use in web
+applications. These are designated
 
 forecast_plot
 -------------
@@ -196,7 +211,6 @@ plotly generated html code.
 
 .. code-block:: python
 
-    import geoglows
     data = geoglows.streamflow.forecast_plot(stats, rperiods, 123456789, outformat='json')
 
 ensembles_plot
@@ -218,7 +232,6 @@ dictionary of the series needed to plot with plotly, a plotly python object or p
 
 .. code-block:: python
 
-    import geoglows
     data = geoglows.streamflow.ensembles_plot(stats, rperiods, 123456789, outformat='json')
 
 historic_plot
@@ -240,7 +253,6 @@ series needed to plot with plotly, or the plotly generated html code.
 
 .. code-block:: python
 
-    import geoglows
     data = geoglows.streamflow.historic_plot(hist, rperiods, 123456789, outformat='json')
 
 seasonal_plot
@@ -262,7 +274,6 @@ the plotly generated html code.
 
 .. code-block:: python
 
-    import geoglows
     data = geoglows.streamflow.seasonal_plot(seasonal, rperiods, 123456789, outformat='json')
 
 probabilities_table
@@ -283,19 +294,59 @@ exceeding the return period flow on each day of the forecast.
 
 .. code-block:: python
 
-    import geoglows
     data = geoglows.streamflow.probabilities_table(stats, ensembles, rperiods)
 
-hydroviewer_forecast
---------------------
-The hydroviewer forecast function returns the HTML needed for a plotly graph and a probabilities table which are used
-by the Hydroviewer and Streamflow Services Tethys applications. It uses the multiprocessing Pool class to
-asynchronously make all the streamflow api calls. This means the user only needs to wait as long as the slowest API
-response rather than the combined time of each API call.
+Utilities
+~~~~~~~~~
+Miscellaneous functions to help with interacting with the streamflow REST API.
 
-hydroviewer_historical
-----------------------
-The hydroviewer historical function returns the HTML needed for a plotly graph used by the Hydroviewer and Streamflow
-Services Tethys applications. It uses the multiprocessing Pool class to asynchronously make all the streamflow api
-calls. This means the user only needs to wait as long as the slowest API response rather than the combined time of
-each API call.
+reach_to_region
+---------------
+The geoglows model was prepared by processing terrain data. This was done in smaller segments rather than process the
+world's terrain all together. The region may be useful in other applications. Provide a reach_id and it will return a
+string with the name of the region that ID falls within.
+
++----------------------+--------------------------------------------------------+--------------------------+
+| Parameter            | Description                                            | Examples                 |
++======================+========================================================+==========================+
+| reach_id (required)  | The ID of a stream.                                    | 204351 (integer)         |
++----------------------+--------------------------------------------------------+--------------------------+
+| lon (required)       | An integer or float longitude value                    | 50                       |
++----------------------+--------------------------------------------------------+--------------------------+
+
+.. code-block:: python
+
+   region = geoglows.streamflow.reach_to_region(10, 50)
+
+latlon_to_reach
+---------------
+If you dont know the reach_id for the stream you're interested in, use this function. Provide a latitude and longitude
+of a segment of the stream and the code will search an index to find the id of the segment in the model that is closest
+to the point you input.
+
++----------------------+--------------------------------------------------------+--------------------------+
+| Parameter            | Description                                            | Examples                 |
++======================+========================================================+==========================+
+| lat (required)       | An integer or float latitude value                     | 10                       |
++----------------------+--------------------------------------------------------+--------------------------+
+| lon (required)       | An integer or float longitude value                    | 50                       |
++----------------------+--------------------------------------------------------+--------------------------+
+
+.. code-block:: python
+
+   reach_id = latlon_to_reach(10, 50)
+
+FAQ
+~~~
+
+How do I save streamflow data to a csv file?
+--------------------------------------------
+By default, the `REST API Functions`_ that return streamflow data will return a pandas dataframe. You can save those to
+a csv with the dataframe's .to_csv() method.
+
+.. code-block:: python
+
+   # get some data from the geoglows streamflow model
+   data = geoglows.streamflow.forecast_stats(12341234)
+   # save it to a csv
+   data.to_csv('/path/to/save/the/csv/file.csv')

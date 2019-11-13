@@ -18,16 +18,16 @@ except ImportError as error:
     raise error
 
 AI4E_ENDPOINT = 'http://aiforearth.azure-api.net/streamflow/'
-GSPAPI_ENDPOINT = 'http://global-streamflow-prediction.eastus.azurecontainer.io/api/'
+CONTAINER_ENDPOINT = 'http://global-streamflow-prediction.eastus.azurecontainer.io/api/'
 BYU_ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
 
 
 # FUNCTIONS THAT CALL THE GLOBAL STREAMFLOW PREDICTION API
-def forecast_stats(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
+def forecast_stats(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='pandas'):
     # check that a reach_id or a lat&lon were provided
     if not reach_id:
         if lat is not None and lon is not None:
-            check = reach_from_latlon(lat, lon)
+            check = latlon_to_reach(lat, lon)
             if 'error' in check.keys():
                 raise Exception('no reach_id was found near that lat/lon')
             reach_id = check['reach_id']
@@ -38,7 +38,7 @@ def forecast_stats(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, a
     headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'ForecastStats/', headers=headers, params=params).text
 
-    if return_format == 'csv':
+    if return_format == 'pandas':
         return pandas.read_csv(StringIO(data))
     elif return_format == 'json':
         return json.loads(data)
@@ -46,11 +46,11 @@ def forecast_stats(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, a
         return data
 
 
-def forecast_ensembles(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
+def forecast_ensembles(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='pandas'):
     # check that a reach_id or a lat&lon were provided
     if not reach_id:
         if lat is not None and lon is not None:
-            check = reach_from_latlon(lat, lon)
+            check = latlon_to_reach(lat, lon)
             if 'error' in check.keys():
                 raise Exception('no reach_id was found near that lat/lon')
             reach_id = check['reach_id']
@@ -61,7 +61,7 @@ def forecast_ensembles(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOIN
     headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'ForecastEnsembles/', headers=headers, params=params).text
 
-    if return_format == 'csv':
+    if return_format == 'pandas':
         tmp = pandas.read_csv(StringIO(data), index_col='datetime')
         tmp.index = pandas.to_datetime(tmp.index)
         return tmp
@@ -71,11 +71,11 @@ def forecast_ensembles(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOIN
         return data
 
 
-def historic_simulation(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
+def historic_simulation(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='pandas'):
     # check that a reach_id or a lat&lon were provided
     if not reach_id:
         if lat is not None and lon is not None:
-            check = reach_from_latlon(lat, lon)
+            check = latlon_to_reach(lat, lon)
             if 'error' in check.keys():
                 raise Exception('no reach_id was found near that lat/lon')
             reach_id = check['reach_id']
@@ -86,7 +86,7 @@ def historic_simulation(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOI
     headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'HistoricSimulation/', headers=headers, params=params).text
 
-    if return_format == 'csv':
+    if return_format == 'pandas':
         return pandas.read_csv(StringIO(data))
     elif return_format == 'json':
         return json.loads(data)
@@ -94,11 +94,11 @@ def historic_simulation(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOI
         return data
 
 
-def seasonal_average(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
+def seasonal_average(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='pandas'):
     # check that a reach_id or a lat&lon were provided
     if not reach_id:
         if lat is not None and lon is not None:
-            check = reach_from_latlon(lat, lon)
+            check = latlon_to_reach(lat, lon)
             if 'error' in check.keys():
                 raise Exception('no reach_id was found near that lat/lon')
             reach_id = check['reach_id']
@@ -109,7 +109,7 @@ def seasonal_average(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT,
     headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'SeasonalAverage/', headers=headers, params=params).text
 
-    if return_format == 'csv':
+    if return_format == 'pandas':
         return pandas.read_csv(StringIO(data))
     elif return_format == 'json':
         return json.loads(data)
@@ -117,11 +117,11 @@ def seasonal_average(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT,
         return data
 
 
-def return_periods(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
+def return_periods(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='pandas'):
     # check that a reach_id or a lat&lon were provided
     if not reach_id:
         if lat is not None and lon is not None:
-            check = reach_from_latlon(lat, lon)
+            check = latlon_to_reach(lat, lon)
             if 'error' in check.keys():
                 raise Exception('no reach_id was found near that lat/lon')
             reach_id = check['reach_id']
@@ -132,7 +132,7 @@ def return_periods(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, a
     headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'ReturnPeriods/', headers=headers, params=params).text
 
-    if return_format == 'csv':
+    if return_format == 'pandas':
         return pandas.read_csv(StringIO(data), index_col='return period')
     elif return_format == 'json':
         return json.loads(data)
@@ -573,6 +573,9 @@ def reach_to_region(reach_id):
     # Europe 12M's
     # North America 13M's
 
+    if not isinstance(reach_id, int):
+        reach_id = int(reach_id)
+
     lookup = OrderedDict([
         # IMPROPERLY NUMBERED REGIONS
         ('australia-geoglows', 300000),
@@ -596,7 +599,7 @@ def reach_to_region(reach_id):
     return None
 
 
-def reach_from_latlon(lat, lon):
+def latlon_to_reach(lat, lon):
     """
     uses the bounding boxes of all the regions to determine which comid_lat_lon_z csv(s) to read from
     """
