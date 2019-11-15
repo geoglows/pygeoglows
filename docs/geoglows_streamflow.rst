@@ -203,11 +203,11 @@ of the series needed to plot with plotly, a plotly python object or plotly gener
 +----------------------+--------------------------------------------------------+--------------------------+
 | rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| reach_id (option)    | The reach id to display on the graph title             | 123456789                |
+| reach_id (kwarg)     | The reach id to display on the graph title             | 123456789                |
 +----------------------+--------------------------------------------------------+--------------------------+
-| drain_area (option)  | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
+| drain_area (kwarg)   | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
 +----------------------+--------------------------------------------------------+--------------------------+
-| outformat            | format for the plot: json, plotly, plotly_html         | default: plotly          |
+| outformat (kwarg)    | format for the plot: json, plotly, plotly_html         | default: plotly          |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
@@ -226,11 +226,11 @@ dictionary of the series needed to plot with plotly, a plotly python object or p
 +----------------------+--------------------------------------------------------+--------------------------+
 | rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| reach_id (option)    | The reach id to display on the graph title             | 123456789                |
+| reach_id (kwarg)     | The reach id to display on the graph title             | 123456789                |
 +----------------------+--------------------------------------------------------+--------------------------+
-| drain_area (option)  | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
+| drain_area (kwarg)   | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
 +----------------------+--------------------------------------------------------+--------------------------+
-| outformat            | format for the plot: json, plotly, plotly_html         | default: plotly          |
+| outformat (kwarg)    | format for the plot: json, plotly, plotly_html         | default: plotly          |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
@@ -249,11 +249,11 @@ series needed to plot with plotly, or the plotly generated html code.
 +----------------------+--------------------------------------------------------+--------------------------+
 | rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| reach_id (option)    | The reach id to display on the graph title             | 123456789                |
+| reach_id (kwarg)     | The reach id to display on the graph title             | 123456789                |
 +----------------------+--------------------------------------------------------+--------------------------+
-| drain_area (option)  | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
+| drain_area (kwarg)   | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
 +----------------------+--------------------------------------------------------+--------------------------+
-| outformat            | format for the plot: json, plotly, plotly_html         | default: plotly          |
+| outformat (kwarg)    | format for the plot: json, plotly, plotly_html         | default: plotly          |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
@@ -272,11 +272,11 @@ the plotly generated html code.
 +----------------------+--------------------------------------------------------+--------------------------+
 | rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| reach_id (option)    | The reach id to display on the graph title             | 123456789                |
+| reach_id (kwarg)     | The reach id to display on the graph title             | 123456789                |
 +----------------------+--------------------------------------------------------+--------------------------+
-| drain_area (option)  | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
+| drain_area (kwarg)   | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
 +----------------------+--------------------------------------------------------+--------------------------+
-| outformat            | format for the plot: json, plotly, plotly_html         | default: plotly          |
+| outformat (kwarg)    | format for the plot: json, plotly, plotly_html         | default: plotly          |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
@@ -295,11 +295,11 @@ with plotly, or the plotly generated html code.
 +----------------------+--------------------------------------------------------+--------------------------+
 | rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| reach_id (option)    | The reach id to display on the graph title             | 123456789                |
+| reach_id (kwarg)     | The reach id to display on the graph title             | 123456789                |
 +----------------------+--------------------------------------------------------+--------------------------+
-| drain_area (option)  | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
+| drain_area (kwarg)   | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
 +----------------------+--------------------------------------------------------+--------------------------+
-| outformat            | format for the plot: json, plotly, plotly_html         | default: plotly          |
+| outformat (kwarg)    | format for the plot: json, plotly, plotly_html         | default: plotly          |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
@@ -372,7 +372,7 @@ FAQ
 How do I save streamflow data to a csv file?
 --------------------------------------------
 By default, the `REST API Functions`_ that return streamflow data will return a pandas dataframe. You can save those to
-a csv with the dataframe's .to_csv() method.
+a csv with the dataframe's ``.to_csv()`` method.
 
 .. code-block:: python
 
