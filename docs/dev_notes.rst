@@ -2,8 +2,8 @@
 Developing Notes
 ================
 
-Packageing for PyPi
-~~~~~~~~~~~~~~~~~~~
+Packaging for PyPi
+~~~~~~~~~~~~~~~~~~
 Sign up for an account on pypi.org
 
 .. code-block:: bash

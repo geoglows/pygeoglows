@@ -23,7 +23,7 @@ BYU_ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
 
 
 # FUNCTIONS THAT CALL THE GLOBAL STREAMFLOW PREDICTION API
-def forecast_stats(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='pandas'):
+def forecast_stats(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
     # check that a reach_id or a lat&lon were provided
     if not reach_id:
         if lat is not None and lon is not None:
@@ -38,7 +38,7 @@ def forecast_stats(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, a
     headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'ForecastStats/', headers=headers, params=params).text
 
-    if return_format == 'pandas':
+    if return_format == 'csv':
         return pandas.read_csv(StringIO(data))
     elif return_format == 'json':
         return json.loads(data)
@@ -46,7 +46,7 @@ def forecast_stats(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, a
         return data
 
 
-def forecast_ensembles(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='pandas'):
+def forecast_ensembles(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
     # check that a reach_id or a lat&lon were provided
     if not reach_id:
         if lat is not None and lon is not None:
@@ -61,7 +61,7 @@ def forecast_ensembles(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOIN
     headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'ForecastEnsembles/', headers=headers, params=params).text
 
-    if return_format == 'pandas':
+    if return_format == 'csv':
         tmp = pandas.read_csv(StringIO(data), index_col='datetime')
         tmp.index = pandas.to_datetime(tmp.index)
         return tmp
@@ -71,7 +71,7 @@ def forecast_ensembles(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOIN
         return data
 
 
-def historic_simulation(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='pandas'):
+def historic_simulation(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
     # check that a reach_id or a lat&lon were provided
     if not reach_id:
         if lat is not None and lon is not None:
@@ -86,7 +86,7 @@ def historic_simulation(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOI
     headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'HistoricSimulation/', headers=headers, params=params).text
 
-    if return_format == 'pandas':
+    if return_format == 'csv':
         return pandas.read_csv(StringIO(data))
     elif return_format == 'json':
         return json.loads(data)
@@ -94,7 +94,7 @@ def historic_simulation(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOI
         return data
 
 
-def seasonal_average(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='pandas'):
+def seasonal_average(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
     # check that a reach_id or a lat&lon were provided
     if not reach_id:
         if lat is not None and lon is not None:
@@ -109,7 +109,7 @@ def seasonal_average(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT,
     headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'SeasonalAverage/', headers=headers, params=params).text
 
-    if return_format == 'pandas':
+    if return_format == 'csv':
         return pandas.read_csv(StringIO(data))
     elif return_format == 'json':
         return json.loads(data)
@@ -117,7 +117,7 @@ def seasonal_average(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT,
         return data
 
 
-def return_periods(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='pandas'):
+def return_periods(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, api_key=None, return_format='csv'):
     # check that a reach_id or a lat&lon were provided
     if not reach_id:
         if lat is not None and lon is not None:
@@ -132,7 +132,7 @@ def return_periods(reach_id=None, lat=None, lon=None, api_source=BYU_ENDPOINT, a
     headers = {'Ocp-Apim-Subscription-Key': api_key}
     data = requests.get(api_source + 'ReturnPeriods/', headers=headers, params=params).text
 
-    if return_format == 'pandas':
+    if return_format == 'csv':
         return pandas.read_csv(StringIO(data), index_col='return period')
     elif return_format == 'json':
         return json.loads(data)
@@ -303,7 +303,6 @@ def ensembles_plot(ensembles, rperiods, reach_id, outformat='plotly'):
 
     # process the series' components and store them in a dictionary
     plot_data = {
-        'reach_id': reach_id,
         'x_1-51': ensembles['ensemble_01 (m3/s)'].dropna(axis=0).index.tolist(),
         'x_52': ensembles['ensemble_52 (m3/s)'].dropna(axis=0).index.tolist(),
         'r2': rperiods.iloc[3][0],
@@ -620,7 +619,10 @@ def latlon_to_reach(lat, lon):
 
     # if there weren't any regions, return that there was an error
     if len(regions_to_check) == 0:
-        return {"error": "This point is not within any of the delineation regions supported."}
+        return {"error": "This point is not within any of the supported delineation regions."}
+
+    # switch the point because the csv's are lat/lon, backwards from what shapely expects (lon then lat)
+    point = Point(float(lat), float(lon))
 
     # check the lat lon against each of the region csv's that we determined were an option
     for region in regions_to_check:

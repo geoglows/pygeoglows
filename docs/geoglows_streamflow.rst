@@ -193,9 +193,8 @@ applications. These are designated
 
 forecast_plot
 -------------
-Processes the dataframe results of ``streamflow.forecast_stats``, ``streamflow.forecast_ensembles``, and
-``streamflow.return_periods`` into a dictionary of the series needed to plot with plotly, a plotly python object or
-plotly generated html code.
+Processes the dataframe results of `forecast_stats`_, `forecast_ensembles`_, and `return_periods`_ into a dictionary
+of the series needed to plot with plotly, a plotly python object or plotly generated html code.
 
 +----------------------+--------------------------------------------------------+--------------------------+
 | Parameter            | Description                                            | Examples                 |
@@ -215,7 +214,7 @@ plotly generated html code.
 
 ensembles_plot
 --------------
-Processes the dataframe results of ``streamflow.forecast_ensembles`` and ``streamflow.return_periods`` into a
+Processes the dataframe results of `forecast_ensembles`_ and `return_periods`_ into a
 dictionary of the series needed to plot with plotly, a plotly python object or plotly generated html code.
 
 +----------------------+--------------------------------------------------------+--------------------------+
@@ -236,7 +235,7 @@ dictionary of the series needed to plot with plotly, a plotly python object or p
 
 historic_plot
 -------------
-Processes the results of ``streamflow.historic_simulation`` and ``streamflow.return_periods`` into a dictionary of the
+Processes the results of `historic_simulation`_ and `return_periods`_ into a dictionary of the
 series needed to plot with plotly, or the plotly generated html code.
 
 +----------------------+--------------------------------------------------------+--------------------------+
@@ -257,7 +256,7 @@ series needed to plot with plotly, or the plotly generated html code.
 
 seasonal_plot
 -------------
-Processes the results of ``streamflow.seasonal_average`` into a dictionary of the series needed to plot with plotly, or
+Processes the results of `seasonal_average`_ into a dictionary of the series needed to plot with plotly, or
 the plotly generated html code.
 
 +----------------------+--------------------------------------------------------+--------------------------+
@@ -278,9 +277,9 @@ the plotly generated html code.
 
 probabilities_table
 -------------------
-Processes the results of ``streamflow.forecast_stats``, ``streamflow.forecast_ensembles``, and
-``streamflow.return_periods`` and uses flask template rendering to generate html code that shows the probabilities of
-exceeding the return period flow on each day of the forecast.
+Processes the results of `forecast_stats`_ , `forecast_ensembles`_, and `return_periods`_ and uses jinja2 template
+rendering to generate html code that shows the probabilities of exceeding the return period flow on each day of the
+forecast.
 
 +----------------------+--------------------------------------------------------+--------------------------+
 | Parameter            | Description                                            | Examples                 |
