@@ -5,13 +5,13 @@ try:
     import datetime
     import jinja2
     import os
-    import multiprocessing
+    import math
+    import scipy.stats
     from plotly.offline import plot as offline_plot
     from plotly.graph_objs import Scatter, Layout, Figure
     import plotly.graph_objs as go
     from io import StringIO
     from collections import OrderedDict, namedtuple
-    import math
     from shapely.geometry import Point, MultiPoint, box
     from shapely.ops import nearest_points
 except ImportError as error:
@@ -570,6 +570,113 @@ def seasonal_plot(seasonal, reach_id=None, drain_area=None, outformat='plotly'):
         },
     )
     figure = Figure([Scatter(x=plot_data['x_day_number'], y=plot_data['y_flow'])], layout=layout)
+    if outformat == 'plotly':
+        return figure
+    if outformat == 'plotly_html':
+        return offline_plot(
+            figure,
+            config={'autosizable': True, 'responsive': True},
+            output_type='div',
+            include_plotlyjs=False
+        )
+    return
+
+
+def flow_duration_curve_plot(hist, rperiods, reach_id=None, drain_area=None, outformat='plotly'):
+    """
+    Makes the streamflow data and metadata into a plotly plot
+
+    :param hist: the csv response from historic_simulation
+    :param rperiods: the csv response from return_periods
+    :param reach_id: a string or integer form of the stream's identifier
+    :param drain_area: a string containing the upstream area and the units
+    :param outformat: string: json, plotly, or plotly_html
+    :return: json, plotly object, or string for an html plotly plot
+    """
+    if not isinstance(hist, pandas.DataFrame):
+        raise ValueError('Sorry, I only process pandas dataframes right now')
+    if outformat not in ['json', 'plotly', 'plotly_html']:
+        raise ValueError('invalid outformat specified. pick json or plotly or plotly_html')
+
+    dates = hist['datetime'].tolist()
+    startdate = dates[0]
+    enddate = dates[-1]
+
+    # process the hist dataframe to create the flow duration curve
+    sorted_hist = hist.sort_values(by='streamflow (m3/s)', ascending=False)['streamflow (m3/s)'].tolist()
+
+    # ranks data from smallest to largest
+    ranks = len(hist) - scipy.stats.rankdata(sorted_hist, method='average')
+
+    # calculate probability of each rank
+    prob = [(ranks[i] / (len(sorted_hist) + 1)) for i in range(len(sorted_hist))]
+
+    plot_data = {
+        'reach_id': reach_id,
+        'drain_area': drain_area,
+        'x_probability': prob,
+        'y_flow': sorted_hist,
+        'y_max': sorted_hist[0],
+        'r2': rperiods.iloc[3][0],
+        'r10': rperiods.iloc[2][0],
+        'r20': rperiods.iloc[1][0],
+    }
+
+    if outformat == 'json':
+        return plot_data
+
+    # Start building the plot
+    title = 'Flow Duration Curve'
+    if reach_id:
+        title += '<br>Stream ID: ' + str(reach_id)
+    if drain_area:
+        title += '<br>Upstream Drainage Area: ' + str(drain_area)
+
+    layout = Layout(
+        title=title,
+        xaxis={
+            'title': 'Date',
+            'hoverformat': '%b %d %Y',
+            'tickformat': '%Y'
+        },
+        yaxis={
+            'title': 'Streamflow (m<sup>3</sup>/s)',
+            'range': [0, 1.2 * plot_data['y_max']]
+        },
+        shapes=[
+            go.layout.Shape(
+                type='rect',
+                x0=startdate,
+                x1=enddate,
+                y0=plot_data['r2'],
+                y1=plot_data['r10'],
+                line={'width': 0},
+                opacity=.4,
+                fillcolor='yellow'
+            ),
+            go.layout.Shape(
+                type='rect',
+                x0=startdate,
+                x1=enddate,
+                y0=plot_data['r10'],
+                y1=plot_data['r20'],
+                line={'width': 0},
+                opacity=.4,
+                fillcolor='red'
+            ),
+            go.layout.Shape(
+                type='rect',
+                x0=startdate,
+                x1=enddate,
+                y0=plot_data['r20'],
+                y1=1.2 * plot_data['y_max'],
+                line={'width': 0},
+                opacity=.4,
+                fillcolor='purple'
+            ),
+        ]
+    )
+    figure = Figure([Scatter(x=plot_data['x_probability'], y=plot_data['y_flow'])], layout=layout)
     if outformat == 'plotly':
         return figure
     if outformat == 'plotly_html':

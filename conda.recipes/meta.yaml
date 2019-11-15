@@ -1,6 +1,6 @@
 package:
   name: geoglows
-  version: 0.7
+  version: 0.8
 
 about:
   author: Riley Hales
@@ -29,6 +29,7 @@ requirements:
     - requests>=2
     - jinja2>=2.10
     - shapely
+    - scipy
 
 outputs:
   - name: geoglows
@@ -41,6 +42,7 @@ test:
     - jinja2
     - shapely
     - geoglows
+    - scipy.stats
 
 extra:
   copy_test_source_files: true

@@ -283,6 +283,29 @@ the plotly generated html code.
 
     data = geoglows.streamflow.seasonal_plot(seasonal, rperiods, 123456789, outformat='json')
 
+flow_duration_curve_plot
+------------------------
+Processes the results of `historic_simulation`_ and `return_periods`_ into a dictionary of the series needed to plot
+with plotly, or the plotly generated html code.
+
++----------------------+--------------------------------------------------------+--------------------------+
+| Parameter            | Description                                            | Examples                 |
++======================+========================================================+==========================+
+| hist (required)      | The dataframe returned by `historic_simulation`_       | pandas.DataFrame         |
++----------------------+--------------------------------------------------------+--------------------------+
+| rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
++----------------------+--------------------------------------------------------+--------------------------+
+| reach_id (option)    | The reach id to display on the graph title             | 123456789                |
++----------------------+--------------------------------------------------------+--------------------------+
+| drain_area (option)  | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
++----------------------+--------------------------------------------------------+--------------------------+
+| outformat            | format for the plot: json, plotly, plotly_html         | default: plotly          |
++----------------------+--------------------------------------------------------+--------------------------+
+
+.. code-block:: python
+
+    data = geoglows.streamflow.flow_duration_curve_plot(hist, rperiods, 12345, outformat='plotly')
+
 probabilities_table
 -------------------
 Processes the results of `forecast_stats`_ , `forecast_ensembles`_, and `return_periods`_ and uses jinja2 template
