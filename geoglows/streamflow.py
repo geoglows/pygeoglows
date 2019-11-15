@@ -159,7 +159,17 @@ def available_regions(api_source=BYU_ENDPOINT, api_key=None):
 
 
 # FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
-def forecast_plot(stats, rperiods, reach_id, outformat='plotly'):
+def forecast_plot(stats, rperiods, reach_id=None, drain_area=None, outformat='plotly'):
+    """
+    Makes the streamflow data and metadata into a plotly plot
+
+    :param stats: the csv response from forecast_stats
+    :param rperiods: the csv response from return_periods
+    :param reach_id: a string or integer form of the stream's identifier
+    :param drain_area: a string containing the upstream area and the units
+    :param outformat: string: json, plotly, or plotly_html
+    :return: json, plotly object, or string for an html plotly plot
+    """
     if not isinstance(stats, pandas.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['json', 'plotly', 'plotly_html']:
@@ -171,6 +181,7 @@ def forecast_plot(stats, rperiods, reach_id, outformat='plotly'):
 
     plot_data = {
         'reach_id': reach_id,
+        'drain_area': drain_area,
         'x_ensembles': stats[['datetime', 'mean (m3/s)']].dropna(axis=0)['datetime'].tolist(),
         'x_hires':  stats[['datetime', 'high_res (m3/s)']].dropna(axis=0)['datetime'].tolist(),
         'y_max': max(stats['max (m3/s)']),
@@ -187,6 +198,13 @@ def forecast_plot(stats, rperiods, reach_id, outformat='plotly'):
 
     if outformat == 'json':
         return plot_data
+
+    # Start building the plot
+    title = 'Forecasted Streamflow'
+    if reach_id:
+        title += '<br>Stream ID: ' + str(reach_id)
+    if drain_area:
+        title += '<br>Upstream Drainage Area: ' + str(drain_area)
 
     meanplot = Scatter(
         name='Mean',
@@ -233,7 +251,7 @@ def forecast_plot(stats, rperiods, reach_id, outformat='plotly'):
         line={'color': 'black'}
     )
     layout = Layout(
-        title='Forecasted Streamflow<br>Stream ID: ' + str(reach_id),
+        title=title,
         xaxis={'title': 'Date'},
         yaxis={
             'title': 'Streamflow (m<sup>3</sup>/s)',
@@ -285,7 +303,17 @@ def forecast_plot(stats, rperiods, reach_id, outformat='plotly'):
     return
 
 
-def ensembles_plot(ensembles, rperiods, reach_id, outformat='plotly'):
+def ensembles_plot(ensembles, rperiods, reach_id=None, drain_area=None, outformat='plotly'):
+    """
+    Makes the streamflow ensemble data and metadata into a plotly plot
+
+    :param ensembles: the csv response from forecast_ensembles
+    :param rperiods: the csv response from return_periods
+    :param reach_id: a string or integer form of the stream's identifier
+    :param drain_area: a string containing the upstream area and the units
+    :param outformat: string: json, plotly, or plotly_html
+    :return: json, plotly object, or string for an html plotly plot
+    """
     # be sure they gave you the kind of information you need
     if not isinstance(ensembles, pandas.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
@@ -303,6 +331,8 @@ def ensembles_plot(ensembles, rperiods, reach_id, outformat='plotly'):
 
     # process the series' components and store them in a dictionary
     plot_data = {
+        'reach_id': reach_id,
+        'drain_area': drain_area,
         'x_1-51': ensembles['ensemble_01 (m3/s)'].dropna(axis=0).index.tolist(),
         'x_52': ensembles['ensemble_52 (m3/s)'].dropna(axis=0).index.tolist(),
         'r2': rperiods.iloc[3][0],
@@ -318,6 +348,13 @@ def ensembles_plot(ensembles, rperiods, reach_id, outformat='plotly'):
 
     if outformat == 'json':
         return plot_data
+
+    # Start building the plot
+    title = 'Ensemble Predicted Streamflow'
+    if reach_id:
+        title += '<br>Stream ID: ' + str(reach_id)
+    if drain_area:
+        title += '<br>Upstream Drainage Area: ' + str(drain_area)
 
     # create the high resolution line (ensemble 52)
     scatters.append(Scatter(
@@ -336,7 +373,7 @@ def ensembles_plot(ensembles, rperiods, reach_id, outformat='plotly'):
 
     # define a layout for the plot
     layout = Layout(
-        title='Ensemble Predicted Streamflow<br>Stream ID: ' + str(reach_id),
+        title=title,
         xaxis={'title': 'Date'},
         yaxis={
             'title': 'Streamflow (m<sup>3</sup>/s)',
@@ -388,7 +425,17 @@ def ensembles_plot(ensembles, rperiods, reach_id, outformat='plotly'):
     return
 
 
-def historical_plot(hist, rperiods, reach_id, outformat='plotly'):
+def historical_plot(hist, rperiods, reach_id=None, drain_area=None, outformat='plotly'):
+    """
+    Makes the streamflow data and metadata into a plotly plot
+
+    :param hist: the csv response from historic_simulation
+    :param rperiods: the csv response from return_periods
+    :param reach_id: a string or integer form of the stream's identifier
+    :param drain_area: a string containing the upstream area and the units
+    :param outformat: string: json, plotly, or plotly_html
+    :return: json, plotly object, or string for an html plotly plot
+    """
     if not isinstance(hist, pandas.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['json', 'plotly', 'plotly_html']:
@@ -400,6 +447,7 @@ def historical_plot(hist, rperiods, reach_id, outformat='plotly'):
 
     plot_data = {
         'reach_id': reach_id,
+        'drain_area': drain_area,
         'x_datetime': dates,
         'y_flow': hist['streamflow (m3/s)'].tolist(),
         'y_max': max(hist['streamflow (m3/s)']),
@@ -411,8 +459,15 @@ def historical_plot(hist, rperiods, reach_id, outformat='plotly'):
     if outformat == 'json':
         return plot_data
 
+    # Start building the plot
+    title = 'Historic Streamflow Simulation'
+    if reach_id:
+        title += '<br>Stream ID: ' + str(reach_id)
+    if drain_area:
+        title += '<br>Upstream Drainage Area: ' + str(drain_area)
+
     layout = Layout(
-        title='Historic Streamflow Simulation<br>Stream ID: ' + str(reach_id),
+        title=title,
         xaxis={
             'title': 'Date',
             'hoverformat': '%b %d %Y',
@@ -468,7 +523,16 @@ def historical_plot(hist, rperiods, reach_id, outformat='plotly'):
     return
 
 
-def seasonal_plot(seasonal, reach_id, outformat='plotly'):
+def seasonal_plot(seasonal, reach_id=None, drain_area=None, outformat='plotly'):
+    """
+    Makes the streamflow data and metadata into a plotly plot
+
+    :param seasonal: the csv response from historic_simulation
+    :param reach_id: a string or integer form of the stream's identifier
+    :param drain_area: a string containing the upstream area and the units
+    :param outformat: string: json, plotly, or plotly_html
+    :return: json, plotly object, or string for an html plotly plot
+    """
     if not isinstance(seasonal, pandas.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['json', 'plotly', 'plotly_html']:
@@ -478,6 +542,7 @@ def seasonal_plot(seasonal, reach_id, outformat='plotly'):
 
     plot_data = {
         'reach_id': reach_id,
+        'drain_area': drain_area,
         'x_day_number': seasonal['day'].tolist(),
         'y_flow': seasonal['streamflow_avg (m3/s)'].tolist(),
     }
@@ -485,8 +550,15 @@ def seasonal_plot(seasonal, reach_id, outformat='plotly'):
     if outformat == 'json':
         return plot_data
 
+    # Start building the plot
+    title = 'Daily Average Streamflow (Historic Simulation)'
+    if reach_id:
+        title += '<br>Stream ID: ' + str(reach_id)
+    if drain_area:
+        title += '<br>Upstream Drainage Area: ' + str(drain_area)
+
     layout = Layout(
-        title='Daily Average Streamflow (Historic Simulation)<br>Stream ID: ' + str(reach_id),
+        title=title,
         xaxis={
             'title': 'Date',
             'hoverformat': '%b %d (%j)',
@@ -511,6 +583,14 @@ def seasonal_plot(seasonal, reach_id, outformat='plotly'):
 
 
 def probabilities_table(stats, ensembles, rperiods):
+    """
+    Uses a template and jinja2 to create an html table showing the probability of exceeding return period flow events
+
+    :param stats: the csv response from forecast_stats
+    :param ensembles: the csv response from forecast_ensembles
+    :param rperiods: the csv response from return_periods
+    :return: string of html representing the table
+    """
     dates = stats['datetime'].tolist()
     startdate = dates[0]
     enddate = dates[-1]

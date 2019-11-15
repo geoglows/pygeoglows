@@ -203,7 +203,9 @@ of the series needed to plot with plotly, a plotly python object or plotly gener
 +----------------------+--------------------------------------------------------+--------------------------+
 | rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| reach_id (required)  | The reach id to display on the graph title             | 123456789                |
+| reach_id (option)    | The reach id to display on the graph title             | 123456789                |
++----------------------+--------------------------------------------------------+--------------------------+
+| drain_area (option)  | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
 +----------------------+--------------------------------------------------------+--------------------------+
 | outformat            | format for the plot: json, plotly, plotly_html         | default: plotly          |
 +----------------------+--------------------------------------------------------+--------------------------+
@@ -224,7 +226,9 @@ dictionary of the series needed to plot with plotly, a plotly python object or p
 +----------------------+--------------------------------------------------------+--------------------------+
 | rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| reach_id (required)  | The reach id to display on the graph title             | 123456789                |
+| reach_id (option)    | The reach id to display on the graph title             | 123456789                |
++----------------------+--------------------------------------------------------+--------------------------+
+| drain_area (option)  | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
 +----------------------+--------------------------------------------------------+--------------------------+
 | outformat            | format for the plot: json, plotly, plotly_html         | default: plotly          |
 +----------------------+--------------------------------------------------------+--------------------------+
@@ -245,7 +249,9 @@ series needed to plot with plotly, or the plotly generated html code.
 +----------------------+--------------------------------------------------------+--------------------------+
 | rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| reach_id (required)  | The reach id to display on the graph title             | 123456789                |
+| reach_id (option)    | The reach id to display on the graph title             | 123456789                |
++----------------------+--------------------------------------------------------+--------------------------+
+| drain_area (option)  | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
 +----------------------+--------------------------------------------------------+--------------------------+
 | outformat            | format for the plot: json, plotly, plotly_html         | default: plotly          |
 +----------------------+--------------------------------------------------------+--------------------------+
@@ -266,7 +272,9 @@ the plotly generated html code.
 +----------------------+--------------------------------------------------------+--------------------------+
 | rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| reach_id (required)  | The reach id to display on the graph title             | 123456789                |
+| reach_id (option)    | The reach id to display on the graph title             | 123456789                |
++----------------------+--------------------------------------------------------+--------------------------+
+| drain_area (option)  | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
 +----------------------+--------------------------------------------------------+--------------------------+
 | outformat            | format for the plot: json, plotly, plotly_html         | default: plotly          |
 +----------------------+--------------------------------------------------------+--------------------------+
