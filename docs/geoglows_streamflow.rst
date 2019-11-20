@@ -293,8 +293,6 @@ with plotly, or the plotly generated html code.
 +======================+========================================================+==========================+
 | hist (required)      | The dataframe returned by `historic_simulation`_       | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
-+----------------------+--------------------------------------------------------+--------------------------+
 | reach_id (kwarg)     | The reach id to display on the graph title             | 123456789                |
 +----------------------+--------------------------------------------------------+--------------------------+
 | drain_area (kwarg)   | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
@@ -304,7 +302,7 @@ with plotly, or the plotly generated html code.
 
 .. code-block:: python
 
-    data = geoglows.streamflow.flow_duration_curve_plot(hist, rperiods, 12345, outformat='plotly')
+    data = geoglows.streamflow.flow_duration_curve_plot(hist, drain_area='532 km^2', outformat='plotly')
 
 probabilities_table
 -------------------
