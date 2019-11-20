@@ -28,5 +28,5 @@ Use Sphinx
 
 .. code-block:: bash
 
-	conda install sphinx sphinx-rtd-theme
+	conda install sphinx sphinx_rtd_theme
 	make html
