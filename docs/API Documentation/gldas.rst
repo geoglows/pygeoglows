@@ -1,6 +1,6 @@
-==============
-geoglows.gldas
-==============
+=====
+gldas
+=====
 
 The gldas module contains functions that will request a timeseries from the GLDAS historical dataset using the GLDAS
 Data Tool Tethys application hosted by Brigham Young University. For more detailed documentation, see

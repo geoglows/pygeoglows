@@ -1,6 +1,6 @@
-============
-geoglows.gfs
-============
+===
+gfs
+===
 
 The gfs module contains functions that will request a timeseries from the most recent GFS forecast through the GFS Data
 Tool Tethys application hosted by Brigham Young University. For more detailed documentation, see

@@ -1,6 +1,6 @@
-===================
-geoglows.streamflow
-===================
+=======================
+streamflow (alt format)
+=======================
 
 The streamflow module contains functions for getting streamflow data from the GEOGloWS model (`REST API Functions`_),
 for turning them into useful plots (`Series Processing Functions`_), and some additional `Utilities`_. Also check the
@@ -13,7 +13,7 @@ ECMWF Streamflow Service. This data is available from this service through a RES
 to get information over the internet without using a web browser.
 
 The API is currently available from a BYU endpoint and 2 endpoints through Microsoft Azure. These endpoints are string
-variables called BYU_ENDPOINT, AI4E_ENDPOINT (requires the api_key parameter) and CONTAINER_ENDPOINT.
+variables called BYU_ENDPOINT, AI4E_ENDPOINT (requires the token   parameter) and CONTAINER_ENDPOINT.
 
 In general, a method requires an ID, called the reach_id or common id (COMID), for a specific stream. This ID is unique
 to the stream network configured for this Service. It is arbitrarily assigned so that there is a way to keep data
@@ -26,17 +26,21 @@ Retrieves statistics of the forecasted streamflow in a reach from each of the pr
 include min, mean, max, one standard deviation above and below the mean, and the high resolution forecast.
 
 +----------------------+--------------------------------------------------------+--------------------------+
-| Parameter            | Description                                            | Examples                 |
+| Required Parameters  | Description                                            | Examples                 |
 +======================+========================================================+==========================+
 | reach_id (recommend) | The ID of a stream.                                    | 204351 (integer)         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| lat, lon (optional)  | Use lat AND lon instead of reach_id                    | lat=10, lon=10 (integer) |
+| lat, lon (alternate) | Use lat AND lon instead of reach_id                    | lat=10, lon=10 (integer) |
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: BYU_ENDPOINT    |
+
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
+| Optional Keywords    | Description                                            | Examples                 |
++======================+========================================================+==========================+
+| endpoint             | the api endpoint to make requests from                 | endpoint=BYU_ENDPOINT    |
 +----------------------+--------------------------------------------------------+--------------------------+
-| return_format        | pandas (df), json (dictionary), waterml (string)       | default: pandas          |
+| token                | An API token used to make the request                  | 'alpha_numeric_string'   |
++----------------------+--------------------------------------------------------+--------------------------+
+| return_format        | pandas (df), json (dictionary), waterml (string)       | default: csv             |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 
@@ -52,17 +56,21 @@ forecast_ensembles
 Returns a table of the forecasted streamflow made by each of the 52 members.
 
 +----------------------+--------------------------------------------------------+--------------------------+
-| Parameter            | Description                                            | Examples                 |
+| Required Parameters  | Description                                            | Examples                 |
 +======================+========================================================+==========================+
 | reach_id (recommend) | The ID of a stream.                                    | 204351 (integer)         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| lat, lon (optional)  | Use lat AND lon instead of reach_id                    | lat=10, lon=10 (integer) |
+| lat, lon (alternate) | Use lat AND lon instead of reach_id                    | lat=10, lon=10 (integer) |
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: BYU_ENDPOINT    |
+
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
+| Optional Keywords    | Description                                            | Examples                 |
++======================+========================================================+==========================+
+| endpoint             | the api endpoint to make requests from                 | endpoint=BYU_ENDPOINT    |
 +----------------------+--------------------------------------------------------+--------------------------+
-| return_format        | pandas (df), json (dictionary), waterml (string)       | default: pandas          |
+| token                | An API token used to make the request                  | 'alpha_numeric_string'   |
++----------------------+--------------------------------------------------------+--------------------------+
+| return_format        | pandas (df), json (dictionary), waterml (string)       | default: csv             |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
@@ -77,17 +85,21 @@ historic_simulation
 Returns a timeseries of simulated streamflow for the reach based on the ERA Interim dataset.
 
 +----------------------+--------------------------------------------------------+--------------------------+
-| Parameter            | Description                                            | Examples                 |
+| Required Parameters  | Description                                            | Examples                 |
 +======================+========================================================+==========================+
 | reach_id (recommend) | The ID of a stream.                                    | 204351 (integer)         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| lat, lon (optional)  | Use lat AND lon instead of reach_id                    | lat=10, lon=10 (integer) |
+| lat, lon (alternate) | Use lat AND lon instead of reach_id                    | lat=10, lon=10 (integer) |
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: BYU_ENDPOINT    |
+
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
+| Optional Keywords    | Description                                            | Examples                 |
++======================+========================================================+==========================+
+| endpoint             | the api endpoint to make requests from                 | endpoint=BYU_ENDPOINT    |
 +----------------------+--------------------------------------------------------+--------------------------+
-| return_format        | pandas (df), json (dictionary), waterml (string)       | default: pandas          |
+| token                | An API token used to make the request                  | 'alpha_numeric_string'   |
++----------------------+--------------------------------------------------------+--------------------------+
+| return_format        | pandas (df), json (dictionary), waterml (string)       | default: csv             |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
@@ -102,17 +114,21 @@ seasonal_average
 Returns a timeseries of the average streamflow for each day of the year based on the 35 year historical simulation.
 
 +----------------------+--------------------------------------------------------+--------------------------+
-| Parameter            | Description                                            | Examples                 |
+| Required Parameters  | Description                                            | Examples                 |
 +======================+========================================================+==========================+
 | reach_id (recommend) | The ID of a stream.                                    | 204351 (integer)         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| lat, lon (optional)  | Use lat AND lon instead of reach_id                    | lat=10, lon=10 (integer) |
+| lat, lon (alternate) | Use lat AND lon instead of reach_id                    | lat=10, lon=10 (integer) |
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: BYU_ENDPOINT    |
+
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
+| Optional Keywords    | Description                                            | Examples                 |
++======================+========================================================+==========================+
+| endpoint             | the api endpoint to make requests from                 | endpoint=BYU_ENDPOINT    |
 +----------------------+--------------------------------------------------------+--------------------------+
-| return_format        | pandas (df), json (dictionary), waterml (string)       | default: pandas          |
+| token                | An API token used to make the request                  | 'alpha_numeric_string'   |
++----------------------+--------------------------------------------------------+--------------------------+
+| return_format        | pandas (df), json (dictionary), waterml (string)       | default: csv             |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
@@ -127,17 +143,21 @@ return_periods
 Returns a dictionary with the streamflows corresponding to a 2, 10, and 20 year event for a specific stream.
 
 +----------------------+--------------------------------------------------------+--------------------------+
-| Parameter            | Description                                            | Examples                 |
+| Required Parameters  | Description                                            | Examples                 |
 +======================+========================================================+==========================+
 | reach_id (recommend) | The ID of a stream.                                    | 204351 (integer)         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| lat, lon (optional)  | Use lat AND lon instead of reach_id                    | lat=10, lon=10 (integer) |
+| lat, lon (alternate) | Use lat AND lon instead of reach_id                    | lat=10, lon=10 (integer) |
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: BYU_ENDPOINT    |
+
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
+| Optional Keywords    | Description                                            | Examples                 |
++======================+========================================================+==========================+
+| endpoint             | the api endpoint to make requests from                 | endpoint=BYU_ENDPOINT    |
 +----------------------+--------------------------------------------------------+--------------------------+
-| return_format        | pandas (df), json (dictionary), waterml (string)       | default: pandas          |
+| token                | An API token used to make the request                  | 'alpha_numeric_string'   |
++----------------------+--------------------------------------------------------+--------------------------+
+| return_format        | pandas (df), json (dictionary), waterml (string)       | default: csv             |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
@@ -153,15 +173,19 @@ Returns the dates of forecasts currently available from the GEOGloWS model. Curr
 is cached by the API. Returns a dictionary. You need to specify either a region or a reach_id.
 
 +----------------------+--------------------------------------------------------+--------------------------+
-| Parameter            | Description                                            | Examples                 |
+| Required Parameters  | Description                                            | Examples                 |
 +======================+========================================================+==========================+
 | region (option 1)    | The name of a global region from `available_regions`_  | europe-geoglows          |
 +----------------------+--------------------------------------------------------+--------------------------+
 | reach_id (option 2)  | A valid reach_id                                       | 204351                   |
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: BYU_ENDPOINT    |
+
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
+| Optional Keywords    | Description                                            | Examples                 |
++======================+========================================================+==========================+
+| endpoint             | the api endpoint to make requests from                 | default: BYU_ENDPOINT    |
++----------------------+--------------------------------------------------------+--------------------------+
+| token                | An API token used to make the request                  | 'alpha_numeric_string'   |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
@@ -174,11 +198,11 @@ available_regions
 Returns a dictionary with a list of the names of regions currently supported by the GSP API.
 
 +----------------------+--------------------------------------------------------+--------------------------+
-| Parameter            | Description                                            | Examples                 |
+| Optional Keywords    | Description                                            | Examples                 |
 +======================+========================================================+==========================+
-| api_key              | An API token used to make the request                  | 'alpha_numeric_string'   |
+| token                | An API token used to make the request                  | 'alpha_numeric_string'   |
 +----------------------+--------------------------------------------------------+--------------------------+
-| api_source           | the api endpoint to make requests from                 | default: BYU_ENDPOINT    |
+| endpoint             | the api endpoint to make requests from                 | default: BYU_ENDPOINT    |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
@@ -189,7 +213,7 @@ Series Processing Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 The following functions turn the results of the API functions into plots or easily plotable data. These produce
 dictionaries, plotly python objects (compatible with showing plots in notebooks), or plotly html code to use in web
-applications. These are designated
+applications.
 
 forecast_plot
 -------------
@@ -197,12 +221,16 @@ Processes the dataframe results of `forecast_stats`_, `forecast_ensembles`_, and
 of the series needed to plot with plotly, a plotly python object or plotly generated html code.
 
 +----------------------+--------------------------------------------------------+--------------------------+
-| Parameter            | Description                                            | Examples                 |
+| Required Parameters  | Description                                            | Examples                 |
 +======================+========================================================+==========================+
-| stats (required)     | The dataframe returned by `forecast_stats`_            | pandas.DataFrame         |
+| stats                | The dataframe returned by `forecast_stats`_            | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
+| rperiods             | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
+
++----------------------+--------------------------------------------------------+--------------------------+
+| Optional Keywords    | Description                                            | Examples                 |
++======================+========================================================+==========================+
 | reach_id (kwarg)     | The reach id to display on the graph title             | 123456789                |
 +----------------------+--------------------------------------------------------+--------------------------+
 | drain_area (kwarg)   | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
@@ -220,12 +248,16 @@ Processes the dataframe results of `forecast_ensembles`_ and `return_periods`_ i
 dictionary of the series needed to plot with plotly, a plotly python object or plotly generated html code.
 
 +----------------------+--------------------------------------------------------+--------------------------+
-| Parameter            | Description                                            | Examples                 |
+| Required Parameters  | Description                                            | Examples                 |
 +======================+========================================================+==========================+
-| ensembles (required) | The dataframe returned by `forecast_ensembles`_        | pandas.DataFrame         |
+| ensembles            | The dataframe returned by `forecast_ensembles`_        | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
+| rperiods             | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
+
++----------------------+--------------------------------------------------------+--------------------------+
+| Optional Keywords    | Description                                            | Examples                 |
++======================+========================================================+==========================+
 | reach_id (kwarg)     | The reach id to display on the graph title             | 123456789                |
 +----------------------+--------------------------------------------------------+--------------------------+
 | drain_area (kwarg)   | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
@@ -243,12 +275,16 @@ Processes the results of `historic_simulation`_ and `return_periods`_ into a dic
 series needed to plot with plotly, or the plotly generated html code.
 
 +----------------------+--------------------------------------------------------+--------------------------+
-| Parameter            | Description                                            | Examples                 |
+| Required Parameters  | Description                                            | Examples                 |
 +======================+========================================================+==========================+
-| hist (required)      | The dataframe returned by `historic_simulation`_       | pandas.DataFrame         |
+| hist                 | The dataframe returned by `historic_simulation`_       | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
+| rperiods             | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
+
++----------------------+--------------------------------------------------------+--------------------------+
+| Optional Keywords    | Description                                            | Examples                 |
++======================+========================================================+==========================+
 | reach_id (kwarg)     | The reach id to display on the graph title             | 123456789                |
 +----------------------+--------------------------------------------------------+--------------------------+
 | drain_area (kwarg)   | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
@@ -266,12 +302,16 @@ Processes the results of `seasonal_average`_ into a dictionary of the series nee
 the plotly generated html code.
 
 +----------------------+--------------------------------------------------------+--------------------------+
-| Parameter            | Description                                            | Examples                 |
+| Required Parameters  | Description                                            | Examples                 |
 +======================+========================================================+==========================+
-| seasonal (required)  | The dataframe returned by `seasonal_average`_          | pandas.DataFrame         |
+| seasonal             | The dataframe returned by `seasonal_average`_          | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
+| rperiods             | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
+
++----------------------+--------------------------------------------------------+--------------------------+
+| Optional Keywords    | Description                                            | Examples                 |
++======================+========================================================+==========================+
 | reach_id (kwarg)     | The reach id to display on the graph title             | 123456789                |
 +----------------------+--------------------------------------------------------+--------------------------+
 | drain_area (kwarg)   | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
@@ -289,12 +329,16 @@ Processes the results of `historic_simulation`_ and `return_periods`_ into a dic
 with plotly, or the plotly generated html code.
 
 +----------------------+--------------------------------------------------------+--------------------------+
-| Parameter            | Description                                            | Examples                 |
+| Required Parameters  | Description                                            | Examples                 |
 +======================+========================================================+==========================+
-| hist (required)      | The dataframe returned by `historic_simulation`_       | pandas.DataFrame         |
+| hist                 | The dataframe returned by `historic_simulation`_       | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
+| rperiods             | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
+
++----------------------+--------------------------------------------------------+--------------------------+
+| Optional Keywords    | Description                                            | Examples                 |
++======================+========================================================+==========================+
 | reach_id (kwarg)     | The reach id to display on the graph title             | 123456789                |
 +----------------------+--------------------------------------------------------+--------------------------+
 | drain_area (kwarg)   | The upstream drainage area to display on the graph     | String: 536, 187 mi^2    |
@@ -313,13 +357,13 @@ rendering to generate html code that shows the probabilities of exceeding the re
 forecast.
 
 +----------------------+--------------------------------------------------------+--------------------------+
-| Parameter            | Description                                            | Examples                 |
+| Required Parameters  | Description                                            | Examples                 |
 +======================+========================================================+==========================+
-| stats (required)     | The dataframe returned by `forecast_stats`_            | pandas.DataFrame         |
+| stats                | The dataframe returned by `forecast_stats`_            | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| ensembles (required) | The dataframe returned by `forecast_ensembles`_        | pandas.DataFrame         |
+| ensembles            | The dataframe returned by `forecast_ensembles`_        | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
-| rperiods (required)  | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
+| rperiods             | The return periods obtained from `return_periods`_     | pandas.DataFrame         |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
@@ -337,16 +381,14 @@ world's terrain all together. The region may be useful in other applications. Pr
 string with the name of the region that ID falls within.
 
 +----------------------+--------------------------------------------------------+--------------------------+
-| Parameter            | Description                                            | Examples                 |
+| Required Parameters  | Description                                            | Examples                 |
 +======================+========================================================+==========================+
-| reach_id (required)  | The ID of a stream.                                    | 204351 (integer)         |
-+----------------------+--------------------------------------------------------+--------------------------+
-| lon (required)       | An integer or float longitude value                    | 50                       |
+| reach_id             | The ID of a stream.                                    | 204351 (integer)         |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
 
-   region = geoglows.streamflow.reach_to_region(10, 50)
+   region = geoglows.streamflow.reach_to_region(123456789)
 
 latlon_to_reach
 ---------------
@@ -355,11 +397,11 @@ of a segment of the stream and the code will search an index to find the id of t
 to the point you input.
 
 +----------------------+--------------------------------------------------------+--------------------------+
-| Parameter            | Description                                            | Examples                 |
+| Required Parameters  | Description                                            | Examples                 |
 +======================+========================================================+==========================+
-| lat (required)       | An integer or float latitude value                     | 10                       |
+| lat                  | An integer or float latitude value                     | 10                       |
 +----------------------+--------------------------------------------------------+--------------------------+
-| lon (required)       | An integer or float longitude value                    | 50                       |
+| lon                  | An integer or float longitude value                    | 50                       |
 +----------------------+--------------------------------------------------------+--------------------------+
 
 .. code-block:: python
