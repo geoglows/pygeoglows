@@ -5,4 +5,4 @@ plotly
 pandas
 jinja2
 shapely
-scipy.stats
+scipy
