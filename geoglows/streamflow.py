@@ -29,12 +29,13 @@ def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, tok
         lon (int): a valid longitude
         endpoint (str): the endpoint of an api instance
         token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', or 'waterml'. Default csv which is returned as a pandas.DataFrame
+        return_format (str): 'csv', 'json', 'waterml', 'request'
 
     Return:
         return_format='csv' returns a pandas dataframe
         return_format='json' returns a json
         return_format='waterml' returns a waterml string
+        return_format='request' returns a request response object
 
     Return Format:
         pandas.DataFrame
@@ -49,13 +50,15 @@ def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, tok
     """
     # validate arguments
     params = __validate_api_params(reach_id, lat, lon, return_format)
-    data = requests.get(endpoint + 'ForecastStats/', headers=token, params=params).text
+    data = requests.get(endpoint + 'ForecastStats/', headers=token, params=params)
 
     if return_format == 'csv':
-        return pandas.read_csv(StringIO(data))
+        return pandas.read_csv(StringIO(data.text))
     elif return_format == 'json':
-        return json.loads(data)
+        return json.loads(data.text)
     elif return_format == 'waterml':
+        return data.text
+    elif return_format == 'request':
         return data
 
 
@@ -70,12 +73,13 @@ def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT,
         lon (int): a valid longitude
         endpoint (str): the endpoint of an api instance
         token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', or 'waterml'. Default csv which is returned as a pandas.DataFrame
+        return_format (str): 'csv', 'json', 'waterml', 'request'
 
     Return:
         return_format='csv' returns a pandas dataframe
         return_format='json' returns a json
         return_format='waterml' returns a waterml string
+        return_format='request' returns a request response object
 
     Example:
         .. code-block:: python
@@ -84,15 +88,17 @@ def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT,
     """
     # validate arguments
     params = __validate_api_params(reach_id, lat, lon, return_format)
-    data = requests.get(endpoint + 'ForecastEnsembles/', headers=token, params=params).text
+    data = requests.get(endpoint + 'ForecastEnsembles/', headers=token, params=params)
 
     if return_format == 'csv':
-        tmp = pandas.read_csv(StringIO(data), index_col='datetime')
+        tmp = pandas.read_csv(StringIO(data.text), index_col='datetime')
         tmp.index = pandas.to_datetime(tmp.index)
         return tmp
     elif return_format == 'json':
-        return json.loads(data)
+        return json.loads(data.text)
     elif return_format == 'waterml':
+        return data.text
+    elif return_format == 'request':
         return data
 
 
@@ -107,12 +113,13 @@ def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT
         lon (int): a valid longitude
         endpoint (str): the endpoint of an api instance
         token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', or 'waterml'. Default csv which is returned as a pandas.DataFrame
+        return_format (str): 'csv', 'json', 'waterml', 'request'
 
     Return:
         return_format='csv' returns a pandas dataframe
         return_format='json' returns a json
         return_format='waterml' returns a waterml string
+        return_format='request' returns a request response object
 
     Example:
         .. code-block:: python
@@ -121,13 +128,15 @@ def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT
     """
     # validate arguments
     params = __validate_api_params(reach_id, lat, lon, return_format)
-    data = requests.get(endpoint + 'HistoricSimulation/', headers=token, params=params).text
+    data = requests.get(endpoint + 'HistoricSimulation/', headers=token, params=params)
 
     if return_format == 'csv':
-        return pandas.read_csv(StringIO(data))
+        return pandas.read_csv(StringIO(data.text))
     elif return_format == 'json':
-        return json.loads(data)
+        return json.loads(data.text)
     elif return_format == 'waterml':
+        return data.text
+    elif return_format == 'request':
         return data
 
 
@@ -141,12 +150,13 @@ def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, t
         lon (int): a valid longitude
         endpoint (str): the endpoint of an api instance
         token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', or 'waterml'. Default csv which is returned as a pandas.DataFrame
+        return_format (str): 'csv', 'json', 'waterml', 'request'
 
     Return:
         return_format='csv' returns a pandas dataframe
         return_format='json' returns a json
         return_format='waterml' returns a waterml string
+        return_format='request' returns a request response object
 
     Example:
         .. code-block:: python
@@ -155,14 +165,15 @@ def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, t
     """
     # validate arguments
     params = __validate_api_params(reach_id, lat, lon, return_format)
-    # build and execute a request to the api with the user's parameters
-    data = requests.get(endpoint + 'SeasonalAverage/', headers=token, params=params).text
+    data = requests.get(endpoint + 'SeasonalAverage/', headers=token, params=params)
 
     if return_format == 'csv':
-        return pandas.read_csv(StringIO(data))
+        return pandas.read_csv(StringIO(data.text))
     elif return_format == 'json':
-        return json.loads(data)
+        return json.loads(data.text)
     elif return_format == 'waterml':
+        return data.text
+    elif return_format == 'request':
         return data
 
 
@@ -177,12 +188,13 @@ def return_periods(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, tok
         lon (int): a valid longitude
         endpoint (str): the endpoint of an api instance
         token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', or 'waterml'. Default csv which is returned as a pandas.DataFrame
+        return_format (str): 'csv', 'json', 'waterml', 'request'
 
     Return:
         return_format='csv' returns a pandas dataframe
         return_format='json' returns a json
-        eturn_format='waterml' returns a waterml string
+        return_format='waterml' returns a waterml string
+        return_format='request' returns a request response object
 
     Example:
         .. code-block:: python
@@ -191,14 +203,15 @@ def return_periods(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, tok
     """
     # validate arguments
     params = __validate_api_params(reach_id, lat, lon, return_format)
-    # build and execute a request to the api with the user's parameters
-    data = requests.get(endpoint + 'ReturnPeriods/', headers=token, params=params).text
+    data = requests.get(endpoint + 'ReturnPeriods/', headers=token, params=params)
 
     if return_format == 'csv':
-        return pandas.read_csv(StringIO(data), index_col='return period')
+        return pandas.read_csv(StringIO(data.text), index_col='return period')
     elif return_format == 'json':
-        return json.loads(data)
+        return json.loads(data.text)
     elif return_format == 'waterml':
+        return data.text
+    elif return_format == 'request':
         return data
 
 
@@ -935,5 +948,9 @@ def __validate_api_params(reach_id, lat, lon, return_format):
             reach_id = check['reach_id']
         else:
             raise Exception('provide a reach_id or both a lat and lon value')
+    if return_format == 'request':
+        return_format = 'csv'
+    elif return_format not in ['csv', 'json', 'waterml']:
+        raise Exception('choose csv, json, waterml, or request as return_format')
     # build and execute a request to the api with the user's parameters
     return {'reach_id': reach_id, 'return_format': return_format}
