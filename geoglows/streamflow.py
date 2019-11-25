@@ -27,13 +27,17 @@ def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, tok
         reach_id (int): the ID of a stream
         lat (int): a valid latitude
         lon (int): a valid longitude
-
-    :keyword endpoint (str): the endpoint of an api instance
-    :keyword token (dictionary): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', or 'waterml'
+        endpoint (str): the endpoint of an api instance
+        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
+        return_format (str): 'csv', 'json', or 'waterml'. Default csv which is returned as a pandas.DataFrame
 
     Return:
-        pandas.DataFrame (return_format='csv'), json, string
+        return_format='csv' returns a pandas dataframe
+        return_format='json' returns a json
+        return_format='waterml' returns a waterml string
+
+    Return Format:
+        pandas.DataFrame
 
     Example:
         .. code-block:: python
@@ -43,17 +47,8 @@ def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, tok
             # using lat and lon as keyword arguments instead of reach_id
             data = geoglows.streamflow.forecast_ensembles(lat=10, lon=10)
     """
-    # check that a reach_id or a lat&lon were provided
-    if not reach_id:
-        if lat is not None and lon is not None:
-            check = latlon_to_reach(lat, lon)
-            if 'error' in check.keys():
-                raise Exception('no reach_id was found near that lat/lon')
-            reach_id = check['reach_id']
-        else:
-            raise Exception('provide a reach_id or both a lat and lon value')
-    # build and execute a request to the api with the user's parameters
-    params = {'reach_id': reach_id, 'return_format': return_format}
+    # validate arguments
+    params = __validate_api_params(reach_id, lat, lon, return_format)
     data = requests.get(endpoint + 'ForecastStats/', headers=token, params=params).text
 
     if return_format == 'csv':
@@ -73,30 +68,22 @@ def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT,
         reach_id (int): the ID of a stream
         lat (int): a valid latitude
         lon (int): a valid longitude
-
-    :keyword endpoint (str): the endpoint of an api instance
-    :keyword token (dictionary): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', or 'waterml'
+        endpoint (str): the endpoint of an api instance
+        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
+        return_format (str): 'csv', 'json', or 'waterml'. Default csv which is returned as a pandas.DataFrame
 
     Return:
-        pandas.DataFrame (return_format='csv'), json, string
+        return_format='csv' returns a pandas dataframe
+        return_format='json' returns a json
+        return_format='waterml' returns a waterml string
 
     Example:
         .. code-block:: python
 
             data = geoglows.streamflow.forecast_ensembles(12341234)
     """
-    # check that a reach_id or a lat&lon were provided
-    if not reach_id:
-        if lat is not None and lon is not None:
-            check = latlon_to_reach(lat, lon)
-            if 'error' in check.keys():
-                raise Exception('no reach_id was found near that lat/lon')
-            reach_id = check['reach_id']
-        else:
-            raise Exception('provide a reach_id or both a lat and lon value')
-    # build and execute a request to the api with the user's parameters
-    params = {'reach_id': reach_id, 'return_format': return_format}
+    # validate arguments
+    params = __validate_api_params(reach_id, lat, lon, return_format)
     data = requests.get(endpoint + 'ForecastEnsembles/', headers=token, params=params).text
 
     if return_format == 'csv':
@@ -118,30 +105,22 @@ def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT
         reach_id (int): the ID of a stream
         lat (int): a valid latitude
         lon (int): a valid longitude
-
-    :keyword endpoint (str): the endpoint of an api instance
-    :keyword token (dictionary): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', or 'waterml'
+        endpoint (str): the endpoint of an api instance
+        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
+        return_format (str): 'csv', 'json', or 'waterml'. Default csv which is returned as a pandas.DataFrame
 
     Return:
-        pandas.DataFrame (return_format='csv'), json, string
+        return_format='csv' returns a pandas dataframe
+        return_format='json' returns a json
+        return_format='waterml' returns a waterml string
 
     Example:
         .. code-block:: python
 
             data = geoglows.streamflow.historic_simulation(12341234)
     """
-    # check that a reach_id or a lat&lon were provided
-    if not reach_id:
-        if lat is not None and lon is not None:
-            check = latlon_to_reach(lat, lon)
-            if 'error' in check.keys():
-                raise Exception('no reach_id was found near that lat/lon')
-            reach_id = check['reach_id']
-        else:
-            raise Exception('provide a reach_id or both a lat and lon value')
-    # build and execute a request to the api with the user's parameters
-    params = {'reach_id': reach_id, 'return_format': return_format}
+    # validate arguments
+    params = __validate_api_params(reach_id, lat, lon, return_format)
     data = requests.get(endpoint + 'HistoricSimulation/', headers=token, params=params).text
 
     if return_format == 'csv':
@@ -160,29 +139,22 @@ def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, t
         reach_id (int): the ID of a stream
         lat (int): a valid latitude
         lon (int): a valid longitude
-
-    :keyword endpoint (str): the endpoint of an api instance
-    :keyword token (dictionary): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', or 'waterml'
+        endpoint (str): the endpoint of an api instance
+        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
+        return_format (str): 'csv', 'json', or 'waterml'. Default csv which is returned as a pandas.DataFrame
 
     Return:
-        pandas.DataFrame (return_format='csv'), json, string
+        return_format='csv' returns a pandas dataframe
+        return_format='json' returns a json
+        return_format='waterml' returns a waterml string
 
     Example:
         .. code-block:: python
 
             data = geoglows.streamflow.seasonal_average(12341234)
     """
-    # check that a reach_id or a lat&lon were provided
-    if not reach_id:
-        if lat is not None and lon is not None:
-            check = latlon_to_reach(lat, lon)
-            if 'error' in check.keys():
-                raise Exception('no reach_id was found near that lat/lon')
-            reach_id = check['reach_id']
-        else:
-            raise Exception('provide a reach_id or both a lat and lon value')
-    params = {'reach_id': reach_id, 'return_format': return_format}
+    # validate arguments
+    params = __validate_api_params(reach_id, lat, lon, return_format)
     # build and execute a request to the api with the user's parameters
     data = requests.get(endpoint + 'SeasonalAverage/', headers=token, params=params).text
 
@@ -203,32 +175,24 @@ def return_periods(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, tok
         reach_id (int): the ID of a stream
         lat (int): a valid latitude
         lon (int): a valid longitude
-
-    :keyword endpoint (str): the endpoint of an api instance
-    :keyword token (dictionary): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', or 'waterml'
+        endpoint (str): the endpoint of an api instance
+        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
+        return_format (str): 'csv', 'json', or 'waterml'. Default csv which is returned as a pandas.DataFrame
 
     Return:
-        pandas.DataFrame (return_format='csv'), json, string
+        return_format='csv' returns a pandas dataframe
+        return_format='json' returns a json
+        eturn_format='waterml' returns a waterml string
 
     Example:
         .. code-block:: python
 
             data = geoglows.streamflow.return_periods(12341234)
     """
-    # check that a reach_id or a lat&lon were provided
-    if not reach_id:
-        if lat is not None and lon is not None:
-            check = latlon_to_reach(lat, lon)
-            if 'error' in check.keys():
-                raise Exception('no reach_id was found near that lat/lon')
-            reach_id = check['reach_id']
-        else:
-            raise Exception('provide a reach_id or both a lat and lon value')
-    params = {'reach_id': reach_id, 'return_format': return_format}
+    # validate arguments
+    params = __validate_api_params(reach_id, lat, lon, return_format)
     # build and execute a request to the api with the user's parameters
-    headers = {'Ocp-Apim-Subscription-Key': token}
-    data = requests.get(endpoint + 'ReturnPeriods/', headers=headers, params=params).text
+    data = requests.get(endpoint + 'ReturnPeriods/', headers=token, params=params).text
 
     if return_format == 'csv':
         return pandas.read_csv(StringIO(data), index_col='return period')
@@ -245,9 +209,8 @@ def available_dates(reach_id=None, region=None, endpoint=BYU_ENDPOINT, token=Non
     Args:
         reach_id (int): the ID of a stream
         region (str): the name of a hydrologic region used in the model
-
-    :keyword endpoint (str): the endpoint of an api instance
-    :keyword token (dictionary): dictionary with the header for api key validation (if applicable to the endpoint)
+        endpoint (str): the endpoint of an api instance
+        token (dicti): dictionary with the header for api key validation (if applicable to the endpoint)
 
     Return:
         dates (json): {'available_dates': ['list_of_dates']}
@@ -272,8 +235,9 @@ def available_regions(endpoint=BYU_ENDPOINT, token=None):
     """
     Retrieves a list of regions available at the endpoint
 
-    :keyword endpoint (str): the endpoint of an api instance
-    :keyword token (dictionary): dictionary with the header for api key validation (if applicable to the endpoint)
+    Args:
+        endpoint (str): the endpoint of an api instance
+        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
 
     Return:
         dates (json): {'available_regions': ['list_of_regions']}
@@ -292,8 +256,8 @@ def forecast_plot(stats, rperiods, **kwargs):
     Makes the streamflow data and optional metadata into a plotly plot
 
     Args:
-        stats (pandas.DataFrame): the csv response from `geoglows.streamflow.forecast_stats`_
-        rperiods (pandas.DataFrame): the csv response from `geoglows.streamflow.return_periods`_
+        stats (pandas.DataFrame): the csv response from `forecast_stats`_
+        rperiods (pandas.DataFrame): the csv response from `return_periods`_
 
     :keyword string outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
     :keyword int reach_id: the reach ID of COMID of a stream to be added to the plot title
@@ -416,8 +380,8 @@ def ensembles_plot(ensembles, rperiods, **kwargs):
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
-        ensembles (pandas.DataFrame): the csv response from `geoglows.streamflow.forecast_ensembles`_
-        rperiods (pandas.DataFrame): the csv response from `geoglows.streamflow.return_periods`_
+        ensembles (pandas.DataFrame): the csv response from `forecast_ensembles`_
+        rperiods (pandas.DataFrame): the csv response from `return_periods`_
 
     :keyword string outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
     :keyword int reach_id: the reach ID of COMID of a stream to be added to the plot title
@@ -516,8 +480,8 @@ def historical_plot(hist, rperiods, **kwargs):
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
-        hist (pandas.DataFrame): the csv response from `geoglows.streamflow.historic_simulation`_
-        rperiods (pandas.DataFrame): the csv response from `geoglows.streamflow.return_periods`_
+        hist (pandas.DataFrame): the csv response from `historic_simulation`_
+        rperiods (pandas.DataFrame): the csv response from `return_periods`_
 
     :keyword string outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
     :keyword int reach_id: the reach ID of COMID of a stream to be added to the plot title
@@ -593,7 +557,7 @@ def seasonal_plot(seasonal, **kwargs):
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
-        seasonal (pandas.DataFrame): the csv response from `geoglows.streamflow.seasonal_average`_
+        seasonal (pandas.DataFrame): the csv response from `seasonal_average`_
 
     :keyword string outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
     :keyword int reach_id: the reach ID of COMID of a stream to be added to the plot title
@@ -663,7 +627,7 @@ def flow_duration_curve_plot(hist, **kwargs):
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
-        hist (pandas.DataFrame): the csv response from `geoglows.streamflow.historic_simulation`_
+        hist (pandas.DataFrame): the csv response from `historic_simulation`_
 
     :keyword string outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
     :keyword int reach_id: the reach ID of COMID of a stream to be added to the plot title
@@ -736,14 +700,13 @@ def flow_duration_curve_plot(hist, **kwargs):
 
 def probabilities_table(stats, ensembles, rperiods):
     """
-    Processes the results of `geoglows.streamflow.forecast_stats`_ , `geoglows.streamflow.forecast_ensembles`_, and
-    `geoglows.streamflow.return_periods`_ and uses jinja2 template rendering to generate html code that shows the
-    probabilities of exceeding the return period flow on each day of the forecast.
+    Processes the results of `forecast_stats`_ , `forecast_ensembles`_, and `return_periods`_ and uses jinja2 template
+    rendering to generate html code that shows the probabilities of exceeding the return period flow on each day.
 
     Args:
-        stats (pandas.DataFrame): the csv response from `geoglows.streamflow.forecast_stats`_
-        ensembles (pandas.DataFrame): the csv response from `geoglows.streamflow.forecast_ensembles`_
-        rperiods (pandas.DataFrame): the csv response from `geoglows.streamflow.return_periods`_
+        stats (pandas.DataFrame): the csv response from `forecast_stats`_
+        ensembles (pandas.DataFrame): the csv response from `forecast_ensembles`_
+        rperiods (pandas.DataFrame): the csv response from `return_periods`_
 
     :keyword string outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
     :keyword int reach_id: the reach ID of COMID of a stream to be added to the plot title
@@ -961,3 +924,16 @@ def __rperiod_shapes(startdate, enddate, r2, r10, r20, y_max):
             fillcolor='purple'
         ),
     ]
+
+
+def __validate_api_params(reach_id, lat, lon, return_format):
+    if not reach_id:
+        if lat is not None and lon is not None:
+            check = latlon_to_reach(lat, lon)
+            if 'error' in check.keys():
+                raise Exception('no reach_id was found near that lat/lon')
+            reach_id = check['reach_id']
+        else:
+            raise Exception('provide a reach_id or both a lat and lon value')
+    # build and execute a request to the api with the user's parameters
+    return {'reach_id': reach_id, 'return_format': return_format}
