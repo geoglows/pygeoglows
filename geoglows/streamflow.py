@@ -15,10 +15,11 @@ from shapely.geometry import Point, MultiPoint, box
 from shapely.ops import nearest_points
 
 BYU_ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
+AZURE_VM = 'http://40.114.53.107/api/'
 
 
 # FUNCTIONS THAT CALL THE GLOBAL STREAMFLOW PREDICTION API
-def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, token=None, return_format='csv'):
+def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=AZURE_VM, token=None, return_format='csv'):
     """
     Retrieves statistics that summarize the most recent streamflow forecast. You need to specify either a reach_id or
     both a lat and lon.
@@ -31,14 +32,11 @@ def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, tok
         token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
         return_format (str): 'csv', 'json', 'waterml', 'request'
 
-    Return:
-        return_format='csv' returns a pandas dataframe
-        return_format='json' returns a json
-        return_format='waterml' returns a waterml string
-        return_format='request' returns a request response object
-
     Return Format:
-        pandas.DataFrame
+        - return_format='csv' returns a pandas dataframe
+        - return_format='json' returns a json
+        - return_format='waterml' returns a waterml string
+        - return_format='request' returns a request response object
 
     Example:
         .. code-block:: python
@@ -62,7 +60,7 @@ def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, tok
         return data
 
 
-def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, token=None, return_format='csv'):
+def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=AZURE_VM, token=None, return_format='csv'):
     """
     Retrieves each ensemble from the most recent streamflow forecast. You need to specify either a reach_id or
     both a lat and lon.
@@ -75,11 +73,11 @@ def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT,
         token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
         return_format (str): 'csv', 'json', 'waterml', 'request'
 
-    Return:
-        return_format='csv' returns a pandas dataframe
-        return_format='json' returns a json
-        return_format='waterml' returns a waterml string
-        return_format='request' returns a request response object
+    Return Format:
+        - return_format='csv' returns a pandas dataframe
+        - return_format='json' returns a json
+        - return_format='waterml' returns a waterml string
+        - return_format='request' returns a request response object
 
     Example:
         .. code-block:: python
@@ -102,7 +100,7 @@ def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT,
         return data
 
 
-def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, token=None, return_format='csv'):
+def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=AZURE_VM, token=None, return_format='csv'):
     """
     Retrieves historical streamflow simulation derived from the ERA-Interim dataset. You need to specify either a
     reach_id or both a lat and lon.
@@ -115,11 +113,11 @@ def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT
         token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
         return_format (str): 'csv', 'json', 'waterml', 'request'
 
-    Return:
-        return_format='csv' returns a pandas dataframe
-        return_format='json' returns a json
-        return_format='waterml' returns a waterml string
-        return_format='request' returns a request response object
+    Return Format:
+        - return_format='csv' returns a pandas dataframe
+        - return_format='json' returns a json
+        - return_format='waterml' returns a waterml string
+        - return_format='request' returns a request response object
 
     Example:
         .. code-block:: python
@@ -140,7 +138,7 @@ def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT
         return data
 
 
-def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, token=None, return_format='csv'):
+def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=AZURE_VM, token=None, return_format='csv'):
     """
     Retrieves the average flow for every day of the year. You need to specify either a reach_id or both a lat and lon.
 
@@ -152,11 +150,11 @@ def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, t
         token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
         return_format (str): 'csv', 'json', 'waterml', 'request'
 
-    Return:
-        return_format='csv' returns a pandas dataframe
-        return_format='json' returns a json
-        return_format='waterml' returns a waterml string
-        return_format='request' returns a request response object
+    Return Format:
+        - return_format='csv' returns a pandas dataframe
+        - return_format='json' returns a json
+        - return_format='waterml' returns a waterml string
+        - return_format='request' returns a request response object
 
     Example:
         .. code-block:: python
@@ -177,7 +175,7 @@ def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, t
         return data
 
 
-def return_periods(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, token=None, return_format='csv'):
+def return_periods(reach_id=None, lat=None, lon=None, endpoint=AZURE_VM, token=None, return_format='csv'):
     """
     Retrieves the return period thresholds for 2, 10, 20 year flow events. You need to specify either a reach_id or
     both a lat and lon.
@@ -190,11 +188,11 @@ def return_periods(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, tok
         token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
         return_format (str): 'csv', 'json', 'waterml', 'request'
 
-    Return:
-        return_format='csv' returns a pandas dataframe
-        return_format='json' returns a json
-        return_format='waterml' returns a waterml string
-        return_format='request' returns a request response object
+    Return Format:
+        - return_format='csv' returns a pandas dataframe
+        - return_format='json' returns a json
+        - return_format='waterml' returns a waterml string
+        - return_format='request' returns a request response object
 
     Example:
         .. code-block:: python
@@ -215,7 +213,7 @@ def return_periods(reach_id=None, lat=None, lon=None, endpoint=BYU_ENDPOINT, tok
         return data
 
 
-def available_dates(reach_id=None, region=None, endpoint=BYU_ENDPOINT, token=None):
+def available_dates(reach_id=None, region=None, endpoint=AZURE_VM, token=None):
     """
     Retrieves the list of dates of stored streamflow forecasts. You need to specify either a reach_id or a region.
 
@@ -244,7 +242,7 @@ def available_dates(reach_id=None, region=None, endpoint=BYU_ENDPOINT, token=Non
     return json.loads(requests.get(endpoint + 'AvailableDates/', headers=token, params=params).text)
 
 
-def available_regions(endpoint=BYU_ENDPOINT, token=None):
+def available_regions(endpoint=AZURE_VM, token=None):
     """
     Retrieves a list of regions available at the endpoint
 
