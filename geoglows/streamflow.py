@@ -1,25 +1,31 @@
-import pandas
-import requests
-import json
 import datetime
-import jinja2
-import os
+import json
 import math
+import os
+from collections import OrderedDict, namedtuple
+from io import StringIO
+
+import jinja2
+import pandas
+import plotly.graph_objs as go
+import requests
 import scipy.stats
 from plotly.offline import plot as offline_plot
-from plotly.graph_objs import Scatter, Layout, Figure
-import plotly.graph_objs as go
-from io import StringIO
-from collections import OrderedDict, namedtuple
 from shapely.geometry import Point, MultiPoint, box
 from shapely.ops import nearest_points
 
+__all__ = [
+    'forecast_stats', 'forecast_ensembles', 'historic_simulation', 'seasonal_average', 'return_periods',
+    'available_dates', 'available_regions', 'forecast_plot', 'ensembles_plot', 'historical_plot', 'seasonal_plot',
+    'flow_duration_curve_plot', 'probabilities_table', 'reach_to_region', 'latlon_to_reach'
+]
+
 BYU_ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
-AZURE_VM = 'http://40.114.53.107/api/'
+AZURE_HOST = 'http://global-streamflow-prediction.eastus.cloudapp.azure.com/api/'
 
 
 # FUNCTIONS THAT CALL THE GLOBAL STREAMFLOW PREDICTION API
-def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=AZURE_VM, token=None, return_format='csv'):
+def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
     """
     Retrieves statistics that summarize the most recent streamflow forecast. You need to specify either a reach_id or
     both a lat and lon.
@@ -60,7 +66,7 @@ def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=AZURE_VM, token=N
         return data
 
 
-def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=AZURE_VM, token=None, return_format='csv'):
+def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
     """
     Retrieves each ensemble from the most recent streamflow forecast. You need to specify either a reach_id or
     both a lat and lon.
@@ -100,7 +106,7 @@ def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=AZURE_VM, tok
         return data
 
 
-def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=AZURE_VM, token=None, return_format='csv'):
+def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
     """
     Retrieves historical streamflow simulation derived from the ERA-Interim dataset. You need to specify either a
     reach_id or both a lat and lon.
@@ -138,7 +144,7 @@ def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=AZURE_VM, to
         return data
 
 
-def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=AZURE_VM, token=None, return_format='csv'):
+def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
     """
     Retrieves the average flow for every day of the year. You need to specify either a reach_id or both a lat and lon.
 
@@ -175,7 +181,7 @@ def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=AZURE_VM, token
         return data
 
 
-def return_periods(reach_id=None, lat=None, lon=None, endpoint=AZURE_VM, token=None, return_format='csv'):
+def return_periods(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
     """
     Retrieves the return period thresholds for 2, 10, 20 year flow events. You need to specify either a reach_id or
     both a lat and lon.
@@ -213,7 +219,7 @@ def return_periods(reach_id=None, lat=None, lon=None, endpoint=AZURE_VM, token=N
         return data
 
 
-def available_dates(reach_id=None, region=None, endpoint=AZURE_VM, token=None):
+def available_dates(reach_id=None, region=None, endpoint=AZURE_HOST, token=None):
     """
     Retrieves the list of dates of stored streamflow forecasts. You need to specify either a reach_id or a region.
 
@@ -242,7 +248,7 @@ def available_dates(reach_id=None, region=None, endpoint=AZURE_VM, token=None):
     return json.loads(requests.get(endpoint + 'AvailableDates/', headers=token, params=params).text)
 
 
-def available_regions(endpoint=AZURE_VM, token=None):
+def available_regions(endpoint=AZURE_HOST, token=None):
     """
     Retrieves a list of regions available at the endpoint
 
@@ -319,13 +325,13 @@ def forecast_plot(stats, rperiods, **kwargs):
     if outformat == 'json':
         return plot_data
 
-    meanplot = Scatter(
+    meanplot = go.Scatter(
         name='Mean',
         x=plot_data['x_ensembles'],
         y=plot_data['mean'],
         line=dict(color='blue'),
     )
-    maxplot = Scatter(
+    maxplot = go.Scatter(
         name='Max',
         x=plot_data['x_ensembles'],
         y=plot_data['max'],
@@ -333,7 +339,7 @@ def forecast_plot(stats, rperiods, **kwargs):
         mode='lines',
         line=dict(color='rgb(152, 251, 152)', width=0)
     )
-    minplot = Scatter(
+    minplot = go.Scatter(
         name='Min',
         x=plot_data['x_ensembles'],
         y=plot_data['min'],
@@ -341,7 +347,7 @@ def forecast_plot(stats, rperiods, **kwargs):
         mode='lines',
         line=dict(color='rgb(152, 251, 152)')
     )
-    stdlowplot = Scatter(
+    stdlowplot = go.Scatter(
         name='Std. Dev. Lower',
         x=plot_data['x_ensembles'],
         y=plot_data['stdlow'],
@@ -349,7 +355,7 @@ def forecast_plot(stats, rperiods, **kwargs):
         mode='lines',
         line=dict(color='rgb(152, 251, 152)', width=0)
     )
-    stdupplot = Scatter(
+    stdupplot = go.Scatter(
         name='Std. Dev. Upper',
         x=plot_data['x_ensembles'],
         y=plot_data['stdup'],
@@ -357,13 +363,13 @@ def forecast_plot(stats, rperiods, **kwargs):
         mode='lines',
         line={'width': 0, 'color': 'rgb(34, 139, 34)'}
     )
-    hires = Scatter(
+    hires = go.Scatter(
         name='Higher Resolution',
         x=plot_data['x_hires'],
         y=plot_data['hires'],
         line={'color': 'black'}
     )
-    layout = Layout(
+    layout = go.Layout(
         title=__build_title('Forecasted Streamflow', reach_id, drain_area),
         xaxis={'title': 'Date'},
         yaxis={
@@ -373,7 +379,7 @@ def forecast_plot(stats, rperiods, **kwargs):
         shapes=__rperiod_shapes(
             startdate, enddate, plot_data['r2'], plot_data['r10'], plot_data['r20'], plot_data['y_max'])
     )
-    figure = Figure([minplot, stdlowplot, stdupplot, maxplot, meanplot, hires], layout=layout)
+    figure = go.Figure([minplot, stdlowplot, stdupplot, maxplot, meanplot, hires], layout=layout)
     if outformat == 'plotly':
         return figure
     if outformat == 'plotly_html':
@@ -448,7 +454,7 @@ def ensembles_plot(ensembles, rperiods, **kwargs):
         return plot_data
 
     # create the high resolution line (ensemble 52)
-    scatters.append(Scatter(
+    scatters.append(go.Scatter(
         name='High Resolution',
         x=plot_data['x_52'],
         y=plot_data[52],
@@ -456,14 +462,14 @@ def ensembles_plot(ensembles, rperiods, **kwargs):
     ))
     # create a line for the rest of the ensembles (1-51)
     for i in range(1, 52):
-        scatters.append(Scatter(
+        scatters.append(go.Scatter(
             name='Ensemble ' + str(i),
             x=plot_data['x_1-51'],
             y=plot_data[i],
         ))
 
     # define a layout for the plot
-    layout = Layout(
+    layout = go.Layout(
         title=__build_title('Ensemble Predicted Streamflow', reach_id, drain_area),
         xaxis={'title': 'Date'},
         yaxis={
@@ -473,7 +479,7 @@ def ensembles_plot(ensembles, rperiods, **kwargs):
         shapes=__rperiod_shapes(
             startdate, enddate, plot_data['r2'], plot_data['r10'], plot_data['r20'], plot_data['y_max'])
     )
-    figure = Figure(scatters, layout=layout)
+    figure = go.Figure(scatters, layout=layout)
     if outformat == 'plotly':
         return figure
     if outformat == 'plotly_html':
@@ -536,7 +542,7 @@ def historical_plot(hist, rperiods, **kwargs):
     if outformat == 'json':
         return plot_data
 
-    layout = Layout(
+    layout = go.Layout(
         title=__build_title('Historic Streamflow Simulation', reach_id, drain_area),
         xaxis={
             'title': 'Date',
@@ -550,7 +556,7 @@ def historical_plot(hist, rperiods, **kwargs):
         shapes=__rperiod_shapes(
             startdate, enddate, plot_data['r2'], plot_data['r10'], plot_data['r20'], plot_data['y_max'])
     )
-    figure = Figure([Scatter(x=plot_data['x_datetime'], y=plot_data['y_flow'])], layout=layout)
+    figure = go.Figure([go.Scatter(x=plot_data['x_datetime'], y=plot_data['y_flow'])], layout=layout)
     if outformat == 'plotly':
         return figure
     if outformat == 'plotly_html':
@@ -608,7 +614,7 @@ def seasonal_plot(seasonal, **kwargs):
     if outformat == 'json':
         return plot_data
 
-    layout = Layout(
+    layout = go.Layout(
         title=__build_title('Daily Average Streamflow (Historic Simulation)', reach_id, drain_area),
         xaxis={
             'title': 'Date',
@@ -620,7 +626,7 @@ def seasonal_plot(seasonal, **kwargs):
             'range': [0, 1.2 * max(plot_data['y_flow'])]
         },
     )
-    figure = Figure([Scatter(x=plot_data['x_day_number'], y=plot_data['y_flow'])], layout=layout)
+    figure = go.Figure([go.Scatter(x=plot_data['x_day_number'], y=plot_data['y_flow'])], layout=layout)
     if outformat == 'plotly':
         return figure
     if outformat == 'plotly_html':
@@ -684,7 +690,7 @@ def flow_duration_curve_plot(hist, **kwargs):
     if outformat == 'json':
         return plot_data
 
-    layout = Layout(
+    layout = go.Layout(
         title=__build_title('Flow Duration Curve', reach_id, drain_area),
         xaxis={
             'title': 'Date',
@@ -696,7 +702,7 @@ def flow_duration_curve_plot(hist, **kwargs):
             'range': [0, 1.2 * plot_data['y_max']]
         },
     )
-    figure = Figure([Scatter(x=plot_data['x_probability'], y=plot_data['y_flow'])], layout=layout)
+    figure = go.Figure([go.Scatter(x=plot_data['x_probability'], y=plot_data['y_flow'])], layout=layout)
     if outformat == 'plotly':
         return figure
     if outformat == 'plotly_html':
@@ -719,13 +725,8 @@ def probabilities_table(stats, ensembles, rperiods):
         ensembles (pandas.DataFrame): the csv response from `forecast_ensembles`_
         rperiods (pandas.DataFrame): the csv response from `return_periods`_
 
-    :keyword string outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
-    :keyword int reach_id: the reach ID of COMID of a stream to be added to the plot title
-    :keyword string drain_area: a string containing the area and units of the area upstream of this reach that will
-        be shown on the plot title
-
     Return:
-         plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
+         string containing html to build a table with a row of dates and for exceeding each return period threshold
 
     Example:
         .. code-block:: python
