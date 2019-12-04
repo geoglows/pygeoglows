@@ -731,7 +731,7 @@ def probabilities_table(stats, ensembles, rperiods):
     Example:
         .. code-block:: python
 
-            data = geoglows.streamflow.flow_duration_curve_plot(hist)
+            data = geoglows.streamflow.probabilities_table(stats, ensembles, rperiods)
     """
     dates = stats['datetime'].tolist()
     startdate = dates[0]
@@ -953,3 +953,19 @@ def __validate_api_params(reach_id, lat, lon, return_format):
         raise Exception('choose csv, json, waterml, or request as return_format')
     # build and execute a request to the api with the user's parameters
     return {'reach_id': reach_id, 'return_format': return_format}
+
+
+def __forecast_diagnostics():
+    byu_diagnostics = {'SOURCE': 'BYU_ENDPOINT'}
+    azure_diagnostics = {'SOURCE': 'AZURE_HOST'}
+    regions = available_regions()['available_regions']
+    for region in regions:
+        dates = available_dates(region=region, endpoint=BYU_ENDPOINT)['available_dates']
+        dates = [float(date) for date in dates]
+        dates.sort(reverse=True)
+        byu_diagnostics[region] = dates[0]
+        dates = available_dates(region=region)['available_dates']
+        dates = [float(date) for date in dates]
+        dates.sort(reverse=True)
+        azure_diagnostics[region] = dates[0]
+    return byu_diagnostics, azure_diagnostics
