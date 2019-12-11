@@ -36,13 +36,14 @@ def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token
         lon (int): a valid longitude
         endpoint (str): the endpoint of an api instance
         token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', 'waterml', 'request'
+        return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
 
     Return Format:
         - return_format='csv' returns a pandas dataframe
         - return_format='json' returns a json
         - return_format='waterml' returns a waterml string
         - return_format='request' returns a request response object
+        - return_format='url' returns a url string for using in a request or web browser
 
     Example:
         .. code-block:: python
@@ -54,16 +55,8 @@ def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token
     """
     # validate arguments
     params = __validate_api_params(reach_id, lat, lon, return_format)
-    data = requests.get(endpoint + 'ForecastStats/', headers=token, params=params)
-
-    if return_format == 'csv':
-        return pandas.read_csv(StringIO(data.text))
-    elif return_format == 'json':
-        return json.loads(data.text)
-    elif return_format == 'waterml':
-        return data.text
-    elif return_format == 'request':
-        return data
+    # return the requested data
+    return __make_request(endpoint, 'ForecastStats', params, token, return_format)
 
 
 def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
@@ -77,13 +70,14 @@ def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, t
         lon (int): a valid longitude
         endpoint (str): the endpoint of an api instance
         token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', 'waterml', 'request'
+        return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
 
     Return Format:
         - return_format='csv' returns a pandas dataframe
         - return_format='json' returns a json
         - return_format='waterml' returns a waterml string
         - return_format='request' returns a request response object
+        - return_format='url' returns a url string for using in a request or web browser
 
     Example:
         .. code-block:: python
@@ -92,18 +86,8 @@ def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, t
     """
     # validate arguments
     params = __validate_api_params(reach_id, lat, lon, return_format)
-    data = requests.get(endpoint + 'ForecastEnsembles/', headers=token, params=params)
-
-    if return_format == 'csv':
-        tmp = pandas.read_csv(StringIO(data.text), index_col='datetime')
-        tmp.index = pandas.to_datetime(tmp.index)
-        return tmp
-    elif return_format == 'json':
-        return json.loads(data.text)
-    elif return_format == 'waterml':
-        return data.text
-    elif return_format == 'request':
-        return data
+    # return the requested data
+    return __make_request(endpoint, 'ForecastEnsembles', params, token, return_format)
 
 
 def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
@@ -117,13 +101,14 @@ def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, 
         lon (int): a valid longitude
         endpoint (str): the endpoint of an api instance
         token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', 'waterml', 'request'
+        return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
 
     Return Format:
         - return_format='csv' returns a pandas dataframe
         - return_format='json' returns a json
         - return_format='waterml' returns a waterml string
         - return_format='request' returns a request response object
+        - return_format='url' returns a url string for using in a request or web browser
 
     Example:
         .. code-block:: python
@@ -132,16 +117,8 @@ def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, 
     """
     # validate arguments
     params = __validate_api_params(reach_id, lat, lon, return_format)
-    data = requests.get(endpoint + 'HistoricSimulation/', headers=token, params=params)
-
-    if return_format == 'csv':
-        return pandas.read_csv(StringIO(data.text))
-    elif return_format == 'json':
-        return json.loads(data.text)
-    elif return_format == 'waterml':
-        return data.text
-    elif return_format == 'request':
-        return data
+    # return the requested data
+    return __make_request(endpoint, 'HistoricSimulation', params, token, return_format)
 
 
 def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
@@ -154,13 +131,14 @@ def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, tok
         lon (int): a valid longitude
         endpoint (str): the endpoint of an api instance
         token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', 'waterml', 'request'
+        return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
 
     Return Format:
         - return_format='csv' returns a pandas dataframe
         - return_format='json' returns a json
         - return_format='waterml' returns a waterml string
         - return_format='request' returns a request response object
+        - return_format='url' returns a url string for using in a request or web browser
 
     Example:
         .. code-block:: python
@@ -169,16 +147,8 @@ def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, tok
     """
     # validate arguments
     params = __validate_api_params(reach_id, lat, lon, return_format)
-    data = requests.get(endpoint + 'SeasonalAverage/', headers=token, params=params)
-
-    if return_format == 'csv':
-        return pandas.read_csv(StringIO(data.text))
-    elif return_format == 'json':
-        return json.loads(data.text)
-    elif return_format == 'waterml':
-        return data.text
-    elif return_format == 'request':
-        return data
+    # return the requested data
+    return __make_request(endpoint, 'SeasonalAverage', params, token, return_format)
 
 
 def return_periods(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
@@ -192,13 +162,14 @@ def return_periods(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token
         lon (int): a valid longitude
         endpoint (str): the endpoint of an api instance
         token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', 'waterml', 'request'
+        return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
 
     Return Format:
         - return_format='csv' returns a pandas dataframe
         - return_format='json' returns a json
         - return_format='waterml' returns a waterml string
         - return_format='request' returns a request response object
+        - return_format='url' returns a url string for using in a request or web browser
 
     Example:
         .. code-block:: python
@@ -207,19 +178,11 @@ def return_periods(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token
     """
     # validate arguments
     params = __validate_api_params(reach_id, lat, lon, return_format)
-    data = requests.get(endpoint + 'ReturnPeriods/', headers=token, params=params)
-
-    if return_format == 'csv':
-        return pandas.read_csv(StringIO(data.text), index_col='return period')
-    elif return_format == 'json':
-        return json.loads(data.text)
-    elif return_format == 'waterml':
-        return data.text
-    elif return_format == 'request':
-        return data
+    # return the requested data
+    return __make_request(endpoint, 'ReturnPeriods', params, token, return_format)
 
 
-def available_dates(reach_id=None, region=None, endpoint=AZURE_HOST, token=None):
+def available_dates(reach_id=None, region=None, endpoint=AZURE_HOST, token=None, return_format='json'):
     """
     Retrieves the list of dates of stored streamflow forecasts. You need to specify either a reach_id or a region.
 
@@ -227,10 +190,11 @@ def available_dates(reach_id=None, region=None, endpoint=AZURE_HOST, token=None)
         reach_id (int): the ID of a stream
         region (str): the name of a hydrologic region used in the model
         endpoint (str): the endpoint of an api instance
-        token (dicti): dictionary with the header for api key validation (if applicable to the endpoint)
+        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
 
-    Return:
-        dates (json): {'available_dates': ['list_of_dates']}
+    Return Format:
+        - return_format='json' *(default)* returns {'available_dates': ['list_of_dates']}
+        - return_format='url' returns a url string for using in a request or web browser
 
     Example:
         .. code-block:: python
@@ -245,26 +209,34 @@ def available_dates(reach_id=None, region=None, endpoint=AZURE_HOST, token=None)
     else:
         raise RuntimeError('specify a region or a reach_id')
 
-    return json.loads(requests.get(endpoint + 'AvailableDates/', headers=token, params=params).text)
+    if return_format == 'json':
+        return json.loads(requests.get(endpoint + 'AvailableDates/', headers=token, params=params).text)
+    elif return_format == 'url':
+        return endpoint + 'AvailableDates/?region=' + params['region']
 
 
-def available_regions(endpoint=AZURE_HOST, token=None):
+def available_regions(endpoint=AZURE_HOST, token=None, return_format='json'):
     """
     Retrieves a list of regions available at the endpoint
 
     Args:
         endpoint (str): the endpoint of an api instance
         token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
+        return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
 
-    Return:
-        dates (json): {'available_regions': ['list_of_regions']}
+    Return Format:
+        - return_format='json' *(default)* returns {'available_regions': ['list_of_dates']}
+        - return_format='url' returns a url string for using in a request or web browser
 
     Example:
         .. code-block:: python
 
             data = geoglows.streamflow.available_regions(12341234)
     """
-    return json.loads(requests.get(endpoint + 'AvailableRegions/', headers=token).text)
+    if return_format == 'json':
+        return json.loads(requests.get(endpoint + 'AvailableRegions/', headers=token).text)
+    elif return_format == 'url':
+        return endpoint + 'AvailableRegions/'
 
 
 # FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
@@ -949,10 +921,34 @@ def __validate_api_params(reach_id, lat, lon, return_format):
             raise Exception('provide a reach_id or both a lat and lon value')
     if return_format == 'request':
         return_format = 'csv'
+    elif return_format == 'url':
+        return {'reach_id': reach_id}
     elif return_format not in ['csv', 'json', 'waterml']:
-        raise Exception('choose csv, json, waterml, or request as return_format')
+        raise Exception('choose csv, json, waterml, url, or request as return_format')
     # build and execute a request to the api with the user's parameters
     return {'reach_id': reach_id, 'return_format': return_format}
+
+
+def __make_request(endpoint, method, params, headers, return_format):
+    if return_format == 'url':
+        return endpoint + method + '/?reach_id=' + str(params['reach_id'])
+
+    data = requests.get(endpoint + method + '/', headers=headers, params=params)
+
+    if return_format == 'csv':
+        if method == 'ForecastEnsembles':
+            tmp = pandas.read_csv(StringIO(data.text), index_col='datetime')
+            tmp.index = pandas.to_datetime(tmp.index)
+            return tmp
+        if method == 'ReturnPeriods':
+            return pandas.read_csv(StringIO(data.text), index_col='return period')
+        return pandas.read_csv(StringIO(data.text))
+    elif return_format == 'json':
+        return json.loads(data.text)
+    elif return_format == 'waterml':
+        return data.text
+    elif return_format == 'request':
+        return data
 
 
 def __forecast_diagnostics():
