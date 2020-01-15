@@ -19,13 +19,12 @@ __all__ = [
     'available_dates', 'available_regions', 'forecast_plot', 'ensembles_plot', 'historical_plot', 'seasonal_plot',
     'flow_duration_curve_plot', 'probabilities_table', 'reach_to_region', 'latlon_to_reach'
 ]
-
-BYU_ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
-AZURE_HOST = 'http://global-streamflow-prediction.eastus.cloudapp.azure.com/api/'
+HOSTS = namedtuple('HOSTS', 'azure, byu')
+API = HOSTS('http://gsf-api-vm.eastus.cloudapp.azure.com/api/', 'https://tethys2.byu.edu/localsptapi/api/')
 
 
 # FUNCTIONS THAT CALL THE GLOBAL STREAMFLOW PREDICTION API
-def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
+def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=API.byu, return_format='csv'):
     """
     Retrieves statistics that summarize the most recent streamflow forecast. You need to specify either a reach_id or
     both a lat and lon.
@@ -35,15 +34,7 @@ def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token
         lat (int): a valid latitude
         lon (int): a valid longitude
         endpoint (str): the endpoint of an api instance
-        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
-
-    Return Format:
-        - return_format='csv' returns a pandas dataframe
-        - return_format='json' returns a json
-        - return_format='waterml' returns a waterml string
-        - return_format='request' returns a request response object
-        - return_format='url' returns a url string for using in a request or web browser
+        return_format (str): 'csv' (pandas DF), 'string', 'json', 'waterml' (string), 'request', 'url'
 
     Example:
         .. code-block:: python
@@ -56,10 +47,10 @@ def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token
     # validate arguments
     params = __validate_api_params(reach_id, lat, lon, return_format)
     # return the requested data
-    return __make_request(endpoint, 'ForecastStats', params, token, return_format)
+    return __make_request(endpoint, 'ForecastStats', params, return_format)
 
 
-def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
+def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=API.byu, return_format='csv'):
     """
     Retrieves each ensemble from the most recent streamflow forecast. You need to specify either a reach_id or
     both a lat and lon.
@@ -69,15 +60,7 @@ def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, t
         lat (int): a valid latitude
         lon (int): a valid longitude
         endpoint (str): the endpoint of an api instance
-        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
-
-    Return Format:
-        - return_format='csv' returns a pandas dataframe
-        - return_format='json' returns a json
-        - return_format='waterml' returns a waterml string
-        - return_format='request' returns a request response object
-        - return_format='url' returns a url string for using in a request or web browser
+        return_format (str): 'csv' (pandas DF), 'string', 'json', 'waterml' (string), 'request', 'url'
 
     Example:
         .. code-block:: python
@@ -87,10 +70,10 @@ def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, t
     # validate arguments
     params = __validate_api_params(reach_id, lat, lon, return_format)
     # return the requested data
-    return __make_request(endpoint, 'ForecastEnsembles', params, token, return_format)
+    return __make_request(endpoint, 'ForecastEnsembles', params, return_format)
 
 
-def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
+def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=API.byu, return_format='csv'):
     """
     Retrieves historical streamflow simulation derived from the ERA-Interim dataset. You need to specify either a
     reach_id or both a lat and lon.
@@ -100,15 +83,7 @@ def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, 
         lat (int): a valid latitude
         lon (int): a valid longitude
         endpoint (str): the endpoint of an api instance
-        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
-
-    Return Format:
-        - return_format='csv' returns a pandas dataframe
-        - return_format='json' returns a json
-        - return_format='waterml' returns a waterml string
-        - return_format='request' returns a request response object
-        - return_format='url' returns a url string for using in a request or web browser
+        return_format (str): 'csv' (pandas DF), 'string', 'json', 'waterml' (string), 'request', 'url'
 
     Example:
         .. code-block:: python
@@ -118,10 +93,10 @@ def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, 
     # validate arguments
     params = __validate_api_params(reach_id, lat, lon, return_format)
     # return the requested data
-    return __make_request(endpoint, 'HistoricSimulation', params, token, return_format)
+    return __make_request(endpoint, 'HistoricSimulation', params, return_format)
 
 
-def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
+def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=API.byu, return_format='csv'):
     """
     Retrieves the average flow for every day of the year. You need to specify either a reach_id or both a lat and lon.
 
@@ -130,15 +105,7 @@ def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, tok
         lat (int): a valid latitude
         lon (int): a valid longitude
         endpoint (str): the endpoint of an api instance
-        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
-
-    Return Format:
-        - return_format='csv' returns a pandas dataframe
-        - return_format='json' returns a json
-        - return_format='waterml' returns a waterml string
-        - return_format='request' returns a request response object
-        - return_format='url' returns a url string for using in a request or web browser
+        return_format (str): 'csv' (pandas DF), 'string', 'json', 'waterml' (string), 'request', 'url'
 
     Example:
         .. code-block:: python
@@ -148,10 +115,10 @@ def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, tok
     # validate arguments
     params = __validate_api_params(reach_id, lat, lon, return_format)
     # return the requested data
-    return __make_request(endpoint, 'SeasonalAverage', params, token, return_format)
+    return __make_request(endpoint, 'SeasonalAverage', params, return_format)
 
 
-def return_periods(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
+def return_periods(reach_id=None, lat=None, lon=None, endpoint=API.byu, return_format='csv'):
     """
     Retrieves the return period thresholds for 2, 10, 20 year flow events. You need to specify either a reach_id or
     both a lat and lon.
@@ -161,15 +128,7 @@ def return_periods(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token
         lat (int): a valid latitude
         lon (int): a valid longitude
         endpoint (str): the endpoint of an api instance
-        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
-
-    Return Format:
-        - return_format='csv' returns a pandas dataframe
-        - return_format='json' returns a json
-        - return_format='waterml' returns a waterml string
-        - return_format='request' returns a request response object
-        - return_format='url' returns a url string for using in a request or web browser
+        return_format (str): 'csv' (pandas DF), 'string', 'json', 'waterml' (string), 'request', 'url'
 
     Example:
         .. code-block:: python
@@ -179,10 +138,11 @@ def return_periods(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token
     # validate arguments
     params = __validate_api_params(reach_id, lat, lon, return_format)
     # return the requested data
-    return __make_request(endpoint, 'ReturnPeriods', params, token, return_format)
+    return __make_request(endpoint, 'ReturnPeriods', params, return_format)
 
 
-def available_dates(reach_id=None, region=None, endpoint=AZURE_HOST, token=None, return_format='json'):
+# DIAGNOSTIC/SUMMARY FUNCTIONS
+def available_dates(reach_id=None, region=None, endpoint=API.byu):
     """
     Retrieves the list of dates of stored streamflow forecasts. You need to specify either a reach_id or a region.
 
@@ -190,11 +150,9 @@ def available_dates(reach_id=None, region=None, endpoint=AZURE_HOST, token=None,
         reach_id (int): the ID of a stream
         region (str): the name of a hydrologic region used in the model
         endpoint (str): the endpoint of an api instance
-        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
 
-    Return Format:
-        - return_format='json' *(default)* returns {'available_dates': ['list_of_dates']}
-        - return_format='url' returns a url string for using in a request or web browser
+    Returns:
+        - json of the form {'available_dates': ['list_of_dates']}
 
     Example:
         .. code-block:: python
@@ -209,34 +167,29 @@ def available_dates(reach_id=None, region=None, endpoint=AZURE_HOST, token=None,
     else:
         raise RuntimeError('specify a region or a reach_id')
 
-    if return_format == 'json':
-        return json.loads(requests.get(endpoint + 'AvailableDates/', headers=token, params=params).text)
-    elif return_format == 'url':
-        return endpoint + 'AvailableDates/?region=' + params['region']
+    tmp = requests.get(endpoint + 'AvailableDates/', params=params).text
+    try:
+        return json.loads(tmp)
+    except json.decoder.JSONDecodeError:
+        return {'available_dates': ['0.0']}
 
 
-def available_regions(endpoint=AZURE_HOST, token=None, return_format='json'):
+def available_regions(endpoint=API.byu):
     """
     Retrieves a list of regions available at the endpoint
 
     Args:
         endpoint (str): the endpoint of an api instance
-        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
 
-    Return Format:
-        - return_format='json' *(default)* returns {'available_regions': ['list_of_dates']}
-        - return_format='url' returns a url string for using in a request or web browser
+    Returns:
+        - json of the form {'available_regions': ['list_of_dates']}
 
     Example:
         .. code-block:: python
 
             data = geoglows.streamflow.available_regions(12341234)
     """
-    if return_format == 'json':
-        return json.loads(requests.get(endpoint + 'AvailableRegions/', headers=token).text)
-    elif return_format == 'url':
-        return endpoint + 'AvailableRegions/'
+    return json.loads(requests.get(endpoint + 'AvailableRegions/').text)
 
 
 # FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
@@ -823,7 +776,7 @@ def latlon_to_reach(lat, lon):
     point = Point(float(lon), float(lat))
     regions_to_check = []
     # store the best matching stream using a named tuple for easy comparisons/management
-    StreamResult = namedtuple('Stream', 'reach_id, region, distance')
+    StreamResult = namedtuple('StreamResult', 'reach_id, region, distance')
     stream_result = StreamResult(None, None, math.inf)
     base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'delineation_data'))
 
@@ -929,13 +882,16 @@ def __validate_api_params(reach_id, lat, lon, return_format):
     return {'reach_id': reach_id, 'return_format': return_format}
 
 
-def __make_request(endpoint, method, params, headers, return_format):
-    if return_format == 'url':
-        return endpoint + method + '/?reach_id=' + str(params['reach_id'])
+def __make_request(endpoint, method, params, return_format):
+    # make the request from the api
+    data = requests.get(endpoint + method + '/', params=params)
+    if return_format == 'request':
+        return data
 
-    data = requests.get(endpoint + method + '/', headers=headers, params=params)
-
-    if return_format == 'csv':
+    # process the return formats
+    if return_format == 'string':
+        return data.text
+    elif return_format == 'csv':
         if method == 'ForecastEnsembles':
             tmp = pandas.read_csv(StringIO(data.text), index_col='datetime')
             tmp.index = pandas.to_datetime(tmp.index)
@@ -947,21 +903,20 @@ def __make_request(endpoint, method, params, headers, return_format):
         return json.loads(data.text)
     elif return_format == 'waterml':
         return data.text
-    elif return_format == 'request':
-        return data
 
 
 def __forecast_diagnostics():
     byu_diagnostics = {'SOURCE': 'BYU_ENDPOINT'}
     azure_diagnostics = {'SOURCE': 'AZURE_HOST'}
-    regions = available_regions()['available_regions']
-    for region in regions:
-        dates = available_dates(region=region, endpoint=BYU_ENDPOINT)['available_dates']
+    for region in available_regions(endpoint=API.byu)['available_regions']:
+        dates = available_dates(region=region, endpoint=API.byu)['available_dates']
         dates = [float(date) for date in dates]
         dates.sort(reverse=True)
         byu_diagnostics[region] = dates[0]
+    for region in available_regions(endpoint=API.azure)['available_regions']:
         dates = available_dates(region=region)['available_dates']
         dates = [float(date) for date in dates]
         dates.sort(reverse=True)
         azure_diagnostics[region] = dates[0]
+
     return byu_diagnostics, azure_diagnostics
