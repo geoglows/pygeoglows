@@ -737,7 +737,7 @@ def reach_to_region(reach_id):
         ('middle_east-geoglows', 700000),
         ('central_america-geoglows', 1000000),
         # CORRECTLY NUMBERED REGIONS
-        ('indonesia-geoglows', 2000000),
+        ('islands-geoglows', 2000000),
         ('japan-geoglows', 4000000),
         ('east_asia-geoglows', 5000000),
         ('south_asia-geoglows', 6000000),
@@ -796,10 +796,6 @@ def latlon_to_reach(lat, lon):
 
     # check the lat lon against each of the region csv's that we determined were an option
     for region in regions_to_check:
-        # TEMPORARY until we figure out how to fix the west asia problem, skip it
-        if region == 'west_asia-geoglows':
-            pass
-
         # open the region csv, find the closest reach_id
         df = pandas.read_csv(os.path.join(base_path, region, 'comid_lat_lon_z.csv'), sep=',', header=0, index_col=0)
         points_df = df.loc[:, "Lat":"Lon"].apply(Point, axis=1)
