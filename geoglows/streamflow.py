@@ -665,9 +665,9 @@ def probabilities_table(stats, ensembles, rperiods):
     span = datetime.datetime.strptime(enddate, "%Y-%m-%d %H:00:00") - start_datetime
     uniqueday = [start_datetime + datetime.timedelta(days=i) for i in range(span.days + 2)]
     # get the return periods for the stream reach
-    rp2 = rperiods.iloc[3][0]
-    rp10 = rperiods.iloc[2][0]
-    rp20 = rperiods.iloc[1][0]
+    rp2 = rperiods.loc['two'][0],
+    rp10 = rperiods.loc['ten'][0],
+    rp20 = rperiods.loc['twenty'][0],
 
     # fill the lists of things used as context in rendering the template
     days = []
