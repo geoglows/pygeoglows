@@ -242,9 +242,9 @@ def forecast_plot(stats, rperiods, **kwargs):
         'stdlow': list(stats['std_dev_range_lower (m3/s)'].dropna(axis=0)),
         'stdup': list(stats['std_dev_range_upper (m3/s)'].dropna(axis=0)),
         'hires': list(stats['high_res (m3/s)'].dropna(axis=0)),
-        'r2': rperiods.iloc[3][0],
-        'r10': rperiods.iloc[2][0],
-        'r20': rperiods.iloc[1][0],
+        'r2': rperiods.loc['two'][0],
+        'r10': rperiods.loc['ten'][0],
+        'r20': rperiods.loc['twenty'][0],
     }
 
     if outformat == 'json':
@@ -364,9 +364,9 @@ def ensembles_plot(ensembles, rperiods, **kwargs):
         'drain_area': drain_area,
         'x_1-51': ensembles['ensemble_01 (m3/s)'].dropna(axis=0).index.tolist(),
         'x_52': ensembles['ensemble_52 (m3/s)'].dropna(axis=0).index.tolist(),
-        'r2': rperiods.iloc[3][0],
-        'r10': rperiods.iloc[2][0],
-        'r20': rperiods.iloc[1][0],
+        'r2': rperiods.loc['two'][0],
+        'r10': rperiods.loc['ten'][0],
+        'r20': rperiods.loc['twenty'][0],
     }
 
     # add a dictionary entry for each of the ensemble members. the key for each series is the integer ensemble number
@@ -459,9 +459,9 @@ def historical_plot(hist, rperiods, **kwargs):
         'x_datetime': dates,
         'y_flow': hist['streamflow (m3/s)'].tolist(),
         'y_max': max(hist['streamflow (m3/s)']),
-        'r2': rperiods.iloc[3][0],
-        'r10': rperiods.iloc[2][0],
-        'r20': rperiods.iloc[1][0],
+        'r2': rperiods.loc['two'][0],
+        'r10': rperiods.loc['ten'][0],
+        'r20': rperiods.loc['twenty'][0],
     }
 
     if outformat == 'json':
