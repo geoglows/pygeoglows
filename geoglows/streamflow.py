@@ -15,31 +15,28 @@ from shapely.geometry import Point, MultiPoint, box
 from shapely.ops import nearest_points
 
 __all__ = [
-    'forecast_stats', 'forecast_ensembles', 'historic_simulation', 'seasonal_average', 'return_periods',
-    'available_dates', 'available_regions', 'forecast_plot', 'ensembles_plot', 'historical_plot', 'seasonal_plot',
-    'flow_duration_curve_plot', 'probabilities_table', 'reach_to_region', 'latlon_to_reach'
+    'forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecast_records', 'historic_simulation',
+    'seasonal_average', 'return_periods', 'available_dates', 'available_regions', 'forecast_plot', 'ensembles_plot',
+    'historical_plot', 'seasonal_plot', 'flow_duration_curve_plot', 'probabilities_table', 'reach_to_region',
+    'latlon_to_reach'
 ]
 
 BYU_ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
-AZURE_HOST = 'http://global-streamflow-prediction.eastus.cloudapp.azure.com/api/'
+AZURE_HOST = 'http://gsf-api-vm.eastus.cloudapp.azure.com/api/'
 
 
 # FUNCTIONS THAT CALL THE GLOBAL STREAMFLOW PREDICTION API
-def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
+def forecast_stats(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv'):
     """
-    Retrieves statistics that summarize the most recent streamflow forecast. You need to specify either a reach_id or
-    both a lat and lon.
+    Retrieves statistics that summarize the most recent streamflow forecast for a certain reach_id
 
     Args:
-        reach_id (int): the ID of a stream
-        lat (int): a valid latitude
-        lon (int): a valid longitude
-        endpoint (str): the endpoint of an api instance
-        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
+        reach_id: the ID of a stream
+        endpoint: the endpoint of an api instance
+        return_format: 'csv', 'json', 'waterml', 'request', 'url'
 
     Return Format:
-        - return_format='csv' returns a pandas dataframe
+        - return_format='csv' returns a pandas.DataFrame()
         - return_format='json' returns a json
         - return_format='waterml' returns a waterml string
         - return_format='request' returns a request response object
@@ -48,28 +45,26 @@ def forecast_stats(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token
     Example:
         .. code-block:: python
 
-            # using a reach_id
-            data = geoglows.streamflow.forecast_ensembles(12341234)
-            # using lat and lon as keyword arguments instead of reach_id
-            data = geoglows.streamflow.forecast_ensembles(lat=10, lon=10)
+            data = geoglows.streamflow.forecast_stats(12341234)
     """
-    # validate arguments
-    params = __validate_api_params(reach_id, lat, lon, return_format)
+    method = 'ForecastStats/'
+
+    if return_format == 'url':
+        return endpoint + method + '?reach_id={0}'.format(reach_id)
+    elif return_format == 'request':
+        return_format = 'csv'
+
     # return the requested data
-    return __make_request(endpoint, 'ForecastStats', params, token, return_format)
+    return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
 
 
-def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
+def forecast_ensembles(reach_id: int, endpoint=AZURE_HOST, return_format='csv'):
     """
-    Retrieves each ensemble from the most recent streamflow forecast. You need to specify either a reach_id or
-    both a lat and lon.
+    Retrieves each ensemble from the most recent streamflow forecast for a certain reach_id
 
     Args:
         reach_id (int): the ID of a stream
-        lat (int): a valid latitude
-        lon (int): a valid longitude
         endpoint (str): the endpoint of an api instance
-        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
         return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
 
     Return Format:
@@ -85,23 +80,87 @@ def forecast_ensembles(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, t
             data = geoglows.streamflow.forecast_ensembles(12341234)
     """
     # validate arguments
-    params = __validate_api_params(reach_id, lat, lon, return_format)
+    method = 'ForecastEnsembles/'
+
+    if return_format == 'url':
+        return endpoint + method + '?reach_id={0}'.format(reach_id)
+    elif return_format == 'request':
+        return_format = 'csv'
+
     # return the requested data
-    return __make_request(endpoint, 'ForecastEnsembles', params, token, return_format)
+    return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
 
 
-def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
+def forecast_warnings(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv'):
     """
-    Retrieves historical streamflow simulation derived from the ERA-Interim dataset. You need to specify either a
-    reach_id or both a lat and lon.
+    Retrieves a csv listing streams likely to experience a return period level flow during the forecast period.
 
     Args:
-        reach_id (int): the ID of a stream
-        lat (int): a valid latitude
-        lon (int): a valid longitude
-        endpoint (str): the endpoint of an api instance
-        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
+        reach_id: the name of a region as shown in the available_regions request
+        endpoint: the endpoint of an api instance
+        return_format: 'csv', 'json', 'waterml', 'request', 'url'
+
+    Return Format:
+        - return_format='csv' returns a pandas dataframe
+        - return_format='request' returns a request response object
+        - return_format='url' returns a url string for using in a request or web browser
+
+    Example:
+        .. code-block:: python
+
+            data = geoglows.streamflow.forecast_warnings('australia-geoglows')
+    """
+    method = 'ForecastWarnings/'
+
+    if return_format == 'url':
+        return endpoint + method + '?reach_id={0}'.format(reach_id)
+    elif return_format == 'request':
+        return_format = 'csv'
+
+    # return the requested data
+    return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
+
+
+def forecast_records(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv'):
+    """
+    Retrieves a csv listing streams likely to experience a return period level flow during the forecast period.
+
+    Args:
+        reach_id: the ID of a stream
+        endpoint: the endpoint of an api instance
         return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
+
+    Return Format:
+        - return_format='csv' returns a pandas dataframe
+        - return_format='request' returns a request response object
+        - return_format='url' returns a url string for using in a request or web browser
+
+    Example:
+        .. code-block:: python
+
+            data = geoglows.streamflow.forecast_warnings('australia-geoglows')
+    """
+    method = 'ForecastRecords/'
+
+    if return_format == 'url':
+        return endpoint + method + '?reach_id={0}'.format(reach_id)
+    elif return_format == 'request':
+        return_format = 'csv'
+
+    # return the requested data
+    params = {'reach_id': reach_id, 'return_format': return_format}
+    return _make_request(endpoint, method, params, return_format)
+
+
+def historic_simulation(reach_id: int, forcing: str, endpoint=BYU_ENDPOINT, return_format='csv'):
+    """
+    Retrieves a historical streamflow simulation derived from a specified forcing for a certain reach_id
+
+    Args:
+        reach_id: the ID of a stream
+        forcing: the runoff dataset used to drive the historic simulation (era_interim or era_5)
+        endpoint: the endpoint of an api instance
+        return_format: 'csv', 'json', 'waterml', 'request', 'url'
 
     Return Format:
         - return_format='csv' returns a pandas dataframe
@@ -115,23 +174,27 @@ def historic_simulation(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, 
 
             data = geoglows.streamflow.historic_simulation(12341234)
     """
-    # validate arguments
-    params = __validate_api_params(reach_id, lat, lon, return_format)
+    method = 'HistoricSimulation/'
+
+    if return_format == 'url':
+        return endpoint + method + '?reach_id={0}&forcing={1}'.format(reach_id, forcing)
+    elif return_format == 'request':
+        return_format = 'csv'
+
     # return the requested data
-    return __make_request(endpoint, 'HistoricSimulation', params, token, return_format)
+    params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
+    return _make_request(endpoint, method, params, return_format)
 
 
-def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
+# todo do we need to postprocess the seasonal average for the era5 data also?
+def seasonal_average(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv'):
     """
-    Retrieves the average flow for every day of the year. You need to specify either a reach_id or both a lat and lon.
+    Retrieves the average flow for every day of the year at a certain reach_id.
 
     Args:
-        reach_id (int): the ID of a stream
-        lat (int): a valid latitude
-        lon (int): a valid longitude
-        endpoint (str): the endpoint of an api instance
-        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
+        reach_id: the ID of a stream
+        endpoint: the endpoint of an api instance
+        return_format: 'csv', 'json', 'waterml', 'request', 'url'
 
     Return Format:
         - return_format='csv' returns a pandas dataframe
@@ -145,24 +208,27 @@ def seasonal_average(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, tok
 
             data = geoglows.streamflow.seasonal_average(12341234)
     """
-    # validate arguments
-    params = __validate_api_params(reach_id, lat, lon, return_format)
+    method = 'SeasonalAverage/'
+
+    if return_format == 'url':
+        return endpoint + method + '?reach_id={0}'.format(reach_id)
+    elif return_format == 'request':
+        return_format = 'csv'
+
     # return the requested data
-    return __make_request(endpoint, 'SeasonalAverage', params, token, return_format)
+    params = {'reach_id': reach_id, 'return_format': return_format}
+    return _make_request(endpoint, method, params, return_format)
 
 
-def return_periods(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token=None, return_format='csv'):
+def return_periods(reach_id: int, forcing: str, endpoint=BYU_ENDPOINT, return_format='csv'):
     """
-    Retrieves the return period thresholds for 2, 10, 20 year flow events. You need to specify either a reach_id or
-    both a lat and lon.
+    Retrieves the return period thresholds based on a specified historic simulation forcing on a certain reach_id.
 
     Args:
-        reach_id (int): the ID of a stream
-        lat (int): a valid latitude
-        lon (int): a valid longitude
-        endpoint (str): the endpoint of an api instance
-        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
+        reach_id: the ID of a stream
+        forcing: the runoff dataset used to drive the historic simulation (era_interim or era_5)
+        endpoint: the endpoint of an api instance
+        return_format: 'csv', 'json', 'waterml', 'request', 'url'
 
     Return Format:
         - return_format='csv' returns a pandas dataframe
@@ -176,10 +242,33 @@ def return_periods(reach_id=None, lat=None, lon=None, endpoint=AZURE_HOST, token
 
             data = geoglows.streamflow.return_periods(12341234)
     """
-    # validate arguments
-    params = __validate_api_params(reach_id, lat, lon, return_format)
+    method = 'ReturnPeriods/'
+
+    if return_format == 'url':
+        return endpoint + method + '?reach_id={0}&forcing={1}'.format(reach_id, forcing)
+    elif return_format == 'request':
+        return_format = 'csv'
+
     # return the requested data
-    return __make_request(endpoint, 'ReturnPeriods', params, token, return_format)
+    params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
+    return _make_request(endpoint, method, params, return_format)
+
+
+# API SUMMARY FUNCTIONS
+# todo
+def available_forecasts():
+    byu_diagnostics = {'SOURCE': 'BYU_ENDPOINT'}
+    azure_diagnostics = {'SOURCE': 'AZURE_HOST'}
+    for region in available_regions()['available_regions']:
+        dates = available_dates(region=region, endpoint=BYU_ENDPOINT)['available_dates']
+        dates = [float(date) for date in dates]
+        dates.sort(reverse=True)
+        byu_diagnostics[region] = dates[0]
+        dates = available_dates(region=region)['available_dates']
+        dates = [float(date) for date in dates]
+        dates.sort(reverse=True)
+        azure_diagnostics[region] = dates[0]
+    return byu_diagnostics, azure_diagnostics
 
 
 def available_dates(reach_id=None, region=None, endpoint=AZURE_HOST, token=None, return_format='json'):
@@ -210,9 +299,15 @@ def available_dates(reach_id=None, region=None, endpoint=AZURE_HOST, token=None,
         raise RuntimeError('specify a region or a reach_id')
 
     if return_format == 'json':
-        return json.loads(requests.get(endpoint + 'AvailableDates/', headers=token, params=params).text)
+        tmp = requests.get(endpoint + 'AvailableDates/', headers=token, params=params).text
+        return json.loads(tmp)
     elif return_format == 'url':
         return endpoint + 'AvailableDates/?region=' + params['region']
+
+
+# todo
+def available_historical():
+    return
 
 
 def available_regions(endpoint=AZURE_HOST, token=None, return_format='json'):
@@ -866,7 +961,12 @@ def latlon_to_reach(lat, lon):
         return dict(reach_id=stream_result.reach_id, region=stream_result.region, distance=stream_result.distance)
 
 
-# MODULE AUXILIARY FUNCTIONS
+# todo
+def latlon_to_region(lat, lon):
+    return
+
+
+# PLOTTING AUXILIARY FUNCTIONS
 def __build_title(base, reach_id, drain_area):
     if reach_id:
         base += '<br>Stream ID: ' + str(reach_id)
@@ -910,58 +1010,21 @@ def __rperiod_shapes(startdate, enddate, r2, r10, r20, y_max):
     ]
 
 
-def __validate_api_params(reach_id, lat, lon, return_format):
-    if not reach_id:
-        if lat is not None and lon is not None:
-            check = latlon_to_reach(lat, lon)
-            if 'error' in check.keys():
-                raise Exception('no reach_id was found near that lat/lon')
-            reach_id = check['reach_id']
-        else:
-            raise Exception('provide a reach_id or both a lat and lon value')
-    if return_format == 'request':
-        return_format = 'csv'
-    elif return_format == 'url':
-        return {'reach_id': reach_id}
-    elif return_format not in ['csv', 'json', 'waterml']:
-        raise Exception('choose csv, json, waterml, url, or request as return_format')
-    # build and execute a request to the api with the user's parameters
-    return {'reach_id': reach_id, 'return_format': return_format}
-
-
-def __make_request(endpoint, method, params, headers, return_format):
-    if return_format == 'url':
-        return endpoint + method + '/?reach_id=' + str(params['reach_id'])
-
-    data = requests.get(endpoint + method + '/', headers=headers, params=params)
+# API AUXILIARY FUNCTION
+def _make_request(endpoint, method, params, return_format):
+    data = requests.get(endpoint + method, params=params)
 
     if return_format == 'csv':
-        if method == 'ForecastEnsembles':
-            tmp = pandas.read_csv(StringIO(data.text), index_col='datetime')
-            tmp.index = pandas.to_datetime(tmp.index)
-            return tmp
-        if method == 'ReturnPeriods':
+        if method == 'ForecastWarnings/':
+            return pandas.read_csv(StringIO(data.text), index_col='comid')
+        if method == 'ReturnPeriods/':
             return pandas.read_csv(StringIO(data.text), index_col='return period')
-        return pandas.read_csv(StringIO(data.text))
+        tmp = pandas.read_csv(StringIO(data.text), index_col='datetime')
+        tmp.index = pandas.to_datetime(tmp.index)
+        return tmp
     elif return_format == 'json':
         return json.loads(data.text)
     elif return_format == 'waterml':
         return data.text
     elif return_format == 'request':
         return data
-
-
-def __forecast_diagnostics():
-    byu_diagnostics = {'SOURCE': 'BYU_ENDPOINT'}
-    azure_diagnostics = {'SOURCE': 'AZURE_HOST'}
-    regions = available_regions()['available_regions']
-    for region in regions:
-        dates = available_dates(region=region, endpoint=BYU_ENDPOINT)['available_dates']
-        dates = [float(date) for date in dates]
-        dates.sort(reverse=True)
-        byu_diagnostics[region] = dates[0]
-        dates = available_dates(region=region)['available_dates']
-        dates = [float(date) for date in dates]
-        dates.sort(reverse=True)
-        azure_diagnostics[region] = dates[0]
-    return byu_diagnostics, azure_diagnostics
