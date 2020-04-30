@@ -4,6 +4,7 @@ import math
 import os
 from collections import OrderedDict, namedtuple
 from io import StringIO
+import pandas as pd
 
 import jinja2
 import pandas
@@ -14,12 +15,10 @@ from plotly.offline import plot as offline_plot
 from shapely.geometry import Point, MultiPoint, box
 from shapely.ops import nearest_points
 
-__all__ = [
-    'forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecast_records', 'historic_simulation',
-    'seasonal_average', 'return_periods', 'available_dates', 'available_regions', 'forecast_plot', 'ensembles_plot',
-    'historical_plot', 'seasonal_plot', 'flow_duration_curve_plot', 'probabilities_table', 'reach_to_region',
-    'latlon_to_reach'
-]
+__all__ = ['forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecast_records', 'historic_simulation',
+           'seasonal_average', 'return_periods', 'available_data', 'available_dates', 'available_regions',
+           'hydroviewer_plot', 'forecast_plot', 'record_plot', 'ensembles_plot', 'historical_plot', 'seasonal_plot',
+           'flow_duration_curve_plot', 'probabilities_table', 'reach_to_region', 'latlon_to_reach']
 
 BYU_ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
 AZURE_HOST = 'http://gsf-api-vm.eastus.cloudapp.azure.com/api/'
@@ -36,7 +35,7 @@ def forecast_stats(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv'):
         return_format: 'csv', 'json', 'waterml', 'request', 'url'
 
     Return Format:
-        - return_format='csv' returns a pandas.DataFrame()
+        - return_format='csv' returns a pd.DataFrame()
         - return_format='json' returns a json
         - return_format='waterml' returns a waterml string
         - return_format='request' returns a request response object
@@ -49,10 +48,9 @@ def forecast_stats(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv'):
     """
     method = 'ForecastStats/'
 
+    # if you only wanted the url, quit here
     if return_format == 'url':
         return endpoint + method + '?reach_id={0}'.format(reach_id)
-    elif return_format == 'request':
-        return_format = 'csv'
 
     # return the requested data
     return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
@@ -79,24 +77,22 @@ def forecast_ensembles(reach_id: int, endpoint=AZURE_HOST, return_format='csv'):
 
             data = geoglows.streamflow.forecast_ensembles(12341234)
     """
-    # validate arguments
     method = 'ForecastEnsembles/'
 
+    # if you only wanted the url, quit here
     if return_format == 'url':
         return endpoint + method + '?reach_id={0}'.format(reach_id)
-    elif return_format == 'request':
-        return_format = 'csv'
 
     # return the requested data
     return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
 
 
-def forecast_warnings(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv'):
+def forecast_warnings(region: str, endpoint=BYU_ENDPOINT, return_format='csv'):
     """
     Retrieves a csv listing streams likely to experience a return period level flow during the forecast period.
 
     Args:
-        reach_id: the name of a region as shown in the available_regions request
+        region: the name of a region as shown in the available_regions request
         endpoint: the endpoint of an api instance
         return_format: 'csv', 'json', 'waterml', 'request', 'url'
 
@@ -112,13 +108,12 @@ def forecast_warnings(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv')
     """
     method = 'ForecastWarnings/'
 
+    # if you only wanted the url, quit here
     if return_format == 'url':
-        return endpoint + method + '?reach_id={0}'.format(reach_id)
-    elif return_format == 'request':
-        return_format = 'csv'
+        return endpoint + method + '?region={0}'.format(region)
 
     # return the requested data
-    return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
+    return _make_request(endpoint, method, {'region': region, 'return_format': return_format}, return_format)
 
 
 def forecast_records(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv'):
@@ -142,17 +137,15 @@ def forecast_records(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv'):
     """
     method = 'ForecastRecords/'
 
+    # if you only wanted the url, quit here
     if return_format == 'url':
         return endpoint + method + '?reach_id={0}'.format(reach_id)
-    elif return_format == 'request':
-        return_format = 'csv'
 
     # return the requested data
-    params = {'reach_id': reach_id, 'return_format': return_format}
-    return _make_request(endpoint, method, params, return_format)
+    return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
 
 
-def historic_simulation(reach_id: int, forcing: str, endpoint=BYU_ENDPOINT, return_format='csv'):
+def historic_simulation(reach_id: int, forcing='era_interim', endpoint=BYU_ENDPOINT, return_format='csv'):
     """
     Retrieves a historical streamflow simulation derived from a specified forcing for a certain reach_id
 
@@ -176,23 +169,22 @@ def historic_simulation(reach_id: int, forcing: str, endpoint=BYU_ENDPOINT, retu
     """
     method = 'HistoricSimulation/'
 
+    # if you only wanted the url, quit here
     if return_format == 'url':
-        return endpoint + method + '?reach_id={0}&forcing={1}'.format(reach_id, forcing)
-    elif return_format == 'request':
-        return_format = 'csv'
+        return endpoint + method + '?reach_id={0}&forcing={1}'.format(reach_id, forcing, return_format)
 
     # return the requested data
     params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
     return _make_request(endpoint, method, params, return_format)
 
 
-# todo do we need to postprocess the seasonal average for the era5 data also?
-def seasonal_average(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv'):
+def seasonal_average(reach_id: int, forcing='era_interim', endpoint=BYU_ENDPOINT, return_format='csv'):
     """
     Retrieves the average flow for every day of the year at a certain reach_id.
 
     Args:
         reach_id: the ID of a stream
+        forcing: the runoff dataset used to drive the historic simulation (era_interim or era_5)
         endpoint: the endpoint of an api instance
         return_format: 'csv', 'json', 'waterml', 'request', 'url'
 
@@ -210,17 +202,16 @@ def seasonal_average(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv'):
     """
     method = 'SeasonalAverage/'
 
+    # if you only wanted the url, quit here
     if return_format == 'url':
-        return endpoint + method + '?reach_id={0}'.format(reach_id)
-    elif return_format == 'request':
-        return_format = 'csv'
+        return endpoint + method + '?reach_id={0}&forcing={1}'.format(reach_id, forcing, return_format)
 
     # return the requested data
-    params = {'reach_id': reach_id, 'return_format': return_format}
+    params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
     return _make_request(endpoint, method, params, return_format)
 
 
-def return_periods(reach_id: int, forcing: str, endpoint=BYU_ENDPOINT, return_format='csv'):
+def return_periods(reach_id: int, forcing='era_interim', endpoint=BYU_ENDPOINT, return_format='csv'):
     """
     Retrieves the return period thresholds based on a specified historic simulation forcing on a certain reach_id.
 
@@ -244,10 +235,9 @@ def return_periods(reach_id: int, forcing: str, endpoint=BYU_ENDPOINT, return_fo
     """
     method = 'ReturnPeriods/'
 
+    # if you only wanted the url, quit here
     if return_format == 'url':
-        return endpoint + method + '?reach_id={0}&forcing={1}'.format(reach_id, forcing)
-    elif return_format == 'request':
-        return_format = 'csv'
+        return endpoint + method + '?reach_id={0}&forcing={1}'.format(reach_id, forcing, return_format)
 
     # return the requested data
     params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
@@ -256,7 +246,7 @@ def return_periods(reach_id: int, forcing: str, endpoint=BYU_ENDPOINT, return_fo
 
 # API SUMMARY FUNCTIONS
 # todo
-def available_forecasts():
+def available_data():
     byu_diagnostics = {'SOURCE': 'BYU_ENDPOINT'}
     azure_diagnostics = {'SOURCE': 'AZURE_HOST'}
     for region in available_regions()['available_regions']:
@@ -271,7 +261,7 @@ def available_forecasts():
     return byu_diagnostics, azure_diagnostics
 
 
-def available_dates(reach_id=None, region=None, endpoint=AZURE_HOST, token=None, return_format='json'):
+def available_dates(reach_id=None, region=None, endpoint=BYU_ENDPOINT, return_format='json'):
     """
     Retrieves the list of dates of stored streamflow forecasts. You need to specify either a reach_id or a region.
 
@@ -305,12 +295,7 @@ def available_dates(reach_id=None, region=None, endpoint=AZURE_HOST, token=None,
         return endpoint + 'AvailableDates/?region=' + params['region']
 
 
-# todo
-def available_historical():
-    return
-
-
-def available_regions(endpoint=AZURE_HOST, token=None, return_format='json'):
+def available_regions(endpoint=BYU_ENDPOINT, token=None, return_format='json'):
     """
     Retrieves a list of regions available at the endpoint
 
@@ -335,18 +320,154 @@ def available_regions(endpoint=AZURE_HOST, token=None, return_format='json'):
 
 
 # FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
+def hydroviewer_plot(records: pd.DataFrame, stats: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
+    """
+    Creates the standard plot for a hydroviewer
+
+    Args:
+        records: the response from `forecast_records`_
+        stats: the response from `forecast_stats`_
+        rperiods: the response from `return_periods`_
+
+    Keyword Args:
+        outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
+        reach_id: the reach ID of COMID of a stream to be added to the plot title
+        drain_area: a string containing the area and units of the area upstream of this reach that will be shown on the
+            plot title
+
+    Return:
+         plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
+
+    Example:
+        .. code-block:: python
+
+            data = geoglows.streamflow.hydroviewer_plot(records, stats, rperiods)
+    """
+    # Process supported key word arguments (kwargs)
+    reach_id = kwargs.get('reach_id', None)
+    drain_area = kwargs.get('drain_area', None)
+    outformat = kwargs.get('outformat', 'plotly')
+
+    # Validate a few of the important inputs
+    if not isinstance(records, pd.DataFrame):
+        raise ValueError('Sorry, I only process pandas dataframes right now')
+    if outformat not in ['json', 'plotly', 'plotly_html']:
+        raise ValueError('invalid outformat specified. pick json or html')
+
+    # Start processing the inputs
+    records_dates = records.index.tolist()
+    dates = stats.index.tolist()
+    startdate = min(records_dates[0], dates[0])
+    enddate = max(records_dates[-1], dates[-1])
+
+    plot_data = {
+        'reach_id': reach_id,
+        'drain_area': drain_area,
+        'x_ensembles': stats['mean (m3/s)'].dropna(axis=0).index.tolist(),
+        'x_hires': stats['mean (m3/s)'].dropna(axis=0).index.tolist(),
+        'x_records': records_dates,
+        'recorded_flows': records['streamflow (m^3/s)'].dropna(axis=0).tolist(),
+        'y_max': max(stats['max (m3/s)']),
+        'min': list(stats['min (m3/s)'].dropna(axis=0)),
+        'mean': list(stats['mean (m3/s)'].dropna(axis=0)),
+        'max': list(stats['max (m3/s)'].dropna(axis=0)),
+        'stdlow': list(stats['std_dev_range_lower (m3/s)'].dropna(axis=0)),
+        'stdup': list(stats['std_dev_range_upper (m3/s)'].dropna(axis=0)),
+        'hires': list(stats['high_res (m3/s)'].dropna(axis=0)),
+        'r2': rperiods['return_period_2'],
+        'r10': rperiods['return_period_10'],
+        'r20': rperiods['return_period_20'],
+    }
+
+    if outformat == 'json':
+        return plot_data
+
+    recorded_flows = go.Scatter(
+        name='1st day forecasted flows',
+        x=plot_data['x_records'],
+        y=plot_data['recorded_flows'],
+        line=dict(color='orange'),
+    )
+    meanplot = go.Scatter(
+        name='Mean',
+        x=plot_data['x_ensembles'],
+        y=plot_data['mean'],
+        line=dict(color='blue'),
+    )
+    maxplot = go.Scatter(
+        name='Max',
+        x=plot_data['x_ensembles'],
+        y=plot_data['max'],
+        fill='tonexty',
+        mode='lines',
+        line=dict(color='rgb(152, 251, 152)', width=0)
+    )
+    minplot = go.Scatter(
+        name='Min',
+        x=plot_data['x_ensembles'],
+        y=plot_data['min'],
+        fill=None,
+        mode='lines',
+        line=dict(color='rgb(152, 251, 152)')
+    )
+    stdlowplot = go.Scatter(
+        name='Std. Dev. Lower',
+        x=plot_data['x_ensembles'],
+        y=plot_data['stdlow'],
+        fill='tonexty',
+        mode='lines',
+        line=dict(color='rgb(152, 251, 152)', width=0)
+    )
+    stdupplot = go.Scatter(
+        name='Std. Dev. Upper',
+        x=plot_data['x_ensembles'],
+        y=plot_data['stdup'],
+        fill='tonexty',
+        mode='lines',
+        line={'width': 0, 'color': 'rgb(34, 139, 34)'}
+    )
+    hires = go.Scatter(
+        name='Higher Resolution',
+        x=plot_data['x_hires'],
+        y=plot_data['hires'],
+        line={'color': 'black'}
+    )
+    layout = go.Layout(
+        title=__build_title('Forecasted Streamflow', reach_id, drain_area),
+        xaxis={'title': 'Date'},
+        yaxis={
+            'title': 'Streamflow (m<sup>3</sup>/s)',
+            'range': [0, 1.2 * plot_data['y_max']]
+        },
+        shapes=__rperiod_shapes(
+            startdate, enddate, plot_data['r2'], plot_data['r10'], plot_data['r20'], plot_data['y_max'])
+    )
+    figure = go.Figure([recorded_flows, minplot, stdlowplot, stdupplot, maxplot, meanplot, hires], layout=layout)
+    if outformat == 'plotly':
+        return figure
+    if outformat == 'plotly_html':
+        return offline_plot(
+            figure,
+            config={'autosizable': True, 'responsive': True},
+            output_type='div',
+            include_plotlyjs=False
+        )
+    return
+
+
 def forecast_plot(stats, rperiods, **kwargs):
     """
     Makes the streamflow data and optional metadata into a plotly plot
 
     Args:
-        stats (pandas.DataFrame): the csv response from `forecast_stats`_
-        rperiods (pandas.DataFrame): the csv response from `return_periods`_
+        stats (pd.DataFrame): the csv response from `forecast_stats`_
+        rperiods (pd.DataFrame): the csv response from `return_periods`_
 
-    :keyword string outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
-    :keyword int reach_id: the reach ID of COMID of a stream to be added to the plot title
-    :keyword string drain_area: a string containing the area and units of the area upstream of this reach that will
-        be shown on the plot title
+    Keyword Args:
+        outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
+        reach_id: the reach ID of COMID of a stream to be added to the plot title
+        drain_area: a string containing the area and units of the area upstream of this reach that will be shown on the
+            plot title
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
@@ -362,21 +483,21 @@ def forecast_plot(stats, rperiods, **kwargs):
     outformat = kwargs.get('outformat', 'plotly')
 
     # Validate a few of the important inputs
-    if not isinstance(stats, pandas.DataFrame):
+    if not isinstance(stats, pd.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['json', 'plotly', 'plotly_html']:
         raise ValueError('invalid outformat specified. pick json or html')
 
     # Start processing the inputs
-    dates = stats['datetime'].tolist()
+    dates = stats.index.tolist()
     startdate = dates[0]
     enddate = dates[-1]
 
     plot_data = {
         'reach_id': reach_id,
         'drain_area': drain_area,
-        'x_ensembles': stats[['datetime', 'mean (m3/s)']].dropna(axis=0)['datetime'].tolist(),
-        'x_hires': stats[['datetime', 'high_res (m3/s)']].dropna(axis=0)['datetime'].tolist(),
+        'x_ensembles': stats['mean (m3/s)'].dropna(axis=0).index.tolist(),
+        'x_hires': stats['mean (m3/s)'].dropna(axis=0).index.tolist(),
         'y_max': max(stats['max (m3/s)']),
         'min': list(stats['min (m3/s)'].dropna(axis=0)),
         'mean': list(stats['mean (m3/s)'].dropna(axis=0)),
@@ -384,9 +505,9 @@ def forecast_plot(stats, rperiods, **kwargs):
         'stdlow': list(stats['std_dev_range_lower (m3/s)'].dropna(axis=0)),
         'stdup': list(stats['std_dev_range_upper (m3/s)'].dropna(axis=0)),
         'hires': list(stats['high_res (m3/s)'].dropna(axis=0)),
-        'r2': rperiods.iloc[3][0],
-        'r10': rperiods.iloc[2][0],
-        'r20': rperiods.iloc[1][0],
+        'r2': rperiods['return_period_2'],
+        'r10': rperiods['return_period_10'],
+        'r20': rperiods['return_period_20'],
     }
 
     if outformat == 'json':
@@ -459,13 +580,73 @@ def forecast_plot(stats, rperiods, **kwargs):
     return
 
 
+def record_plot(records, rperiods, **kwargs):
+    # Process supported key word arguments (kwargs)
+    reach_id = kwargs.get('reach_id', None)
+    drain_area = kwargs.get('drain_area', None)
+    outformat = kwargs.get('outformat', 'plotly')
+
+    # Validate a few of the important inputs
+    if not isinstance(records, pd.DataFrame):
+        raise ValueError('Sorry, I only process pandas dataframes right now')
+    if outformat not in ['json', 'plotly', 'plotly_html']:
+        raise ValueError('invalid outformat specified. pick json or html')
+
+    # Start processing the inputs
+    dates = records.index.tolist()
+    startdate = dates[0]
+    enddate = dates[-1]
+
+    plot_data = {
+        'reach_id': reach_id,
+        'drain_area': drain_area,
+        'x_values': dates,
+        'recorded_flows': records['streamflow (m^3/s)'].dropna(axis=0).tolist(),
+        'y_max': max(records['streamflow (m^3/s)']),
+        'r2': rperiods['return_period_2'],
+        'r10': rperiods['return_period_10'],
+        'r20': rperiods['return_period_20'],
+    }
+
+    if outformat == 'json':
+        return plot_data
+
+    recorded_flows = go.Scatter(
+        name='1st day forecasted flows',
+        x=plot_data['x_values'],
+        y=plot_data['recorded_flows'],
+        line=dict(color='blue'),
+    )
+    layout = go.Layout(
+        title=__build_title('Previously Forecasted Streamflow', reach_id, drain_area),
+        xaxis={'title': 'Date'},
+        yaxis={
+            'title': 'Streamflow (m<sup>3</sup>/s)',
+            'range': [0, 1.2 * plot_data['y_max']]
+        },
+        shapes=__rperiod_shapes(
+            startdate, enddate, plot_data['r2'], plot_data['r10'], plot_data['r20'], plot_data['y_max'])
+    )
+    figure = go.Figure([recorded_flows], layout=layout)
+    if outformat == 'plotly':
+        return figure
+    if outformat == 'plotly_html':
+        return offline_plot(
+            figure,
+            config={'autosizable': True, 'responsive': True},
+            output_type='div',
+            include_plotlyjs=False
+        )
+    return
+
+
 def ensembles_plot(ensembles, rperiods, **kwargs):
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
-        ensembles (pandas.DataFrame): the csv response from `forecast_ensembles`_
-        rperiods (pandas.DataFrame): the csv response from `return_periods`_
+        ensembles (pd.DataFrame): the csv response from `forecast_ensembles`_
+        rperiods (pd.DataFrame): the csv response from `return_periods`_
 
     :keyword string outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
     :keyword int reach_id: the reach ID of COMID of a stream to be added to the plot title
@@ -486,7 +667,7 @@ def ensembles_plot(ensembles, rperiods, **kwargs):
     outformat = kwargs.get('outformat', 'plotly')
 
     # Validate a few of the important inputs
-    if not isinstance(ensembles, pandas.DataFrame):
+    if not isinstance(ensembles, pd.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['json', 'plotly', 'plotly_html']:
         raise ValueError('invalid outformat specified. pick json or html')
@@ -506,9 +687,9 @@ def ensembles_plot(ensembles, rperiods, **kwargs):
         'drain_area': drain_area,
         'x_1-51': ensembles['ensemble_01 (m3/s)'].dropna(axis=0).index.tolist(),
         'x_52': ensembles['ensemble_52 (m3/s)'].dropna(axis=0).index.tolist(),
-        'r2': rperiods.iloc[3][0],
-        'r10': rperiods.iloc[2][0],
-        'r20': rperiods.iloc[1][0],
+        'r2': rperiods['return_period_2'],
+        'r10': rperiods['return_period_10'],
+        'r20': rperiods['return_period_20'],
     }
 
     # add a dictionary entry for each of the ensemble members. the key for each series is the integer ensemble number
@@ -564,8 +745,8 @@ def historical_plot(hist, rperiods, **kwargs):
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
-        hist (pandas.DataFrame): the csv response from `historic_simulation`_
-        rperiods (pandas.DataFrame): the csv response from `return_periods`_
+        hist (pd.DataFrame): the csv response from `historic_simulation`_
+        rperiods (pd.DataFrame): the csv response from `return_periods`_
 
     :keyword string outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
     :keyword int reach_id: the reach ID of COMID of a stream to be added to the plot title
@@ -586,12 +767,12 @@ def historical_plot(hist, rperiods, **kwargs):
     outformat = kwargs.get('outformat', 'plotly')
 
     # Validate a few of the important inputs
-    if not isinstance(hist, pandas.DataFrame):
+    if not isinstance(hist, pd.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['json', 'plotly', 'plotly_html']:
         raise ValueError('invalid outformat specified. pick json or plotly or plotly_html')
 
-    dates = hist['datetime'].tolist()
+    dates = hist.index.tolist()
     startdate = dates[0]
     enddate = dates[-1]
 
@@ -599,11 +780,11 @@ def historical_plot(hist, rperiods, **kwargs):
         'reach_id': reach_id,
         'drain_area': drain_area,
         'x_datetime': dates,
-        'y_flow': hist['streamflow (m3/s)'].tolist(),
-        'y_max': max(hist['streamflow (m3/s)']),
-        'r2': rperiods.iloc[3][0],
-        'r10': rperiods.iloc[2][0],
-        'r20': rperiods.iloc[1][0],
+        'y_flow': hist['streamflow (m^3/s)'].tolist(),
+        'y_max': max(hist['streamflow (m^3/s)']),
+        'r2': rperiods['return_period_2'],
+        'r10': rperiods['return_period_10'],
+        'r20': rperiods['return_period_20'],
     }
 
     if outformat == 'json':
@@ -641,7 +822,7 @@ def seasonal_plot(seasonal, **kwargs):
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
-        seasonal (pandas.DataFrame): the csv response from `seasonal_average`_
+        seasonal (pd.DataFrame): the csv response from `seasonal_average`_
 
     :keyword string outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
     :keyword int reach_id: the reach ID of COMID of a stream to be added to the plot title
@@ -663,23 +844,41 @@ def seasonal_plot(seasonal, **kwargs):
     outformat = kwargs.get('outformat', 'plotly')
 
     # Validate a few of the important inputs
-    if not isinstance(seasonal, pandas.DataFrame):
+    if not isinstance(seasonal, pd.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['json', 'plotly', 'plotly_html']:
         raise ValueError('invalid outformat specified. pick json or plotly or plotly_html')
 
-    # we need to start at the first day of the year, pandas indexes from zero
-    seasonal['day'] = pandas.to_datetime(seasonal['day'] + 1, format='%j')
-
     plot_data = {
         'reach_id': reach_id,
         'drain_area': drain_area,
-        'x_day_number': seasonal['day'].tolist(),
-        'y_flow': seasonal['streamflow_avg (m3/s)'].tolist(),
+        'day_number': seasonal.index.tolist(),
+        'average_flow': seasonal['streamflow (m^3/s)'].tolist(),
+        'max_flow': seasonal['max_flow'].tolist(),
+        'min_flow': seasonal['min_flow'].tolist(),
     }
 
     if outformat == 'json':
         return plot_data
+
+    avg_flow = go.Scatter(
+        name='Average Daily Flow',
+        x=plot_data['day_number'],
+        y=plot_data['average_flow'],
+        line=dict(color='blue')
+    )
+    max_flow = go.Scatter(
+        name='Maximum Daily Flow',
+        x=plot_data['day_number'],
+        y=plot_data['max_flow'],
+        line=dict(color='red')
+    )
+    min_flow = go.Scatter(
+        name='Minimum Daily Flow',
+        x=plot_data['day_number'],
+        y=plot_data['min_flow'],
+        line=dict(color='black')
+    )
 
     layout = go.Layout(
         title=__build_title('Daily Average Streamflow (Historic Simulation)', reach_id, drain_area),
@@ -690,10 +889,10 @@ def seasonal_plot(seasonal, **kwargs):
         },
         yaxis={
             'title': 'Streamflow (m<sup>3</sup>/s)',
-            'range': [0, 1.2 * max(plot_data['y_flow'])]
+            'range': [0, 1.2 * max(plot_data['max_flow'])]
         },
     )
-    figure = go.Figure([go.Scatter(x=plot_data['x_day_number'], y=plot_data['y_flow'])], layout=layout)
+    figure = go.Figure([max_flow, avg_flow, min_flow], layout=layout)
     if outformat == 'plotly':
         return figure
     if outformat == 'plotly_html':
@@ -711,7 +910,7 @@ def flow_duration_curve_plot(hist, **kwargs):
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
-        hist (pandas.DataFrame): the csv response from `historic_simulation`_
+        hist (pd.DataFrame): the csv response from `historic_simulation`_
 
     :keyword string outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
     :keyword int reach_id: the reach ID of COMID of a stream to be added to the plot title
@@ -732,13 +931,13 @@ def flow_duration_curve_plot(hist, **kwargs):
     outformat = kwargs.get('outformat', 'plotly')
 
     # Validate a few of the important inputs
-    if not isinstance(hist, pandas.DataFrame):
+    if not isinstance(hist, pd.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['json', 'plotly', 'plotly_html']:
         raise ValueError('invalid outformat specified. pick json or plotly or plotly_html')
 
     # process the hist dataframe to create the flow duration curve
-    sorted_hist = hist.sort_values(by='streamflow (m3/s)', ascending=False)['streamflow (m3/s)'].tolist()
+    sorted_hist = hist.sort_values(by='streamflow (m^3/s)', ascending=False)['streamflow (m^3/s)'].tolist()
 
     # ranks data from smallest to largest
     ranks = len(hist) - scipy.stats.rankdata(sorted_hist, method='average')
@@ -788,9 +987,9 @@ def probabilities_table(stats, ensembles, rperiods):
     rendering to generate html code that shows the probabilities of exceeding the return period flow on each day.
 
     Args:
-        stats (pandas.DataFrame): the csv response from `forecast_stats`_
-        ensembles (pandas.DataFrame): the csv response from `forecast_ensembles`_
-        rperiods (pandas.DataFrame): the csv response from `return_periods`_
+        stats (pd.DataFrame): the csv response from `forecast_stats`_
+        ensembles (pd.DataFrame): the csv response from `forecast_ensembles`_
+        rperiods (pd.DataFrame): the csv response from `return_periods`_
 
     Return:
          string containing html to build a table with a row of dates and for exceeding each return period threshold
@@ -1011,14 +1210,23 @@ def __rperiod_shapes(startdate, enddate, r2, r10, r20, y_max):
 
 
 # API AUXILIARY FUNCTION
-def _make_request(endpoint, method, params, return_format):
+def _make_request(endpoint: str, method: str, params: dict, return_format: str):
+    if return_format == 'request':
+        params['return_format'] == 'csv'
+
+    # request the data from the API
     data = requests.get(endpoint + method, params=params)
 
+    # process the response from the API as appropriate to make the corresponding python object
     if return_format == 'csv':
         if method == 'ForecastWarnings/':
             return pandas.read_csv(StringIO(data.text), index_col='comid')
         if method == 'ReturnPeriods/':
-            return pandas.read_csv(StringIO(data.text), index_col='return period')
+            return pandas.read_csv(StringIO(data.text), index_col='rivid')
+        if method == 'SeasonalAverage/':
+            tmp = pandas.read_csv(StringIO(data.text), index_col='day_of_year')
+            tmp.index = pandas.to_datetime(tmp.index + 1, format='%j').strftime('%b %d')
+            return tmp
         tmp = pandas.read_csv(StringIO(data.text), index_col='datetime')
         tmp.index = pandas.to_datetime(tmp.index)
         return tmp
@@ -1028,3 +1236,13 @@ def _make_request(endpoint, method, params, return_format):
         return data.text
     elif return_format == 'request':
         return data
+    else:
+        raise ValueError('Unsupported return format requested: ' + str(return_format))
+
+# todo make the return periods optional??
+# todo make an option to call the plots function with the reach_id as the only argument??
+# todo standardize the m3 vs m^3 in the forecasts
+# todo make hyroviewer_plot not duplicate so much code. Maybe use another return format to get the plotly shapes out?
+# todo use duplicates of the pandas df's so that the functions don't change them? or do they change them?
+# todo add type hints to everything?
+# todo __rperiods shapes for more than 3 return periods?
