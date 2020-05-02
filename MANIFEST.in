@@ -1,4 +1,3 @@
-#todo
 LICENSE
 recursive-include geoglows/delineation_data/ *.csv */*.csv
 recursive-include geoglows/templates/ *.html

@@ -244,32 +244,42 @@ def return_periods(reach_id: int, forcing='era_interim', endpoint=BYU_ENDPOINT, 
     return _make_request(endpoint, method, params, return_format)
 
 
-# API SUMMARY FUNCTIONS
-# todo
-def available_data():
-    byu_diagnostics = {'SOURCE': 'BYU_ENDPOINT'}
-    azure_diagnostics = {'SOURCE': 'AZURE_HOST'}
-    for region in available_regions()['available_regions']:
-        dates = available_dates(region=region, endpoint=BYU_ENDPOINT)['available_dates']
-        dates = [float(date) for date in dates]
-        dates.sort(reverse=True)
-        byu_diagnostics[region] = dates[0]
-        dates = available_dates(region=region)['available_dates']
-        dates = [float(date) for date in dates]
-        dates.sort(reverse=True)
-        azure_diagnostics[region] = dates[0]
-    return byu_diagnostics, azure_diagnostics
+def available_data(endpoint=BYU_ENDPOINT, return_format='json') -> dict:
+    """
+    Returns a dictionary with a key for each `AvailableRegions`_ containing the `AvailableDates`_ for that region
+
+    Args:
+        endpoint: the endpoint of an api instance
+        return_format: 'json' or 'url'
+
+    Returns:
+        dict
+
+    Example:
+        .. code-block:: python
+
+            data = geoglows.streamflow.available_data()
+
+    """
+    method = 'AvailableData/'
+
+    # if you only wanted the url, quit here
+    if return_format == 'url':
+        return endpoint + method
+
+    # return the requested data
+    return _make_request(endpoint, method, {}, return_format)
 
 
-def available_dates(reach_id=None, region=None, endpoint=BYU_ENDPOINT, return_format='json'):
+def available_dates(reach_id=None, region=None, endpoint=BYU_ENDPOINT, return_format='json') -> dict:
     """
     Retrieves the list of dates of stored streamflow forecasts. You need to specify either a reach_id or a region.
 
     Args:
-        reach_id (int): the ID of a stream
-        region (str): the name of a hydrologic region used in the model
-        endpoint (str): the endpoint of an api instance
-        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
+        reach_id: the ID of a stream
+        region: the name of a hydrologic region used in the model
+        endpoint: the endpoint of an api instance
+        return_format: 'json' or 'url'
 
     Return Format:
         - return_format='json' *(default)* returns {'available_dates': ['list_of_dates']}
@@ -280,6 +290,8 @@ def available_dates(reach_id=None, region=None, endpoint=BYU_ENDPOINT, return_fo
 
             data = geoglows.streamflow.available_dates(12341234)
     """
+    method = 'AvailableData/'
+
     # you need a region for the api call, so the user needs to provide one or a valid reach_id to get it from
     if region:
         params = {'region': region}
@@ -288,21 +300,21 @@ def available_dates(reach_id=None, region=None, endpoint=BYU_ENDPOINT, return_fo
     else:
         raise RuntimeError('specify a region or a reach_id')
 
-    if return_format == 'json':
-        tmp = requests.get(endpoint + 'AvailableDates/', headers=token, params=params).text
-        return json.loads(tmp)
-    elif return_format == 'url':
-        return endpoint + 'AvailableDates/?region=' + params['region']
+    # if you only wanted the url, quit here
+    if return_format == 'url':
+        return endpoint + method
+
+    # return the requested data
+    return _make_request(endpoint, method, params, return_format)
 
 
-def available_regions(endpoint=BYU_ENDPOINT, token=None, return_format='json'):
+def available_regions(endpoint=BYU_ENDPOINT, return_format='json'):
     """
     Retrieves a list of regions available at the endpoint
 
     Args:
-        endpoint (str): the endpoint of an api instance
-        token (dict): dictionary with the header for api key validation (if applicable to the endpoint)
-        return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
+        endpoint: the endpoint of an api instance
+        return_format: 'json' or 'url'
 
     Return Format:
         - return_format='json' *(default)* returns {'available_regions': ['list_of_dates']}
@@ -313,10 +325,123 @@ def available_regions(endpoint=BYU_ENDPOINT, token=None, return_format='json'):
 
             data = geoglows.streamflow.available_regions(12341234)
     """
-    if return_format == 'json':
-        return json.loads(requests.get(endpoint + 'AvailableRegions/', headers=token).text)
-    elif return_format == 'url':
-        return endpoint + 'AvailableRegions/'
+    method = 'AvailableRegions/'
+
+    if return_format == 'url':
+        return endpoint + method
+
+    # return the requested data
+    return _make_request(endpoint, method, {}, return_format)
+
+
+# UTILITY FUNCTIONS
+def reach_to_region(reach_id):
+    """
+    returns the delineation region name corresponding to the range of numbers for a given reach_id.
+    does not validate that the reach_id exists in the region, just associates a number to a name.
+
+    Args:
+        reach_id (int): the ID for a stream
+
+    Return:
+        region (str): the name of the delineated world region used by the API.
+
+    Example:
+        region = geoglows.streamflow.reach_to_region(5000000)
+    """
+    # Indonesia 1M's
+    # ------australia 2M (currently 200k's)
+    # Japan 3M's
+    # East Asia 4M's
+    # South Asia 5M's
+    # ------middle_east 6M (currently 600k's)
+    # Africa 7M's
+    # Central Asia 8M's
+    # South America 9M's
+    # West Asia 10M's
+    # -------central_america 11M (currently 900k's)
+    # Europe 12M's
+    # North America 13M's
+
+    if not isinstance(reach_id, int):
+        reach_id = int(reach_id)
+
+    lookup = OrderedDict([
+        # IMPROPERLY NUMBERED REGIONS
+        ('australia-geoglows', 300000),
+        ('middle_east-geoglows', 700000),
+        ('central_america-geoglows', 1000000),
+        # CORRECTLY NUMBERED REGIONS
+        ('islands-geoglows', 2000000),
+        ('japan-geoglows', 4000000),
+        ('east_asia-geoglows', 5000000),
+        ('south_asia-geoglows', 6000000),
+        ('africa-geoglows', 8000000),
+        ('central_asia-geoglows', 9000000),
+        ('south_america-geoglows', 10000000),
+        ('west_asia-geoglows', 11000000),
+        ('europe-geoglows', 13000000),
+        ('north_america-geoglows', 14000000)
+    ])
+    for region, threshold in lookup.items():
+        if reach_id < threshold:
+            return region
+    return None
+
+
+def latlon_to_reach(lat: float, lon: float) -> str:
+    """
+    Uses the bounding boxes of all the regions to determine which comid_lat_lon_z csv(s) to read from
+
+    Args:
+        lat (int): a valid latitude
+        lon (int): a valid longitude
+
+    Return:
+        stream_data (dict): a dictionary containing the reach_id as well as the name of the region and the distance
+        from the provided lat and lon to the stream in units of degrees.
+
+    Example:
+        .. code-block:: python
+
+            stream_data = latlon_to_reach(10, 50)
+            {'reach_id': 123456, 'region': 'example_region-geoglows', 'distance': .05}
+    """
+    # determine the region that the point is in
+    region = latlon_to_region(lat, lon)
+
+    # switch the point because the csv's are lat/lon, backwards from what shapely expects (lon then lat)
+    point = Point(float(lat), float(lon))
+
+    # open the region csv
+    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'delineation_data'))
+    df = pandas.read_csv(os.path.join(base_path, region, 'comid_lat_lon_z.csv'), sep=',', header=0, index_col=0)
+    points_df = df.loc[:, "Lat":"Lon"].apply(Point, axis=1)
+
+    # determine which point is closest
+    multi_pt = MultiPoint(points_df.tolist())
+    nearest_pt = nearest_points(point, multi_pt)
+    reach_id = int(points_df[points_df == nearest_pt[1]].index[0])
+    distance = nearest_pt[0].distance(nearest_pt[1])
+
+    # if the nearest stream if more than .1 degrees away, you probably didn't find the right stream
+    if distance > 0.11:
+        return {"error": "Nearest river is more than ~10km away."}
+    else:
+        return dict(reach_id=reach_id, region=region, distance=distance)
+
+
+def latlon_to_region(lat, lon):
+    # open the bounding boxes csv, figure out which regions the point lies within
+    point = Point(float(lon), float(lat))
+    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'delineation_data'))
+    bb_csv = pandas.read_csv(os.path.join(base_path, 'bounding_boxes.csv'), index_col='region')
+    for row in bb_csv.iterrows():
+        bbox = box(row[1][0], row[1][1], row[1][2], row[1][3])
+        if point.within(bbox):
+            return row[0]
+    # if there weren't any regions, return that there was an error
+    raise ValueError('This point is not within any of the supported delineation regions.')
 
 
 # FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
@@ -363,17 +488,17 @@ def hydroviewer_plot(records: pd.DataFrame, stats: pd.DataFrame, rperiods: pd.Da
     plot_data = {
         'reach_id': reach_id,
         'drain_area': drain_area,
-        'x_ensembles': stats['mean (m3/s)'].dropna(axis=0).index.tolist(),
-        'x_hires': stats['mean (m3/s)'].dropna(axis=0).index.tolist(),
+        'x_ensembles': stats['mean (m^3/s)'].dropna(axis=0).index.tolist(),
+        'x_hires': stats['mean (m^3/s)'].dropna(axis=0).index.tolist(),
         'x_records': records_dates,
         'recorded_flows': records['streamflow (m^3/s)'].dropna(axis=0).tolist(),
-        'y_max': max(stats['max (m3/s)']),
-        'min': list(stats['min (m3/s)'].dropna(axis=0)),
-        'mean': list(stats['mean (m3/s)'].dropna(axis=0)),
-        'max': list(stats['max (m3/s)'].dropna(axis=0)),
-        'stdlow': list(stats['std_dev_range_lower (m3/s)'].dropna(axis=0)),
-        'stdup': list(stats['std_dev_range_upper (m3/s)'].dropna(axis=0)),
-        'hires': list(stats['high_res (m3/s)'].dropna(axis=0)),
+        'y_max': max(stats['max (m^3/s)']),
+        'min': list(stats['min (m^3/s)'].dropna(axis=0)),
+        'mean': list(stats['mean (m^3/s)'].dropna(axis=0)),
+        'max': list(stats['max (m^3/s)'].dropna(axis=0)),
+        'stdlow': list(stats['std_dev_range_lower (m^3/s)'].dropna(axis=0)),
+        'stdup': list(stats['std_dev_range_upper (m^3/s)'].dropna(axis=0)),
+        'hires': list(stats['high_res (m^3/s)'].dropna(axis=0)),
         'r2': rperiods['return_period_2'],
         'r10': rperiods['return_period_10'],
         'r20': rperiods['return_period_20'],
@@ -496,15 +621,15 @@ def forecast_plot(stats, rperiods, **kwargs):
     plot_data = {
         'reach_id': reach_id,
         'drain_area': drain_area,
-        'x_ensembles': stats['mean (m3/s)'].dropna(axis=0).index.tolist(),
-        'x_hires': stats['mean (m3/s)'].dropna(axis=0).index.tolist(),
-        'y_max': max(stats['max (m3/s)']),
-        'min': list(stats['min (m3/s)'].dropna(axis=0)),
-        'mean': list(stats['mean (m3/s)'].dropna(axis=0)),
-        'max': list(stats['max (m3/s)'].dropna(axis=0)),
-        'stdlow': list(stats['std_dev_range_lower (m3/s)'].dropna(axis=0)),
-        'stdup': list(stats['std_dev_range_upper (m3/s)'].dropna(axis=0)),
-        'hires': list(stats['high_res (m3/s)'].dropna(axis=0)),
+        'x_ensembles': stats['mean (m^3/s)'].dropna(axis=0).index.tolist(),
+        'x_hires': stats['mean (m^3/s)'].dropna(axis=0).index.tolist(),
+        'y_max': max(stats['max (m^3/s)']),
+        'min': list(stats['min (m^3/s)'].dropna(axis=0)),
+        'mean': list(stats['mean (m^3/s)'].dropna(axis=0)),
+        'max': list(stats['max (m^3/s)'].dropna(axis=0)),
+        'stdlow': list(stats['std_dev_range_lower (m^3/s)'].dropna(axis=0)),
+        'stdup': list(stats['std_dev_range_upper (m^3/s)'].dropna(axis=0)),
+        'hires': list(stats['high_res (m^3/s)'].dropna(axis=0)),
         'r2': rperiods['return_period_2'],
         'r10': rperiods['return_period_10'],
         'r20': rperiods['return_period_20'],
@@ -685,8 +810,8 @@ def ensembles_plot(ensembles, rperiods, **kwargs):
     plot_data = {
         'reach_id': reach_id,
         'drain_area': drain_area,
-        'x_1-51': ensembles['ensemble_01 (m3/s)'].dropna(axis=0).index.tolist(),
-        'x_52': ensembles['ensemble_52 (m3/s)'].dropna(axis=0).index.tolist(),
+        'x_1-51': ensembles['ensemble_01 (m^3/s)'].dropna(axis=0).index.tolist(),
+        'x_52': ensembles['ensemble_52 (m^3/s)'].dropna(axis=0).index.tolist(),
         'r2': rperiods['return_period_2'],
         'r10': rperiods['return_period_10'],
         'r20': rperiods['return_period_20'],
@@ -1040,131 +1165,6 @@ def probabilities_table(stats, ensembles, rperiods):
         return jinja2.Template(template.read()).render(days=days, r2=r2, r10=r10, r20=r20)
 
 
-# UTILITY FUNCTIONS
-def reach_to_region(reach_id):
-    """
-    returns the delineation region name corresponding to the range of numbers for a given reach_id.
-    does not validate that the reach_id exists in the region, just associates a number to a name.
-
-    Args:
-        reach_id (int): the ID for a stream
-
-    Return:
-        region (str): the name of the delineated world region used by the API.
-
-    Example:
-        region = geoglows.streamflow.reach_to_region(5000000)
-    """
-    # Indonesia 1M's
-    # ------australia 2M (currently 200k's)
-    # Japan 3M's
-    # East Asia 4M's
-    # South Asia 5M's
-    # ------middle_east 6M (currently 600k's)
-    # Africa 7M's
-    # Central Asia 8M's
-    # South America 9M's
-    # West Asia 10M's
-    # -------central_america 11M (currently 900k's)
-    # Europe 12M's
-    # North America 13M's
-
-    if not isinstance(reach_id, int):
-        reach_id = int(reach_id)
-
-    lookup = OrderedDict([
-        # IMPROPERLY NUMBERED REGIONS
-        ('australia-geoglows', 300000),
-        ('middle_east-geoglows', 700000),
-        ('central_america-geoglows', 1000000),
-        # CORRECTLY NUMBERED REGIONS
-        ('indonesia-geoglows', 2000000),
-        ('japan-geoglows', 4000000),
-        ('east_asia-geoglows', 5000000),
-        ('south_asia-geoglows', 6000000),
-        ('africa-geoglows', 8000000),
-        ('central_asia-geoglows', 9000000),
-        ('south_america-geoglows', 10000000),
-        ('west_asia-geoglows', 11000000),
-        ('europe-geoglows', 13000000),
-        ('north_america-geoglows', 14000000)
-    ])
-    for region, threshold in lookup.items():
-        if reach_id < threshold:
-            return region
-    return None
-
-
-def latlon_to_reach(lat, lon):
-    """
-    Uses the bounding boxes of all the regions to determine which comid_lat_lon_z csv(s) to read from
-
-    Args:
-        lat (int): a valid latitude
-        lon (int): a valid longitude
-
-    Return:
-        stream_data (dict): a dictionary containing the reach_id as well as the name of the region and the distance
-        from the provided lat and lon to the stream in units of degrees.
-
-    Example:
-        .. code-block:: python
-
-            stream_data = latlon_to_reach(10, 50)
-            {'reach_id': 123456, 'region': 'example_region-geoglows', 'distance': .05}
-    """
-    # create a shapely point for the querying
-    point = Point(float(lon), float(lat))
-    regions_to_check = []
-    # store the best matching stream using a named tuple for easy comparisons/management
-    StreamResult = namedtuple('Stream', 'reach_id, region, distance')
-    stream_result = StreamResult(None, None, math.inf)
-    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'delineation_data'))
-
-    # open the bounding boxes csv, figure out which regions the point lies within
-    bb_csv = pandas.read_csv(os.path.join(base_path, 'bounding_boxes.csv'), index_col='region')
-    for row in bb_csv.iterrows():
-        bbox = box(row[1][0], row[1][1], row[1][2], row[1][3])
-        if point.within(bbox):
-            regions_to_check.append(row[0])
-
-    # if there weren't any regions, return that there was an error
-    if len(regions_to_check) == 0:
-        return {"error": "This point is not within any of the supported delineation regions."}
-
-    # switch the point because the csv's are lat/lon, backwards from what shapely expects (lon then lat)
-    point = Point(float(lat), float(lon))
-
-    # check the lat lon against each of the region csv's that we determined were an option
-    for region in regions_to_check:
-        # TEMPORARY until we figure out how to fix the west asia problem, skip it
-        if region == 'west_asia-geoglows':
-            pass
-
-        # open the region csv, find the closest reach_id
-        df = pandas.read_csv(os.path.join(base_path, region, 'comid_lat_lon_z.csv'), sep=',', header=0, index_col=0)
-        points_df = df.loc[:, "Lat":"Lon"].apply(Point, axis=1)
-        multi_pt = MultiPoint(points_df.tolist())
-        nearest_pt = nearest_points(point, multi_pt)
-        reach_id = int(points_df[points_df == nearest_pt[1]].index[0])
-
-        # is this a better match than what we have? if so then replace the current selection
-        distance = nearest_pt[0].distance(nearest_pt[1])
-        if distance < stream_result.distance:
-            stream_result = StreamResult(reach_id, region, distance)
-
-    # there was only 1 option, return it
-    if stream_result.distance > 0.11:
-        return {"error": "Nearest river is more than ~10km away."}
-    else:
-        return dict(reach_id=stream_result.reach_id, region=stream_result.region, distance=stream_result.distance)
-
-
-# todo
-def latlon_to_region(lat, lon):
-    return
-
-
 # PLOTTING AUXILIARY FUNCTIONS
 def __build_title(base, reach_id, drain_area):
     if reach_id:
@@ -1238,11 +1238,3 @@ def _make_request(endpoint: str, method: str, params: dict, return_format: str):
         return data
     else:
         raise ValueError('Unsupported return format requested: ' + str(return_format))
-
-# todo make the return periods optional??
-# todo make an option to call the plots function with the reach_id as the only argument??
-# todo standardize the m3 vs m^3 in the forecasts
-# todo make hyroviewer_plot not duplicate so much code. Maybe use another return format to get the plotly shapes out?
-# todo use duplicates of the pandas df's so that the functions don't change them? or do they change them?
-# todo add type hints to everything?
-# todo __rperiods shapes for more than 3 return periods?

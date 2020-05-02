@@ -1,22 +1,25 @@
 import geoglows.streamflow as sf
 
-endpoint = 'http://0.0.0.0:8090/api/'
 reach_id = 3000150
 region = 'japan-geoglows'
 
-stats = sf.forecast_stats(reach_id, endpoint=endpoint)
-ensembles = sf.forecast_ensembles(reach_id, endpoint=endpoint)
-warnings = sf.forecast_warnings(region, endpoint=endpoint)
-records = sf.forecast_records(reach_id, endpoint=endpoint)
+stats = sf.forecast_stats(reach_id)
+ensembles = sf.forecast_ensembles(reach_id)
+warnings = sf.forecast_warnings(region)
+records = sf.forecast_records(reach_id)
 
-historical_int = sf.historic_simulation(reach_id, forcing='era_interim', endpoint=endpoint)
-historical_5 = sf.historic_simulation(reach_id, forcing='era_5', endpoint=endpoint)
+sf.available_data()
+print(sf.available_regions())
+print(sf.available_dates(region=region))
 
-seasonal_int = sf.seasonal_average(reach_id, forcing='era_interim', endpoint=endpoint)
-seasonal_5 = sf.seasonal_average(reach_id, forcing='era_5', endpoint=endpoint)
+historical_int = sf.historic_simulation(reach_id, 'era_interim')
+historical_5 = sf.historic_simulation(reach_id, 'era_5')
 
-rperiods_int = sf.return_periods(reach_id, forcing='era_interim', endpoint=endpoint)
-rperiods_5 = sf.return_periods(reach_id, forcing='era_5', endpoint=endpoint)
+seasonal_int = sf.seasonal_average(reach_id, 'era_interim')
+seasonal_5 = sf.seasonal_average(reach_id, 'era_5')
+
+rperiods_int = sf.return_periods(reach_id, 'era_interim')
+rperiods_5 = sf.return_periods(reach_id, 'era_5')
 
 print(stats.head())
 print(ensembles.head())
