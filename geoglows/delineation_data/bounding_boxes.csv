@@ -1,8 +1,8 @@
 region,min_lon,min_lat,max_lon,max_lat
 south_asia-geoglows,61,1,110,38
 central_asia-geoglows,72,29,120,52
-east_asia-geoglows,89,18,151,56
 japan-geoglows,127,26,146,46
+east_asia-geoglows,89,18,151,56
 middle_east-geoglows,25,12,62,48
 south_america-geoglows,-92,-56,-34,13
 central_america-geoglows,-125,7,-66,44
