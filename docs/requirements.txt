@@ -1,8 +1,2 @@
 sphinx
 sphinx_rtd_theme
-requests
-plotly
-pandas
-jinja2
-shapely
-scipy
