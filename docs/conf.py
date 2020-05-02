@@ -14,7 +14,7 @@ copyright = '2019, Riley Hales'
 author = 'Riley Hales'
 
 # The full version, including alpha/beta/rc tags
-release = '0.11.0'
+release = '0.12.0'
 master_doc = 'index'
 
 # -- General configuration ---------------------------------------------------
@@ -32,6 +32,14 @@ extensions = [
 autodoc_default_options = {
     'member-order': 'bysource',
 }
+autodoc_mock_imports = [
+    'requests',
+    'pandas',
+    'plotly',
+    'jinja2',
+    'shapely',
+    'scipy',
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
