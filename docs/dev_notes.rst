@@ -16,10 +16,17 @@ Packaging for Conda/Anaconda Cloud
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Sign up for an account on anaconda.org
 
+useful reference
+
+https://docs.conda.io/projects/conda-build/en/latest/resources/commands/conda-build.html
+
+https://docs.conda.io/projects/conda/en/latest/user-guide/configuration/use-condarc.html
+
 .. code-block:: bash
 
 	conda install anaconda-client conda-build
-	conda build .
+	conda config --set anaconda_upload no
+	conda build . --no-test
 	anaconda upload /path/to/distribution -u user_or_group_name -l label
 
 Developing documentation

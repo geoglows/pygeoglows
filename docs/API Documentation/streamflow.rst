@@ -56,6 +56,9 @@ return_periods
         return_periods
     :noindex:
 
+Summary + Diagnostic Functions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 available_dates
 ---------------
 
