@@ -1200,7 +1200,7 @@ def flow_duration_curve_plot(hist: pd.DataFrame, **kwargs):
     return
 
 
-def probabilities_table(stats: pd.DataFrame, ensembles: pd.DataFrame, rperiods: pd.DataFrame):
+def probabilities_table(stats: pd.DataFrame, ensembles: pd.DataFrame, rperiods: pd.DataFrame) -> str:
     """
     Processes the results of forecast_stats , forecast_ensembles, and return_periods and uses jinja2 template
     rendering to generate html code that shows the probabilities of exceeding the return period flow on each day.
@@ -1225,9 +1225,9 @@ def probabilities_table(stats: pd.DataFrame, ensembles: pd.DataFrame, rperiods: 
     span = datetime.datetime.strptime(enddate, "%Y-%m-%d %H:00:00") - start_datetime
     uniqueday = [start_datetime + datetime.timedelta(days=i) for i in range(span.days + 2)]
     # get the return periods for the stream reach
-    rp2 = rperiods.iloc[3][0]
-    rp10 = rperiods.iloc[2][0]
-    rp20 = rperiods.iloc[1][0]
+    rp2 = rperiods['return_period_2']
+    rp10 = rperiods['return_period_10']
+    rp20 = rperiods['return_period_20']
 
     # fill the lists of things used as context in rendering the template
     days = []
@@ -1257,6 +1257,28 @@ def probabilities_table(stats: pd.DataFrame, ensembles: pd.DataFrame, rperiods: 
     path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates', 'probabilities_table.html'))
     with open(path) as template:
         return jinja2.Template(template.read()).render(days=days, r2=r2, r10=r10, r20=r20)
+
+
+def return_periods_table(rperiods: pd.DataFrame) -> str:
+    # find the correct template to render
+    path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates', 'return_periods_table.html'))
+    # work on a copy of the dataframe so you dont ruin the original
+    tmp = rperiods
+    reach_id = str(tmp.index[0])
+    js = json.loads(tmp.to_json())
+    rp = {}
+    for item in js:
+        if item.startswith('return_period'):
+            year = item.split('_')[-1]
+            rp[f'{year} Year'] = js[item][reach_id]
+        elif item == 'max_flow':
+            rp['Max Simulated Flow'] = js[item][reach_id]
+
+    rp = {key: round(value, 2) for key, value in sorted(rp.items(), key=lambda item: item[1])}
+    print(rp)
+
+    with open(path) as template:
+        return jinja2.Template(template.read()).render(reach_id=reach_id, rp=rp)
 
 
 # PLOTTING AUXILIARY FUNCTIONS

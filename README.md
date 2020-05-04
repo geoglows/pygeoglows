@@ -1,14 +1,11 @@
 # GEOGloWS
-[![Anaconda-Server Badge](https://anaconda.org/geoglows/geoglows/badges/version.svg)](https://anaconda.org/geoglows/geoglows)
-[![Anaconda-Server Badge](https://anaconda.org/geoglows/geoglows/badges/latest_release_date.svg)](https://anaconda.org/geoglows/geoglows)
-[![Anaconda-Server Badge](https://anaconda.org/geoglows/geoglows/badges/installer/conda.svg)](https://conda.anaconda.org/rileyhales)
-[![Anaconda-Server Badge](https://anaconda.org/geoglows/geoglows/badges/downloads.svg)](https://anaconda.org/geoglows/geoglows)
-[![Documentation Status](https://readthedocs.org/projects/geoglows/badge/?version=latest)](https://geoglows.readthedocs.io/en/latest/?badge=latest)
+[![Conda Version](https://img.shields.io/conda/vn/conda-forge/geoglows.svg)](https://img.shields.io/conda/vn/conda-forge/geoglows.svg)
+[![Conda Downloads](https://img.shields.io/conda/dn/conda-forge/geoglows.svg)](https://anaconda.org/conda-forge/geoglows)
 [![PyPI](https://img.shields.io/pypi/v/geoglows)](https://pypi.org/project/geoglows)
 
-[Visit the Anaconda Cloud page](https://anaconda.org/geoglows/geoglows)
+[Visit the Conda Forge page](https://github.com/conda-forge/geoglows-feedstock)
 ```bash
-conda install -c geoglows geoglows
+conda install -c conda-forge geoglows
 ```
 
 Also available on pypi

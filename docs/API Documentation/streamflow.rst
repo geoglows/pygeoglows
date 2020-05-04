@@ -13,7 +13,7 @@ to get information over the internet without using a web browser.
 
 In general, a method requires an ID, called the reach_id or common id (COMID), for a specific stream. This ID is unique
 to the stream network configured for this Service. It is arbitrarily assigned so that there is a way to keep data
-organized. Get it using the function.
+organized.
 
 Forecasted Streamflow
 ---------------------
@@ -47,7 +47,7 @@ applications.
 .. automodule:: geoglows.streamflow
     :members:
         forecast_plot, ensembles_plot, records_plot, historical_plot, seasonal_plot, flow_duration_curve_plot,
-        probabilities_table
+        probabilities_table, return_periods_table
     :noindex:
 
 FAQ

@@ -53,6 +53,10 @@ def plot_all(data):
     plot.show()
     plot = sf.seasonal_plot(data[7])
     plot.show()
+
+    sf.probabilities_table(data[0], data[1], data[8])
+    sf.return_periods_table(data[8])
+
     return
 
 
@@ -66,17 +70,3 @@ if __name__ == '__main__':
     plot_all(data)
     data_latlon = request_all_data_with_lat_lon(lat, lon)
     plot_all(data_latlon)
-
-    # print(stats.head())
-    # print(ensembles.head())
-    # print(warnings.head())
-    # print(records.head())
-    # print(historical_int.head())
-    # print(historical_5.head())
-    # print(seasonal_int.head())
-    # print(seasonal_5.head())
-    # print(rperiods_int.head())
-    # print(rperiods_5.head())
-    # print(sf.available_data())
-    # print(sf.available_regions())
-    # print(sf.available_dates(region=region))
