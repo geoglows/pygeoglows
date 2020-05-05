@@ -1303,12 +1303,6 @@ def __build_title(base, reach_id, drain_area):
 
 
 def __rperiod_shapes(startdate, enddate, r2, r10, r20, y_max):
-    print(startdate)
-    print(enddate)
-    print(r2)
-    print(r10)
-    print(r20)
-    print(y_max)
     return [
         go.layout.Shape(
             type='rect',
