@@ -66,7 +66,13 @@ if __name__ == '__main__':
     lat = 36.203917
     lon = 139.435292
 
-    data = request_all_data_with_reach_id_and_region(reach_id, region)
-    plot_all(data)
-    data_latlon = request_all_data_with_lat_lon(lat, lon)
-    plot_all(data_latlon)
+    # data = request_all_data_with_reach_id_and_region(reach_id, region)
+    # plot_all(data)
+    # data_latlon = request_all_data_with_lat_lon(lat, lon)
+    # plot_all(data_latlon)
+
+    stats = sf.forecast_stats(reach_id)
+    records = sf.forecast_records(reach_id)
+    rperiods_int = sf.return_periods(reach_id, 'era_interim')
+    plot = sf.hydroviewer_plot(records, stats, rperiods_int, record_days_len=7)
+    plot.show()

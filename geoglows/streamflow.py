@@ -528,6 +528,7 @@ def hydroviewer_plot(records: pd.DataFrame, stats: pd.DataFrame, rperiods: pd.Da
         reach_id: the reach ID of COMID of a stream to be added to the plot title
         drain_area: a string containing the area and units of the area upstream of this reach that will be shown on the
             plot title
+        record_days_len: the number of days of forecast records to show before the start of the forecast (if available)
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
@@ -541,12 +542,16 @@ def hydroviewer_plot(records: pd.DataFrame, stats: pd.DataFrame, rperiods: pd.Da
     reach_id = kwargs.get('reach_id', None)
     drain_area = kwargs.get('drain_area', None)
     outformat = kwargs.get('outformat', 'plotly')
+    rec_day = kwargs.get('record_days_len', 7)
 
     # Validate a few of the important inputs
     if not isinstance(records, pd.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['json', 'plotly', 'plotly_html']:
         raise ValueError('invalid outformat specified. pick json or html')
+
+    # limit the forecast records to 7 days before the start of the forecast
+    records = records.loc[records.index >= pd.to_datetime(datetime.date.today() - datetime.timedelta(days=rec_day))]
 
     # Start processing the inputs
     records_dates = records.index.tolist()
@@ -1260,6 +1265,16 @@ def probabilities_table(stats: pd.DataFrame, ensembles: pd.DataFrame, rperiods: 
 
 
 def return_periods_table(rperiods: pd.DataFrame) -> str:
+    """
+    Processes the dataframe response from the return_periods function and uses jinja2 to render an html string for a
+    table showing each of the return periods
+    Args:
+        rperiods: the dataframe from the return periods function
+
+    Returns:
+        html string
+    """
+
     # find the correct template to render
     path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates', 'return_periods_table.html'))
     # work on a copy of the dataframe so you dont ruin the original
@@ -1275,7 +1290,6 @@ def return_periods_table(rperiods: pd.DataFrame) -> str:
             rp['Max Simulated Flow'] = js[item][reach_id]
 
     rp = {key: round(value, 2) for key, value in sorted(rp.items(), key=lambda item: item[1])}
-    print(rp)
 
     with open(path) as template:
         return jinja2.Template(template.read()).render(reach_id=reach_id, rp=rp)
