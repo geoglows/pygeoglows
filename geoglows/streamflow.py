@@ -574,9 +574,9 @@ def hydroviewer_plot(records: pd.DataFrame, stats: pd.DataFrame, rperiods: pd.Da
         'stdlow': list(stats['std_dev_range_lower (m^3/s)'].dropna(axis=0)),
         'stdup': list(stats['std_dev_range_upper (m^3/s)'].dropna(axis=0)),
         'hires': list(stats['high_res (m^3/s)'].dropna(axis=0)),
-        'r2': rperiods['return_period_2'],
-        'r10': rperiods['return_period_10'],
-        'r20': rperiods['return_period_20'],
+        'r2': rperiods['return_period_2'].values[0],
+        'r10': rperiods['return_period_10'].values[0],
+        'r20': rperiods['return_period_20'].values[0],
     }
 
     if outformat == 'json':
@@ -705,9 +705,9 @@ def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
         'stdlow': list(stats['std_dev_range_lower (m^3/s)'].dropna(axis=0)),
         'stdup': list(stats['std_dev_range_upper (m^3/s)'].dropna(axis=0)),
         'hires': list(stats['high_res (m^3/s)'].dropna(axis=0)),
-        'r2': rperiods['return_period_2'],
-        'r10': rperiods['return_period_10'],
-        'r20': rperiods['return_period_20'],
+        'r2': rperiods['return_period_2'].values[0],
+        'r10': rperiods['return_period_10'].values[0],
+        'r20': rperiods['return_period_20'].values[0],
     }
 
     if outformat == 'json':
@@ -828,9 +828,9 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
         'drain_area': drain_area,
         'x_1-51': ensembles['ensemble_01 (m^3/s)'].dropna(axis=0).index.tolist(),
         'x_52': ensembles['ensemble_52 (m^3/s)'].dropna(axis=0).index.tolist(),
-        'r2': rperiods['return_period_2'],
-        'r10': rperiods['return_period_10'],
-        'r20': rperiods['return_period_20'],
+        'r2': rperiods['return_period_2'].values[0],
+        'r10': rperiods['return_period_10'].values[0],
+        'r20': rperiods['return_period_20'].values[0],
     }
 
     # add a dictionary entry for each of the ensemble members. the key for each series is the integer ensemble number
@@ -925,9 +925,9 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
         'x_values': dates,
         'recorded_flows': records['streamflow (m^3/s)'].dropna(axis=0).tolist(),
         'y_max': max(records['streamflow (m^3/s)']),
-        'r2': rperiods['return_period_2'],
-        'r10': rperiods['return_period_10'],
-        'r20': rperiods['return_period_20'],
+        'r2': rperiods['return_period_2'].values[0],
+        'r10': rperiods['return_period_10'].values[0],
+        'r20': rperiods['return_period_20'].values[0],
     }
 
     if outformat == 'json':
@@ -1005,9 +1005,9 @@ def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
         'x_datetime': dates,
         'y_flow': hist['streamflow (m^3/s)'].tolist(),
         'y_max': max(hist['streamflow (m^3/s)']),
-        'r2': rperiods['return_period_2'],
-        'r10': rperiods['return_period_10'],
-        'r20': rperiods['return_period_20'],
+        'r2': rperiods['return_period_2'].values[0],
+        'r10': rperiods['return_period_10'].values[0],
+        'r20': rperiods['return_period_20'].values[0],
     }
 
     if outformat == 'json':
@@ -1303,6 +1303,12 @@ def __build_title(base, reach_id, drain_area):
 
 
 def __rperiod_shapes(startdate, enddate, r2, r10, r20, y_max):
+    print(startdate)
+    print(enddate)
+    print(r2)
+    print(r10)
+    print(r20)
+    print(y_max)
     return [
         go.layout.Shape(
             type='rect',

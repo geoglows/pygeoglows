@@ -71,5 +71,11 @@ if __name__ == '__main__':
     # data_latlon = request_all_data_with_lat_lon(lat, lon)
     # plot_all(data_latlon)
 
-    rperiods_int = sf.return_periods(reach_id, 'era_interim')
-    print(sf.return_periods_table(rperiods_int))
+    reach_id = 943583
+    region = 'central_america-geoglows'
+    stats = sf.forecast_stats(reach_id)
+    records = sf.forecast_records(reach_id)
+    historical_int = sf.historic_simulation(reach_id)
+    rperiods_int = sf.return_periods(reach_id)
+    plot = sf.hydroviewer_plot(records, stats, rperiods_int)
+    plot.show()
