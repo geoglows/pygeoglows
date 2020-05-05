@@ -17,7 +17,8 @@ from shapely.ops import nearest_points
 __all__ = ['forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecast_records', 'historic_simulation',
            'seasonal_average', 'return_periods', 'available_data', 'available_dates', 'available_regions',
            'hydroviewer_plot', 'forecast_plot', 'records_plot', 'ensembles_plot', 'historical_plot', 'seasonal_plot',
-           'flow_duration_curve_plot', 'probabilities_table', 'reach_to_region', 'latlon_to_reach']
+           'flow_duration_curve_plot', 'probabilities_table', 'return_periods_table', 'reach_to_region',
+           'latlon_to_reach']
 
 BYU_ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
 AZURE_HOST = 'http://gsf-api-vm.eastus.cloudapp.azure.com/api/'
@@ -1205,7 +1206,7 @@ def flow_duration_curve_plot(hist: pd.DataFrame, **kwargs):
     return
 
 
-def probabilities_table(stats: pd.DataFrame, ensembles: pd.DataFrame, rperiods: pd.DataFrame) -> str:
+def probabilities_table(stats: pd.DataFrame, ensembles: pd.DataFrame, rperiods: pd.DataFrame):
     """
     Processes the results of forecast_stats , forecast_ensembles, and return_periods and uses jinja2 template
     rendering to generate html code that shows the probabilities of exceeding the return period flow on each day.
@@ -1223,17 +1224,15 @@ def probabilities_table(stats: pd.DataFrame, ensembles: pd.DataFrame, rperiods: 
 
             data = geoglows.streamflow.probabilities_table(stats, ensembles, rperiods)
     """
-    dates = stats['datetime'].tolist()
+    dates = stats.index.tolist()
     startdate = dates[0]
     enddate = dates[-1]
-    start_datetime = datetime.datetime.strptime(startdate, "%Y-%m-%d %H:00:00")
-    span = datetime.datetime.strptime(enddate, "%Y-%m-%d %H:00:00") - start_datetime
-    uniqueday = [start_datetime + datetime.timedelta(days=i) for i in range(span.days + 2)]
+    span = enddate - startdate
+    uniqueday = [startdate + datetime.timedelta(days=i) for i in range(span.days + 2)]
     # get the return periods for the stream reach
-    rp2 = rperiods['return_period_2']
-    rp10 = rperiods['return_period_10']
-    rp20 = rperiods['return_period_20']
-
+    rp2 = rperiods['return_period_2'].values
+    rp10 = rperiods['return_period_10'].values
+    rp20 = rperiods['return_period_20'].values
     # fill the lists of things used as context in rendering the template
     days = []
     r2 = []
@@ -1258,7 +1257,6 @@ def probabilities_table(stats: pd.DataFrame, ensembles: pd.DataFrame, rperiods: 
         r2.append(round(num2 * 100 / 52))
         r10.append(round(num10 * 100 / 52))
         r20.append(round(num20 * 100 / 52))
-
     path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates', 'probabilities_table.html'))
     with open(path) as template:
         return jinja2.Template(template.read()).render(days=days, r2=r2, r10=r10, r20=r20)

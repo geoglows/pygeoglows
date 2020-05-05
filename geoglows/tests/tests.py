@@ -71,8 +71,5 @@ if __name__ == '__main__':
     # data_latlon = request_all_data_with_lat_lon(lat, lon)
     # plot_all(data_latlon)
 
-    stats = sf.forecast_stats(reach_id)
-    records = sf.forecast_records(reach_id)
     rperiods_int = sf.return_periods(reach_id, 'era_interim')
-    plot = sf.hydroviewer_plot(records, stats, rperiods_int, record_days_len=7)
-    plot.show()
+    print(sf.return_periods_table(rperiods_int))
