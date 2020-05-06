@@ -79,8 +79,9 @@ if __name__ == '__main__':
     # historical = sf.historic_simulation(reach_id)
     rperiods = sf.return_periods(reach_id)
     rperiods_int = sf.return_periods(reach_id, forcing='era_interim')
+    print(rperiods.head())
     print(rperiods_int.head())
-    plot = sf.forecast_plot(stats, rperiods_int)
+    plot = sf.forecast_plot(stats, rperiods)
     plot.show()
     with open('/Users/riley/spatialdata/table.html', 'w') as f:
         f.write(sf.probabilities_table(stats, ensembles, rperiods))

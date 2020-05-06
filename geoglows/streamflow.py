@@ -515,7 +515,7 @@ def latlon_to_region(lat: float, lon: float) -> str:
 
 
 # FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
-def hydroviewer_plot(records: pd.DataFrame, stats: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
+def hydroviewer_plot(records: pd.DataFrame, stats: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs):
     """
     Creates the standard plot for a hydroviewer
 
@@ -575,8 +575,11 @@ def hydroviewer_plot(records: pd.DataFrame, stats: pd.DataFrame, rperiods: pd.Da
         'stdup': list(stats['std_dev_range_upper (m^3/s)'].dropna(axis=0)),
         'hires': list(stats['high_res (m^3/s)'].dropna(axis=0)),
         'r2': rperiods['return_period_2'].values[0],
+        'r5': rperiods['return_period_5'].values[0],
         'r10': rperiods['return_period_10'].values[0],
-        'r20': rperiods['return_period_20'].values[0],
+        'r25': rperiods['return_period_25'].values[0],
+        'r50': rperiods['return_period_50'].values[0],
+        'r100': rperiods['return_period_100'].values[0],
     }
 
     if outformat == 'json':
@@ -632,6 +635,10 @@ def hydroviewer_plot(records: pd.DataFrame, stats: pd.DataFrame, rperiods: pd.Da
         y=plot_data['hires'],
         line={'color': 'black'}
     )
+    if rperiods is not None:
+        shapes = __rperiod_shapes(startdate, enddate, plot_data['r2'], plot_data['r5'], plot_data['r10'], plot_data['r25'], plot_data['r50'], plot_data['r100'], plot_data['y_max'])
+    else:
+        shapes = []
     layout = go.Layout(
         title=__build_title('Forecasted Streamflow', reach_id, drain_area),
         xaxis={'title': 'Date'},
@@ -639,8 +646,7 @@ def hydroviewer_plot(records: pd.DataFrame, stats: pd.DataFrame, rperiods: pd.Da
             'title': 'Streamflow (m<sup>3</sup>/s)',
             'range': [0, 1.2 * plot_data['y_max']]
         },
-        shapes=__rperiod_shapes(
-            startdate, enddate, plot_data['r2'], plot_data['r10'], plot_data['r20'], plot_data['y_max'])
+        shapes=shapes
     )
     figure = go.Figure([recorded_flows, minplot, stdlowplot, stdupplot, maxplot, meanplot, hires], layout=layout)
     if outformat == 'plotly':
@@ -655,7 +661,7 @@ def hydroviewer_plot(records: pd.DataFrame, stats: pd.DataFrame, rperiods: pd.Da
     return
 
 
-def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
+def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs):
     """
     Makes the streamflow data and optional metadata into a plotly plot
 
@@ -706,8 +712,11 @@ def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
         'stdup': list(stats['std_dev_range_upper (m^3/s)'].dropna(axis=0)),
         'hires': list(stats['high_res (m^3/s)'].dropna(axis=0)),
         'r2': rperiods['return_period_2'].values[0],
+        'r5': rperiods['return_period_5'].values[0],
         'r10': rperiods['return_period_10'].values[0],
-        'r20': rperiods['return_period_20'].values[0],
+        'r25': rperiods['return_period_25'].values[0],
+        'r50': rperiods['return_period_50'].values[0],
+        'r100': rperiods['return_period_100'].values[0],
     }
 
     if outformat == 'json':
@@ -757,6 +766,10 @@ def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
         y=plot_data['hires'],
         line={'color': 'black'}
     )
+    if rperiods is not None:
+        shapes = __rperiod_shapes(startdate, enddate, plot_data['r2'], plot_data['r5'], plot_data['r10'], plot_data['r25'], plot_data['r50'], plot_data['r100'], plot_data['y_max'])
+    else:
+        shapes = []
     layout = go.Layout(
         title=__build_title('Forecasted Streamflow', reach_id, drain_area),
         xaxis={'title': 'Date'},
@@ -764,8 +777,7 @@ def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
             'title': 'Streamflow (m<sup>3</sup>/s)',
             'range': [0, 1.2 * plot_data['y_max']]
         },
-        shapes=__rperiod_shapes(
-            startdate, enddate, plot_data['r2'], plot_data['r10'], plot_data['r20'], plot_data['y_max'])
+        shapes=shapes
     )
     figure = go.Figure([minplot, stdlowplot, stdupplot, maxplot, meanplot, hires], layout=layout)
     if outformat == 'plotly':
@@ -780,7 +792,7 @@ def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
     return
 
 
-def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
+def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs):
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
@@ -829,8 +841,11 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
         'x_1-51': ensembles['ensemble_01 (m^3/s)'].dropna(axis=0).index.tolist(),
         'x_52': ensembles['ensemble_52 (m^3/s)'].dropna(axis=0).index.tolist(),
         'r2': rperiods['return_period_2'].values[0],
+        'r5': rperiods['return_period_5'].values[0],
         'r10': rperiods['return_period_10'].values[0],
-        'r20': rperiods['return_period_20'].values[0],
+        'r25': rperiods['return_period_25'].values[0],
+        'r50': rperiods['return_period_50'].values[0],
+        'r100': rperiods['return_period_100'].values[0],
     }
 
     # add a dictionary entry for each of the ensemble members. the key for each series is the integer ensemble number
@@ -856,7 +871,10 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
             x=plot_data['x_1-51'],
             y=plot_data[i],
         ))
-
+    if rperiods is not None:
+        shapes = __rperiod_shapes(startdate, enddate, plot_data['r2'], plot_data['r5'], plot_data['r10'], plot_data['r25'], plot_data['r50'], plot_data['r100'], plot_data['y_max'])
+    else:
+        shapes = []
     # define a layout for the plot
     layout = go.Layout(
         title=__build_title('Ensemble Predicted Streamflow', reach_id, drain_area),
@@ -865,8 +883,7 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
             'title': 'Streamflow (m<sup>3</sup>/s)',
             'range': [0, 1.2 * plot_data['y_max']]
         },
-        shapes=__rperiod_shapes(
-            startdate, enddate, plot_data['r2'], plot_data['r10'], plot_data['r20'], plot_data['y_max'])
+        shapes=shapes
     )
     figure = go.Figure(scatters, layout=layout)
     if outformat == 'plotly':
@@ -881,7 +898,7 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
     return
 
 
-def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
+def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs):
     """
     Makes the streamflow saved forecast data and metadata into a plotly plot
 
@@ -926,13 +943,20 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
         'recorded_flows': records['streamflow (m^3/s)'].dropna(axis=0).tolist(),
         'y_max': max(records['streamflow (m^3/s)']),
         'r2': rperiods['return_period_2'].values[0],
+        'r5': rperiods['return_period_5'].values[0],
         'r10': rperiods['return_period_10'].values[0],
-        'r20': rperiods['return_period_20'].values[0],
+        'r25': rperiods['return_period_25'].values[0],
+        'r50': rperiods['return_period_50'].values[0],
+        'r100': rperiods['return_period_100'].values[0],
     }
 
     if outformat == 'json':
         return plot_data
 
+    if rperiods is not None:
+        shapes = __rperiod_shapes(startdate, enddate, plot_data['r2'], plot_data['r5'], plot_data['r10'], plot_data['r25'], plot_data['r50'], plot_data['r100'], plot_data['y_max'])
+    else:
+        shapes = []
     recorded_flows = go.Scatter(
         name='1st day forecasted flows',
         x=plot_data['x_values'],
@@ -946,8 +970,7 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
             'title': 'Streamflow (m<sup>3</sup>/s)',
             'range': [0, 1.2 * plot_data['y_max']]
         },
-        shapes=__rperiod_shapes(
-            startdate, enddate, plot_data['r2'], plot_data['r10'], plot_data['r20'], plot_data['y_max'])
+        shapes=shapes
     )
     figure = go.Figure([recorded_flows], layout=layout)
     if outformat == 'plotly':
@@ -962,7 +985,7 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
     return
 
 
-def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
+def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs):
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
@@ -1006,12 +1029,20 @@ def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
         'y_flow': hist['streamflow (m^3/s)'].tolist(),
         'y_max': max(hist['streamflow (m^3/s)']),
         'r2': rperiods['return_period_2'].values[0],
+        'r5': rperiods['return_period_5'].values[0],
         'r10': rperiods['return_period_10'].values[0],
-        'r20': rperiods['return_period_20'].values[0],
+        'r25': rperiods['return_period_25'].values[0],
+        'r50': rperiods['return_period_50'].values[0],
+        'r100': rperiods['return_period_100'].values[0],
     }
 
     if outformat == 'json':
         return plot_data
+
+    if rperiods is not None:
+        shapes = __rperiod_shapes(startdate, enddate, plot_data['r2'], plot_data['r5'], plot_data['r10'], plot_data['r25'], plot_data['r50'], plot_data['r100'], plot_data['y_max'])
+    else:
+        shapes = []
 
     layout = go.Layout(
         title=__build_title('Historic Streamflow Simulation', reach_id, drain_area),
@@ -1024,8 +1055,7 @@ def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame, **kwargs):
             'title': 'Streamflow (m<sup>3</sup>/s)',
             'range': [0, 1.2 * plot_data['y_max']]
         },
-        shapes=__rperiod_shapes(
-            startdate, enddate, plot_data['r2'], plot_data['r10'], plot_data['r20'], plot_data['y_max'])
+        shapes=shapes
     )
     figure = go.Figure([go.Scatter(x=plot_data['x_datetime'], y=plot_data['y_flow'])], layout=layout)
     if outformat == 'plotly':
@@ -1230,12 +1260,12 @@ def probabilities_table(stats: pd.DataFrame, ensembles: pd.DataFrame, rperiods: 
     span = enddate - startdate
     uniqueday = [startdate + datetime.timedelta(days=i) for i in range(span.days + 2)]
     # get the return periods for the stream reach
-    rp2 = rperiods['return_period_2'].values[0]
-    rp5 = rperiods['return_period_5'].values[0]
-    rp10 = rperiods['return_period_10'].values[0]
-    rp25 = rperiods['return_period_25'].values[0]
-    rp50 = rperiods['return_period_50'].values[0]
-    rp100 = rperiods['return_period_100'].values[0]
+    rp2 = rperiods['return_period_2'].values
+    rp5 = rperiods['return_period_5'].values
+    rp10 = rperiods['return_period_10'].values
+    rp25 = rperiods['return_period_25'].values
+    rp50 = rperiods['return_period_50'].values
+    rp100 = rperiods['return_period_100'].values
     # fill the lists of things used as context in rendering the template
     days = []
     r2 = []
@@ -1332,37 +1362,67 @@ def __build_title(base, reach_id, drain_area):
     return base
 
 
-def __rperiod_shapes(startdate, enddate, r2, r10, r20, y_max):
+def __rperiod_shapes(startdate, enddate, r2, r5, r10, r25, r50, r100, y_max):
     return [
         go.layout.Shape(
             type='rect',
             x0=startdate,
             x1=enddate,
             y0=r2,
-            y1=r10,
-            line={'width': 0},
+            y1=r5,
+            line={'width': .5},
             opacity=.4,
-            fillcolor='yellow'
+            fillcolor='rgba(134, 206, 250, 1)'
+        ),
+        go.layout.Shape(
+            type='rect',
+            x0=startdate,
+            x1=enddate,
+            y0=r5,
+            y1=r10,
+            line={'width': .5},
+            opacity=.4,
+            fillcolor='rgba(115, 185, 238, 1)'
         ),
         go.layout.Shape(
             type='rect',
             x0=startdate,
             x1=enddate,
             y0=r10,
-            y1=r20,
-            line={'width': 0},
+            y1=r25,
+            line={'width': .5},
             opacity=.4,
-            fillcolor='red'
+            fillcolor='rgba(84, 148, 218, 1)'
         ),
         go.layout.Shape(
             type='rect',
             x0=startdate,
             x1=enddate,
-            y0=r20,
-            y1=1.2 * y_max,
-            line={'width': 0},
+            y0=r25,
+            y1=r50,
+            line={'width': .5},
             opacity=.4,
-            fillcolor='purple'
+            fillcolor='rgba(51, 115, 196, 1)'
+        ),
+        go.layout.Shape(
+            type='rect',
+            x0=startdate,
+            x1=enddate,
+            y0=r50,
+            y1=r100,
+            line={'width': .5},
+            opacity=.4,
+            fillcolor='rgba(23, 80, 172, 1)'
+        ),
+        go.layout.Shape(
+            type='rect',
+            x0=startdate,
+            x1=enddate,
+            y0=r100,
+            y1=1.2 * y_max,
+            line={'width': .5},
+            opacity=.4,
+            fillcolor='rgba(0, 51, 150, 1)'
         ),
     ]
 
