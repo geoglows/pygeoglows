@@ -574,13 +574,17 @@ def hydroviewer_plot(records: pd.DataFrame, stats: pd.DataFrame, rperiods: pd.Da
         'stdlow': list(stats['std_dev_range_lower (m^3/s)'].dropna(axis=0)),
         'stdup': list(stats['std_dev_range_upper (m^3/s)'].dropna(axis=0)),
         'hires': list(stats['high_res (m^3/s)'].dropna(axis=0)),
-        'r2': rperiods['return_period_2'].values[0],
-        'r5': rperiods['return_period_5'].values[0],
-        'r10': rperiods['return_period_10'].values[0],
-        'r25': rperiods['return_period_25'].values[0],
-        'r50': rperiods['return_period_50'].values[0],
-        'r100': rperiods['return_period_100'].values[0],
     }
+    if rperiods is not None:
+        plot_data['r2']: rperiods['return_period_2'].values[0]
+        plot_data['r5']: rperiods['return_period_5'].values[0]
+        plot_data['r10']: rperiods['return_period_10'].values[0]
+        plot_data['r25']: rperiods['return_period_25'].values[0]
+        plot_data['r50']: rperiods['return_period_50'].values[0]
+        plot_data['r100']: rperiods['return_period_100'].values[0]
+        shapes = _rperiod_shapes(startdate, enddate, rperiods, plot_data['y_max'])
+    else:
+        shapes = []
 
     if outformat == 'json':
         return plot_data
@@ -635,10 +639,6 @@ def hydroviewer_plot(records: pd.DataFrame, stats: pd.DataFrame, rperiods: pd.Da
         y=plot_data['hires'],
         line={'color': 'black'}
     )
-    if rperiods is not None:
-        shapes = __rperiod_shapes(startdate, enddate, plot_data['r2'], plot_data['r5'], plot_data['r10'], plot_data['r25'], plot_data['r50'], plot_data['r100'], plot_data['y_max'])
-    else:
-        shapes = []
     layout = go.Layout(
         title=__build_title('Forecasted Streamflow', reach_id, drain_area),
         xaxis={'title': 'Date'},
@@ -711,13 +711,17 @@ def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs):
         'stdlow': list(stats['std_dev_range_lower (m^3/s)'].dropna(axis=0)),
         'stdup': list(stats['std_dev_range_upper (m^3/s)'].dropna(axis=0)),
         'hires': list(stats['high_res (m^3/s)'].dropna(axis=0)),
-        'r2': rperiods['return_period_2'].values[0],
-        'r5': rperiods['return_period_5'].values[0],
-        'r10': rperiods['return_period_10'].values[0],
-        'r25': rperiods['return_period_25'].values[0],
-        'r50': rperiods['return_period_50'].values[0],
-        'r100': rperiods['return_period_100'].values[0],
     }
+    if rperiods is not None:
+        plot_data['r2']: rperiods['return_period_2'].values[0]
+        plot_data['r5']: rperiods['return_period_5'].values[0]
+        plot_data['r10']: rperiods['return_period_10'].values[0]
+        plot_data['r25']: rperiods['return_period_25'].values[0]
+        plot_data['r50']: rperiods['return_period_50'].values[0]
+        plot_data['r100']: rperiods['return_period_100'].values[0]
+        shapes = _rperiod_shapes(startdate, enddate, rperiods, plot_data['y_max'])
+    else:
+        shapes = []
 
     if outformat == 'json':
         return plot_data
@@ -766,10 +770,6 @@ def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs):
         y=plot_data['hires'],
         line={'color': 'black'}
     )
-    if rperiods is not None:
-        shapes = __rperiod_shapes(startdate, enddate, plot_data['r2'], plot_data['r5'], plot_data['r10'], plot_data['r25'], plot_data['r50'], plot_data['r100'], plot_data['y_max'])
-    else:
-        shapes = []
     layout = go.Layout(
         title=__build_title('Forecasted Streamflow', reach_id, drain_area),
         xaxis={'title': 'Date'},
@@ -840,12 +840,6 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None, **kwa
         'drain_area': drain_area,
         'x_1-51': ensembles['ensemble_01 (m^3/s)'].dropna(axis=0).index.tolist(),
         'x_52': ensembles['ensemble_52 (m^3/s)'].dropna(axis=0).index.tolist(),
-        'r2': rperiods['return_period_2'].values[0],
-        'r5': rperiods['return_period_5'].values[0],
-        'r10': rperiods['return_period_10'].values[0],
-        'r25': rperiods['return_period_25'].values[0],
-        'r50': rperiods['return_period_50'].values[0],
-        'r100': rperiods['return_period_100'].values[0],
     }
 
     # add a dictionary entry for each of the ensemble members. the key for each series is the integer ensemble number
@@ -853,6 +847,17 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None, **kwa
         plot_data[int(ensemble[9:11])] = ensembles[ensemble].dropna(axis=0).tolist()
         max_flows.append(max(plot_data[int(ensemble[9:11])]))
     plot_data['y_max'] = max(max_flows)
+
+    if rperiods is not None:
+        plot_data['r2']: rperiods['return_period_2'].values[0]
+        plot_data['r5']: rperiods['return_period_5'].values[0]
+        plot_data['r10']: rperiods['return_period_10'].values[0]
+        plot_data['r25']: rperiods['return_period_25'].values[0]
+        plot_data['r50']: rperiods['return_period_50'].values[0]
+        plot_data['r100']: rperiods['return_period_100'].values[0]
+        shapes = _rperiod_shapes(startdate, enddate, rperiods, plot_data['y_max'])
+    else:
+        shapes = []
 
     if outformat == 'json':
         return plot_data
@@ -871,10 +876,7 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None, **kwa
             x=plot_data['x_1-51'],
             y=plot_data[i],
         ))
-    if rperiods is not None:
-        shapes = __rperiod_shapes(startdate, enddate, plot_data['r2'], plot_data['r5'], plot_data['r10'], plot_data['r25'], plot_data['r50'], plot_data['r100'], plot_data['y_max'])
-    else:
-        shapes = []
+
     # define a layout for the plot
     layout = go.Layout(
         title=__build_title('Ensemble Predicted Streamflow', reach_id, drain_area),
@@ -942,21 +944,21 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs)
         'x_values': dates,
         'recorded_flows': records['streamflow (m^3/s)'].dropna(axis=0).tolist(),
         'y_max': max(records['streamflow (m^3/s)']),
-        'r2': rperiods['return_period_2'].values[0],
-        'r5': rperiods['return_period_5'].values[0],
-        'r10': rperiods['return_period_10'].values[0],
-        'r25': rperiods['return_period_25'].values[0],
-        'r50': rperiods['return_period_50'].values[0],
-        'r100': rperiods['return_period_100'].values[0],
     }
+    if rperiods is not None:
+        plot_data['r2']: rperiods['return_period_2'].values[0]
+        plot_data['r5']: rperiods['return_period_5'].values[0]
+        plot_data['r10']: rperiods['return_period_10'].values[0]
+        plot_data['r25']: rperiods['return_period_25'].values[0]
+        plot_data['r50']: rperiods['return_period_50'].values[0]
+        plot_data['r100']: rperiods['return_period_100'].values[0]
+        shapes = _rperiod_shapes(startdate, enddate, rperiods, plot_data['y_max'])
+    else:
+        shapes = []
 
     if outformat == 'json':
         return plot_data
 
-    if rperiods is not None:
-        shapes = __rperiod_shapes(startdate, enddate, plot_data['r2'], plot_data['r5'], plot_data['r10'], plot_data['r25'], plot_data['r50'], plot_data['r100'], plot_data['y_max'])
-    else:
-        shapes = []
     recorded_flows = go.Scatter(
         name='1st day forecasted flows',
         x=plot_data['x_values'],
@@ -1028,21 +1030,20 @@ def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs)
         'x_datetime': dates,
         'y_flow': hist['streamflow (m^3/s)'].tolist(),
         'y_max': max(hist['streamflow (m^3/s)']),
-        'r2': rperiods['return_period_2'].values[0],
-        'r5': rperiods['return_period_5'].values[0],
-        'r10': rperiods['return_period_10'].values[0],
-        'r25': rperiods['return_period_25'].values[0],
-        'r50': rperiods['return_period_50'].values[0],
-        'r100': rperiods['return_period_100'].values[0],
     }
+    if rperiods is not None:
+        plot_data['r2']: rperiods['return_period_2'].values[0]
+        plot_data['r5']: rperiods['return_period_5'].values[0]
+        plot_data['r10']: rperiods['return_period_10'].values[0]
+        plot_data['r25']: rperiods['return_period_25'].values[0]
+        plot_data['r50']: rperiods['return_period_50'].values[0]
+        plot_data['r100']: rperiods['return_period_100'].values[0]
+        shapes = _rperiod_shapes(startdate, enddate, rperiods, plot_data['y_max'])
+    else:
+        shapes = []
 
     if outformat == 'json':
         return plot_data
-
-    if rperiods is not None:
-        shapes = __rperiod_shapes(startdate, enddate, plot_data['r2'], plot_data['r5'], plot_data['r10'], plot_data['r25'], plot_data['r50'], plot_data['r100'], plot_data['y_max'])
-    else:
-        shapes = []
 
     layout = go.Layout(
         title=__build_title('Historic Streamflow Simulation', reach_id, drain_area),
@@ -1362,14 +1363,47 @@ def __build_title(base, reach_id, drain_area):
     return base
 
 
-def __rperiod_shapes(startdate, enddate, r2, r5, r10, r25, r50, r100, y_max):
+def _rperiod_shapes(startdate: str, enddate: str, rperiods: pd.DataFrame, y_max: float):
+    if list(rperiods.columns) == ['max_flow', 'return_period_20', 'return_period_10', 'return_period_2']:
+        return [
+            go.layout.Shape(
+                type='rect',
+                x0=startdate,
+                x1=enddate,
+                y0=rperiods['return_period_2'].values[0],
+                y1=rperiods['return_period_10'].values[0],
+                line={'width': 0},
+                opacity=.4,
+                fillcolor='yellow'
+            ),
+            go.layout.Shape(
+                type='rect',
+                x0=startdate,
+                x1=enddate,
+                y0=rperiods['return_period_10'].values[0],
+                y1=rperiods['return_period_20'].values[0],
+                line={'width': 0},
+                opacity=.4,
+                fillcolor='red'
+            ),
+            go.layout.Shape(
+                type='rect',
+                x0=startdate,
+                x1=enddate,
+                y0=rperiods['return_period_10'].values[0],
+                y1=1.2 * y_max,
+                line={'width': 0},
+                opacity=.4,
+                fillcolor='purple'
+            ),
+        ]
     return [
         go.layout.Shape(
             type='rect',
             x0=startdate,
             x1=enddate,
-            y0=r2,
-            y1=r5,
+            y0=rperiods['return_period_2'].values[0],
+            y1=rperiods['return_period_5'].values[0],
             line={'width': .5},
             opacity=.4,
             fillcolor='rgba(134, 206, 250, 1)'
@@ -1378,8 +1412,8 @@ def __rperiod_shapes(startdate, enddate, r2, r5, r10, r25, r50, r100, y_max):
             type='rect',
             x0=startdate,
             x1=enddate,
-            y0=r5,
-            y1=r10,
+            y0=rperiods['return_period_5'].values[0],
+            y1=rperiods['return_period_10'].values[0],
             line={'width': .5},
             opacity=.4,
             fillcolor='rgba(115, 185, 238, 1)'
@@ -1388,8 +1422,8 @@ def __rperiod_shapes(startdate, enddate, r2, r5, r10, r25, r50, r100, y_max):
             type='rect',
             x0=startdate,
             x1=enddate,
-            y0=r10,
-            y1=r25,
+            y0=rperiods['return_period_10'].values[0],
+            y1=rperiods['return_period_25'].values[0],
             line={'width': .5},
             opacity=.4,
             fillcolor='rgba(84, 148, 218, 1)'
@@ -1398,8 +1432,8 @@ def __rperiod_shapes(startdate, enddate, r2, r5, r10, r25, r50, r100, y_max):
             type='rect',
             x0=startdate,
             x1=enddate,
-            y0=r25,
-            y1=r50,
+            y0=rperiods['return_period_25'].values[0],
+            y1=rperiods['return_period_50'].values[0],
             line={'width': .5},
             opacity=.4,
             fillcolor='rgba(51, 115, 196, 1)'
@@ -1408,8 +1442,8 @@ def __rperiod_shapes(startdate, enddate, r2, r5, r10, r25, r50, r100, y_max):
             type='rect',
             x0=startdate,
             x1=enddate,
-            y0=r50,
-            y1=r100,
+            y0=rperiods['return_period_50'].values[0],
+            y1=rperiods['return_period_100'].values[0],
             line={'width': .5},
             opacity=.4,
             fillcolor='rgba(23, 80, 172, 1)'
@@ -1418,7 +1452,7 @@ def __rperiod_shapes(startdate, enddate, r2, r5, r10, r25, r50, r100, y_max):
             type='rect',
             x0=startdate,
             x1=enddate,
-            y0=r100,
+            y0=rperiods['return_period_100'].values[0],
             y1=1.2 * y_max,
             line={'width': .5},
             opacity=.4,
