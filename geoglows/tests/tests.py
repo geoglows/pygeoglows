@@ -71,11 +71,16 @@ if __name__ == '__main__':
     # data_latlon = request_all_data_with_lat_lon(lat, lon)
     # plot_all(data_latlon)
 
-    reach_id = 943583
-    region = 'central_america-geoglows'
+    reach_id = 7083574
+    region = 'africa-geoglows'
     stats = sf.forecast_stats(reach_id)
-    records = sf.forecast_records(reach_id)
-    historical_int = sf.historic_simulation(reach_id)
-    rperiods_int = sf.return_periods(reach_id)
-    plot = sf.hydroviewer_plot(records, stats, rperiods_int)
+    ensembles = sf.forecast_ensembles(reach_id)
+    # records = sf.forecast_records(reach_id)
+    # historical = sf.historic_simulation(reach_id)
+    rperiods = sf.return_periods(reach_id)
+    rperiods_int = sf.return_periods(reach_id, forcing='era_interim')
+    print(rperiods_int.head())
+    plot = sf.forecast_plot(stats, rperiods_int)
     plot.show()
+    with open('/Users/riley/spatialdata/table.html', 'w') as f:
+        f.write(sf.probabilities_table(stats, ensembles, rperiods))

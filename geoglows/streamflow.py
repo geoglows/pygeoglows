@@ -173,7 +173,7 @@ def forecast_records(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv', 
     return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
 
 
-def historic_simulation(reach_id: int, forcing='era_interim', endpoint=BYU_ENDPOINT, return_format='csv', **kwargs):
+def historic_simulation(reach_id: int, forcing='era_5', endpoint=BYU_ENDPOINT, return_format='csv', **kwargs):
     """
     Retrieves a historical streamflow simulation derived from a specified forcing for a certain reach_id
 
@@ -213,7 +213,7 @@ def historic_simulation(reach_id: int, forcing='era_interim', endpoint=BYU_ENDPO
     return _make_request(endpoint, method, params, return_format)
 
 
-def seasonal_average(reach_id: int, forcing='era_interim', endpoint=BYU_ENDPOINT, return_format='csv', **kwargs):
+def seasonal_average(reach_id: int, forcing='era_5', endpoint=BYU_ENDPOINT, return_format='csv', **kwargs):
     """
     Retrieves the average flow for every day of the year at a certain reach_id.
 
@@ -253,7 +253,7 @@ def seasonal_average(reach_id: int, forcing='era_interim', endpoint=BYU_ENDPOINT
     return _make_request(endpoint, method, params, return_format)
 
 
-def return_periods(reach_id: int, forcing='era_interim', endpoint=BYU_ENDPOINT, return_format='csv', **kwargs):
+def return_periods(reach_id: int, forcing='era_5', endpoint=BYU_ENDPOINT, return_format='csv', **kwargs):
     """
     Retrieves the return period thresholds based on a specified historic simulation forcing on a certain reach_id.
 
@@ -438,7 +438,7 @@ def reach_to_region(reach_id: int) -> str:
     return None
 
 
-def latlon_to_reach(lat: float, lon: float) -> str:
+def latlon_to_reach(lat: float, lon: float) -> dict:
     """
     Uses a list of lat/lon for each reach_id to find the closest stream reach to a given lat/lon location
 
@@ -1230,36 +1230,66 @@ def probabilities_table(stats: pd.DataFrame, ensembles: pd.DataFrame, rperiods: 
     span = enddate - startdate
     uniqueday = [startdate + datetime.timedelta(days=i) for i in range(span.days + 2)]
     # get the return periods for the stream reach
-    rp2 = rperiods['return_period_2'].values
-    rp10 = rperiods['return_period_10'].values
-    rp20 = rperiods['return_period_20'].values
+    rp2 = rperiods['return_period_2'].values[0]
+    rp5 = rperiods['return_period_5'].values[0]
+    rp10 = rperiods['return_period_10'].values[0]
+    rp25 = rperiods['return_period_25'].values[0]
+    rp50 = rperiods['return_period_50'].values[0]
+    rp100 = rperiods['return_period_100'].values[0]
     # fill the lists of things used as context in rendering the template
     days = []
     r2 = []
+    r5 = []
     r10 = []
-    r20 = []
+    r25 = []
+    r50 = []
+    r100 = []
     for i in range(len(uniqueday) - 1):  # (-1) omit the extra day used for reference only
         tmp = ensembles.loc[uniqueday[i]:uniqueday[i + 1]]
         days.append(uniqueday[i].strftime('%b %d'))
         num2 = 0
+        num5 = 0
         num10 = 0
-        num20 = 0
+        num25 = 0
+        num50 = 0
+        num100 = 0
         for column in tmp:
-            if any(i > rp20 for i in tmp[column].to_numpy()):
+            if any(i > rp100 for i in tmp[column].to_numpy()):
                 num2 += 1
+                num5 += 1
                 num10 += 1
-                num20 += 1
+                num25 += 1
+                num50 += 1
+                num100 += 1
+            elif any(i > rp50 for i in tmp[column].to_numpy()):
+                num2 += 1
+                num5 += 1
+                num10 += 1
+                num25 += 1
+                num50 += 1
+            elif any(i > rp25 for i in tmp[column].to_numpy()):
+                num2 += 1
+                num5 += 1
+                num10 += 1
+                num25 += 1
             elif any(i > rp10 for i in tmp[column].to_numpy()):
-                num10 += 1
                 num2 += 1
+                num5 += 1
+                num10 += 1
+            elif any(i > rp5 for i in tmp[column].to_numpy()):
+                num2 += 1
+                num5 += 1
             elif any(i > rp2 for i in tmp[column].to_numpy()):
                 num2 += 1
         r2.append(round(num2 * 100 / 52))
+        r5.append(round(num5 * 100 / 52))
         r10.append(round(num10 * 100 / 52))
-        r20.append(round(num20 * 100 / 52))
+        r25.append(round(num25 * 100 / 52))
+        r50.append(round(num50 * 100 / 52))
+        r100.append(round(num100 * 100 / 52))
     path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates', 'probabilities_table.html'))
     with open(path) as template:
-        return jinja2.Template(template.read()).render(days=days, r2=r2, r10=r10, r20=r20)
+        return jinja2.Template(template.read()).render(days=days, r2=r2, r5=r5, r10=r10, r25=r25, r50=r50, r100=r100)
 
 
 def return_periods_table(rperiods: pd.DataFrame) -> str:
