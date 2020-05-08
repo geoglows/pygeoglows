@@ -1,11 +1,11 @@
 import geoglows.streamflow as sf
 
 
-def get_forecast_data_with_reach_id_region(reach_id, region):
-    stats = sf.forecast_stats(reach_id)
-    ensembles = sf.forecast_ensembles(reach_id)
-    warnings = sf.forecast_warnings(region)
-    records = sf.forecast_records(reach_id)
+def get_forecast_data_with_reach_id_region(reach_id, region, endpoint):
+    stats = sf.forecast_stats(reach_id, endpoint=endpoint)
+    ensembles = sf.forecast_ensembles(reach_id, endpoint=endpoint)
+    warnings = sf.forecast_warnings(region, endpoint=endpoint)
+    records = sf.forecast_records(reach_id, endpoint=endpoint)
     return stats, ensembles, warnings, records
 
 
@@ -72,19 +72,23 @@ def plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods
 
 
 if __name__ == '__main__':
-    reach_id = 3000150
+    reach_id = 3001070
     region = 'japan-geoglows'
     lat = 36.203917
     lon = 139.435292
+    endpoint = 'http://0.0.0.0:8090/api/'
 
-    stats, ensembles, warnings, records = get_forecast_data_with_reach_id_region(reach_id, region)
+    stats, ensembles, warnings, records = get_forecast_data_with_reach_id_region(reach_id, region, endpoint)
+    rperiods = sf.return_periods(reach_id)
     # historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id)
     # historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id, forcing='era_interim')
     # plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods)
 
-    print(stats.tail(20))
-    sf.hydroviewer_plot(records, stats).show()
-    sf.ensembles_plot(ensembles).show()
+    # print(stats.head(20))
+    # print(ensembles.head(20))
+    # print(records.head(20))
+    sf.hydroviewer_plot(records, stats, ensembles, rperiods, record_days=20).show()
+    # sf.ensembles_plot(ensembles).show()
 
     # sf.historical_plot(historical, rperiods).show()
     # with open('/Users/riley/spatialdata/table.html', 'w') as t:

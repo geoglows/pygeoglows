@@ -167,7 +167,7 @@ def forecast_records(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv', 
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return endpoint + method + '?reach_id={0}'.format(reach_id)
+        return f'{endpoint}{method}?reach_id={reach_id}&return_format={return_format}'
 
     # return the requested data
     return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
@@ -206,7 +206,7 @@ def historic_simulation(reach_id: int, forcing='era_5', endpoint=BYU_ENDPOINT, r
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return endpoint + method + '?reach_id={0}&forcing={1}'.format(reach_id, forcing, return_format)
+        return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}&return_format={return_format}'
 
     # return the requested data
     params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
@@ -246,7 +246,7 @@ def seasonal_average(reach_id: int, forcing='era_5', endpoint=BYU_ENDPOINT, retu
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return endpoint + method + '?reach_id={0}&forcing={1}'.format(reach_id, forcing, return_format)
+        return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}&return_format={return_format}'
 
     # return the requested data
     params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
@@ -286,7 +286,7 @@ def return_periods(reach_id: int, forcing='era_5', endpoint=BYU_ENDPOINT, return
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return endpoint + method + '?reach_id={0}&forcing={1}'.format(reach_id, forcing, return_format)
+        return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}&return_format={return_format}'
 
     # return the requested data
     params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
@@ -435,7 +435,7 @@ def reach_to_region(reach_id: int) -> str:
     for region, threshold in lookup.items():
         if reach_id < threshold:
             return region
-    return None
+    raise ValueError(f'{reach_id} not in the range of reach_ids for this model')
 
 
 def latlon_to_reach(lat: float, lon: float) -> dict:
@@ -515,7 +515,12 @@ def latlon_to_region(lat: float, lon: float) -> str:
 
 
 # FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
-def hydroviewer_plot(records: pd.DataFrame, stats: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs):
+def hydroviewer_plot(records: pd.DataFrame,
+                     stats: pd.DataFrame,
+                     ensembles: pd.DataFrame,
+                     rperiods: pd.DataFrame = None,
+                     record_days: int = 7,
+                     outformat: str = 'plotly', **kwargs):
     """
     Creates the standard plot for a hydroviewer
 
@@ -523,13 +528,13 @@ def hydroviewer_plot(records: pd.DataFrame, stats: pd.DataFrame, rperiods: pd.Da
         records: the response from forecast_records
         stats: the response from forecast_stats
         rperiods: the response from return_periods
+        outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
+        record_days: the number of days of forecast records to show before the start of the forecast (if available)
 
     Keyword Args:
-        outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
         reach_id: the reach ID of COMID of a stream to be added to the plot title
         drain_area: a string containing the area and units of the area upstream of this reach that will be shown on the
             plot title
-        record_days_len: the number of days of forecast records to show before the start of the forecast (if available)
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
@@ -542,8 +547,6 @@ def hydroviewer_plot(records: pd.DataFrame, stats: pd.DataFrame, rperiods: pd.Da
     # Process supported key word arguments (kwargs)
     reach_id = kwargs.get('reach_id', None)
     drain_area = kwargs.get('drain_area', None)
-    outformat = kwargs.get('outformat', 'plotly')
-    rec_day = kwargs.get('record_days_len', 7)
 
     # Validate a few of the important inputs
     if not isinstance(records, pd.DataFrame):
@@ -552,28 +555,32 @@ def hydroviewer_plot(records: pd.DataFrame, stats: pd.DataFrame, rperiods: pd.Da
         raise ValueError('invalid outformat specified. pick json or html')
 
     # limit the forecast records to 7 days before the start of the forecast
-    records = records.loc[records.index >= pd.to_datetime(datetime.date.today() - datetime.timedelta(days=rec_day))]
+    records = records.loc[records.index >= pd.to_datetime(datetime.date.today() - datetime.timedelta(days=record_days))]
+    records_dates = records.index.tolist()
 
     # Start processing the inputs
-    records_dates = records.index.tolist()
     dates = stats.index.tolist()
-    startdate = min(records_dates[0], dates[0])
-    enddate = max(records_dates[-1], dates[-1])
+    if len(records_dates) == 0:
+        startdate = dates[0]
+        enddate = dates[-1]
+    else:
+        startdate = min(records_dates[0], dates[0])
+        enddate = max(records_dates[-1], dates[-1])
 
     plot_data = {
         'reach_id': reach_id,
         'drain_area': drain_area,
-        'x_ensembles': stats['mean (m^3/s)'].dropna(axis=0).index.tolist(),
-        'x_hires': stats['mean (m^3/s)'].dropna(axis=0).index.tolist(),
+        'x_stats': stats['flow_avg_m^3/s'].dropna(axis=0).index.tolist(),
+        'x_hires': stats['high_res_m^3/s'].dropna(axis=0).index.tolist(),
         'x_records': records_dates,
         'recorded_flows': records['streamflow (m^3/s)'].dropna(axis=0).tolist(),
-        'y_max': max(stats['max (m^3/s)']),
-        'min': list(stats['min (m^3/s)'].dropna(axis=0)),
-        'mean': list(stats['mean (m^3/s)'].dropna(axis=0)),
-        'max': list(stats['max (m^3/s)'].dropna(axis=0)),
-        'stdlow': list(stats['std_dev_range_lower (m^3/s)'].dropna(axis=0)),
-        'stdup': list(stats['std_dev_range_upper (m^3/s)'].dropna(axis=0)),
-        'hires': list(stats['high_res (m^3/s)'].dropna(axis=0)),
+        'y_max': max(stats['flow_max_m^3/s']),
+        'flow_max': list(stats['flow_max_m^3/s'].dropna(axis=0)),
+        'flow_75%': list(stats['flow_75%_m^3/s'].dropna(axis=0)),
+        'flow_avg': list(stats['flow_avg_m^3/s'].dropna(axis=0)),
+        'flow_25%': list(stats['flow_25%_m^3/s'].dropna(axis=0)),
+        'flow_min': list(stats['flow_min_m^3/s'].dropna(axis=0)),
+        'high_res': list(stats['high_res_m^3/s'].dropna(axis=0)),
     }
     if rperiods is not None:
         plot_data['r2']: rperiods['return_period_2'].values[0]
@@ -586,69 +593,66 @@ def hydroviewer_plot(records: pd.DataFrame, stats: pd.DataFrame, rperiods: pd.Da
     else:
         shapes = []
 
+    ensembles_data = ensembles_plot(ensembles, outformat='json')
     if outformat == 'json':
         return plot_data
 
-    recorded_flows = go.Scatter(
-        name='1st day forecasted flows',
-        x=plot_data['x_records'],
-        y=plot_data['recorded_flows'],
-        line=dict(color='orange'),
-    )
-    meanplot = go.Scatter(
-        name='Mean',
-        x=plot_data['x_ensembles'],
-        y=plot_data['mean'],
-        line=dict(color='blue'),
-    )
-    maxplot = go.Scatter(
-        name='Max',
-        x=plot_data['x_ensembles'],
-        y=plot_data['max'],
-        fill='tonexty',
-        mode='lines',
-        line=dict(color='rgb(152, 251, 152)', width=0)
-    )
-    minplot = go.Scatter(
-        name='Min',
-        x=plot_data['x_ensembles'],
-        y=plot_data['min'],
-        fill=None,
-        mode='lines',
-        line=dict(color='rgb(152, 251, 152)')
-    )
-    stdlowplot = go.Scatter(
-        name='Std. Dev. Lower',
-        x=plot_data['x_ensembles'],
-        y=plot_data['stdlow'],
-        fill='tonexty',
-        mode='lines',
-        line=dict(color='rgb(152, 251, 152)', width=0)
-    )
-    stdupplot = go.Scatter(
-        name='Std. Dev. Upper',
-        x=plot_data['x_ensembles'],
-        y=plot_data['stdup'],
-        fill='tonexty',
-        mode='lines',
-        line={'width': 0, 'color': 'rgb(34, 139, 34)'}
-    )
-    hires = go.Scatter(
-        name='Higher Resolution',
-        x=plot_data['x_hires'],
-        y=plot_data['hires'],
-        line={'color': 'black'}
-    )
+    plot_scatters = [
+        go.Scatter(name='Previous Forcasted Flow',
+                   x=plot_data['x_records'],
+                   y=plot_data['recorded_flows'],
+                   line=dict(color='orange'), ),
+        # Do 25/75 percentile + max/min flows each together so you can use fill='toself' to make the colors work right
+        go.Scatter(name='Maximum & Minimum',
+                   x=plot_data['x_stats'] + plot_data['x_stats'][::-1],
+                   y=plot_data['flow_max'] + plot_data['flow_min'][::-1],
+                   legendgroup='Boundaries',
+                   fill='toself',
+                   visible='legendonly',
+                   line=dict(color='red', dash='dash')),
+        go.Scatter(name='25-75 Percentile Flow',
+                   x=plot_data['x_stats'] + plot_data['x_stats'][::-1],
+                   y=plot_data['flow_75%'] + plot_data['flow_25%'][::-1],
+                   legendgroup='percentile_flow',
+                   fill='toself',
+                   line=dict(color='green'), ),
+        go.Scatter(name='Higher Resolution',
+                   x=plot_data['x_hires'],
+                   y=plot_data['high_res'],
+                   line={'color': 'black'}, ),
+        go.Scatter(name='Average',
+                   x=plot_data['x_stats'],
+                   y=plot_data['flow_avg'],
+                   line=dict(color='blue'), ),
+        # add ensemble 1 individually so there is a legend entry, add the rest with showlegend=False
+        go.Scatter(
+            x=plot_data['x_stats'],
+            y=ensembles_data[f'ensemble_{1}'],
+            visible='legendonly',
+            legendgroup='Ensembles',
+            name=f'View Individual Ensembles',
+        )
+    ]
+    for i in range(2, 52):
+        plot_scatters.append(go.Scatter(
+            x=plot_data['x_stats'],
+            y=ensembles_data[f'ensemble_{i}'],
+            visible='legendonly',
+            legendgroup='Ensembles',
+            name=f'Ensemble {i}',
+            showlegend=False,
+        ))
+
     layout = go.Layout(
         title=__build_title('Forecasted Streamflow', reach_id, drain_area),
         xaxis={'title': 'Date'},
-        yaxis={
-            'title': 'Streamflow (m<sup>3</sup>/s)',
-            'range': [0, 1.2 * plot_data['y_max']]
-        },
-        shapes=shapes
+        yaxis=dict(title='Streamflow (m<sup>3</sup>/s)', range=[0, 1.2 * plot_data['y_max']]),
+        shapes=shapes,
+        legend_title_text='Streamflow Series'
     )
-    figure = go.Figure([recorded_flows, minplot, stdlowplot, stdupplot, maxplot, meanplot, hires], layout=layout)
+
+    figure = go.Figure(plot_scatters, layout=layout)
+
     if outformat == 'plotly':
         return figure
     if outformat == 'plotly_html':
@@ -844,8 +848,8 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None, **kwa
 
     # add a dictionary entry for each of the ensemble members. the key for each series is the integer ensemble number
     for ensemble in ensembles.columns:
-        plot_data[int(ensemble[9:11])] = ensembles[ensemble].dropna(axis=0).tolist()
-        max_flows.append(max(plot_data[int(ensemble[9:11])]))
+        plot_data[f'ensemble_{int(ensemble[9:11])}'] = ensembles[ensemble].dropna(axis=0).tolist()
+        max_flows.append(max(plot_data[f'ensemble_{int(ensemble[9:11])}']))
     plot_data['y_max'] = max(max_flows)
 
     if rperiods is not None:
