@@ -78,8 +78,14 @@ if __name__ == '__main__':
     lon = 139.435292
 
     stats, ensembles, warnings, records = get_forecast_data_with_reach_id_region(reach_id, region)
-    # historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id, forcing='era_5')
-    historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id, forcing='era_interim')
-    plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods)
-    # data_latlon = request_all_data_with_lat_lon(lat, lon)
-    # plot_all(data_latlon)
+    # historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id)
+    # historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id, forcing='era_interim')
+    # plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods)
+
+    print(stats.tail(20))
+    sf.hydroviewer_plot(records, stats).show()
+    sf.ensembles_plot(ensembles).show()
+
+    # sf.historical_plot(historical, rperiods).show()
+    # with open('/Users/riley/spatialdata/table.html', 'w') as t:
+    #     t.write(sf.return_periods_table(rperiods))

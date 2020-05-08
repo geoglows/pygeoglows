@@ -1351,7 +1351,7 @@ def return_periods_table(rperiods: pd.DataFrame) -> str:
     rp = {key: round(value, 2) for key, value in sorted(rp.items(), key=lambda item: item[1])}
 
     with open(path) as template:
-        return jinja2.Template(template.read()).render(reach_id=reach_id, rp=rp)
+        return jinja2.Template(template.read()).render(reach_id=reach_id, rp=rp, colors=_plot_colors())
 
 
 # PLOTTING AUXILIARY FUNCTIONS
@@ -1363,7 +1363,21 @@ def __build_title(base, reach_id, drain_area):
     return base
 
 
+def _plot_colors():
+    return {
+        '2 Year': 'rgba(254, 240, 1, .4)',
+        '5 Year': 'rgba(253, 154, 1, .4)',
+        '10 Year': 'rgba(255, 56, 5, .4)',
+        '20 Year': 'rgba(128, 0, 246, .4)',
+        '25 Year': 'rgba(255, 0, 0, .4)',
+        '50 Year': 'rgba(128, 0, 106, .4)',
+        '100 Year': 'rgba(128, 0, 246, .4)',
+    }
+
+
 def _rperiod_shapes(startdate: str, enddate: str, rperiods: pd.DataFrame, y_max: float):
+    colors = _plot_colors()
+    linestyle = {'width': .3}
     if list(rperiods.columns) == ['max_flow', 'return_period_20', 'return_period_10', 'return_period_2']:
         return [
             go.layout.Shape(
@@ -1372,9 +1386,8 @@ def _rperiod_shapes(startdate: str, enddate: str, rperiods: pd.DataFrame, y_max:
                 x1=enddate,
                 y0=rperiods['return_period_2'].values[0],
                 y1=rperiods['return_period_10'].values[0],
-                line={'width': 0},
-                opacity=.4,
-                fillcolor='yellow'
+                line=linestyle,
+                fillcolor=colors['2 Year']
             ),
             go.layout.Shape(
                 type='rect',
@@ -1382,9 +1395,8 @@ def _rperiod_shapes(startdate: str, enddate: str, rperiods: pd.DataFrame, y_max:
                 x1=enddate,
                 y0=rperiods['return_period_10'].values[0],
                 y1=rperiods['return_period_20'].values[0],
-                line={'width': 0},
-                opacity=.4,
-                fillcolor='red'
+                line=linestyle,
+                fillcolor=colors['10 Year']
             ),
             go.layout.Shape(
                 type='rect',
@@ -1392,9 +1404,8 @@ def _rperiod_shapes(startdate: str, enddate: str, rperiods: pd.DataFrame, y_max:
                 x1=enddate,
                 y0=rperiods['return_period_10'].values[0],
                 y1=1.2 * y_max,
-                line={'width': 0},
-                opacity=.4,
-                fillcolor='purple'
+                line=linestyle,
+                fillcolor=colors['20 Year']
             ),
         ]
     return [
@@ -1404,9 +1415,8 @@ def _rperiod_shapes(startdate: str, enddate: str, rperiods: pd.DataFrame, y_max:
             x1=enddate,
             y0=rperiods['return_period_2'].values[0],
             y1=rperiods['return_period_5'].values[0],
-            line={'width': .5},
-            opacity=.4,
-            fillcolor='rgba(134, 206, 250, 1)'
+            line=linestyle,
+            fillcolor=colors['2 Year']
         ),
         go.layout.Shape(
             type='rect',
@@ -1414,9 +1424,8 @@ def _rperiod_shapes(startdate: str, enddate: str, rperiods: pd.DataFrame, y_max:
             x1=enddate,
             y0=rperiods['return_period_5'].values[0],
             y1=rperiods['return_period_10'].values[0],
-            line={'width': .5},
-            opacity=.4,
-            fillcolor='rgba(115, 185, 238, 1)'
+            line=linestyle,
+            fillcolor=colors['5 Year']
         ),
         go.layout.Shape(
             type='rect',
@@ -1424,9 +1433,8 @@ def _rperiod_shapes(startdate: str, enddate: str, rperiods: pd.DataFrame, y_max:
             x1=enddate,
             y0=rperiods['return_period_10'].values[0],
             y1=rperiods['return_period_25'].values[0],
-            line={'width': .5},
-            opacity=.4,
-            fillcolor='rgba(84, 148, 218, 1)'
+            line=linestyle,
+            fillcolor=colors['10 Year']
         ),
         go.layout.Shape(
             type='rect',
@@ -1434,9 +1442,8 @@ def _rperiod_shapes(startdate: str, enddate: str, rperiods: pd.DataFrame, y_max:
             x1=enddate,
             y0=rperiods['return_period_25'].values[0],
             y1=rperiods['return_period_50'].values[0],
-            line={'width': .5},
-            opacity=.4,
-            fillcolor='rgba(51, 115, 196, 1)'
+            line=linestyle,
+            fillcolor=colors['25 Year']
         ),
         go.layout.Shape(
             type='rect',
@@ -1444,9 +1451,8 @@ def _rperiod_shapes(startdate: str, enddate: str, rperiods: pd.DataFrame, y_max:
             x1=enddate,
             y0=rperiods['return_period_50'].values[0],
             y1=rperiods['return_period_100'].values[0],
-            line={'width': .5},
-            opacity=.4,
-            fillcolor='rgba(23, 80, 172, 1)'
+            line=linestyle,
+            fillcolor=colors['50 Year']
         ),
         go.layout.Shape(
             type='rect',
@@ -1454,9 +1460,8 @@ def _rperiod_shapes(startdate: str, enddate: str, rperiods: pd.DataFrame, y_max:
             x1=enddate,
             y0=rperiods['return_period_100'].values[0],
             y1=1.2 * y_max,
-            line={'width': .5},
-            opacity=.4,
-            fillcolor='rgba(0, 51, 150, 1)'
+            line=linestyle,
+            fillcolor=colors['100 Year']
         ),
     ]
 
