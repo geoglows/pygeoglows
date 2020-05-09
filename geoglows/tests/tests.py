@@ -9,10 +9,10 @@ def get_forecast_data_with_reach_id_region(reach_id, region, endpoint):
     return stats, ensembles, warnings, records
 
 
-def get_historical_data_with_reach_id(reach_id, forcing='era_5'):
-    historical = sf.historic_simulation(reach_id, forcing)
-    seasonal = sf.seasonal_average(reach_id, forcing)
-    rperiods = sf.return_periods(reach_id, forcing)
+def get_historical_data_with_reach_id(reach_id, endpoint, forcing='era_5'):
+    historical = sf.historic_simulation(reach_id, forcing, endpoint=endpoint)
+    seasonal = sf.seasonal_average(reach_id, forcing, endpoint=endpoint)
+    rperiods = sf.return_periods(reach_id, forcing, endpoint=endpoint)
     return historical, seasonal, rperiods
 
 
@@ -71,9 +71,10 @@ if __name__ == '__main__':
     endpoint = 'http://0.0.0.0:8090/api/'
 
     stats, ensembles, warnings, records = get_forecast_data_with_reach_id_region(reach_id, region, endpoint)
-    historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id)
+    historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id, sf.BYU_ENDPOINT)
     # historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id, forcing='era_interim')
     # plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods)
+    sf.hydroviewer_plot(records, stats, ensembles, rperiods).show()
 
-    with open('/Users/riley/spatialdata/table.html', 'w') as t:
-        t.write(sf.probabilities_table(stats, ensembles, rperiods))
+    # with open('/Users/riley/spatialdata/table.html', 'w') as t:
+    #     t.write(sf.probabilities_table(stats, ensembles, rperiods))

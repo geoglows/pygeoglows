@@ -167,7 +167,7 @@ def forecast_records(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv', 
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return f'{endpoint}{method}?reach_id={reach_id}&return_format={return_format}'
+        return f'{endpoint}{method}?reach_id={reach_id}'
 
     # return the requested data
     return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
@@ -206,7 +206,7 @@ def historic_simulation(reach_id: int, forcing='era_5', endpoint=BYU_ENDPOINT, r
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}&return_format={return_format}'
+        return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}'
 
     # return the requested data
     params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
@@ -246,7 +246,7 @@ def seasonal_average(reach_id: int, forcing='era_5', endpoint=BYU_ENDPOINT, retu
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}&return_format={return_format}'
+        return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}'
 
     # return the requested data
     params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
@@ -286,7 +286,7 @@ def return_periods(reach_id: int, forcing='era_5', endpoint=BYU_ENDPOINT, return
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}&return_format={return_format}'
+        return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}'
 
     # return the requested data
     params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
@@ -605,7 +605,6 @@ def hydroviewer_plot(records: pd.DataFrame,
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%Y'},
         shapes=_rperiod_shapes(startdate, enddate, rperiods, max_flow),
-        legend_title_text='Streamflow Series',
     )
 
     if outformat == 'plotly':
@@ -711,7 +710,8 @@ def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs):
         title=__build_title('Forecasted Streamflow', reach_id, drain_area),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 1.2 * plot_data['y_max']]},
         xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%Y'},
-        shapes=shapes
+        shapes=shapes,
+        legend_title_text='Streamflow Series',
     )
     figure = go.Figure(scatter_plots, layout=layout)
     if outformat == 'plotly':
@@ -814,7 +814,8 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None, **kwa
         title=__build_title('Ensemble Predicted Streamflow', reach_id, drain_area),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 1.2 * plot_data['y_max']]},
         xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%Y'},
-        shapes=shapes
+        shapes=shapes,
+        legend_title_text='Streamflow Series',
     )
     figure = go.Figure(scatter_plots, layout=layout)
     if outformat == 'plotly':
@@ -893,11 +894,13 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs)
     if outformat == 'plotly_scatters':
         return scatter_plots
 
+    # todo fix the x axis format tick option- refer to previous version of the code if necessary
     layout = go.Layout(
         title=__build_title('Forecasted Streamflow Record', reach_id, drain_area),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 1.2 * plot_data['y_max']]},
-        xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%Y'},
-        shapes=shapes
+        xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y'},
+        shapes=shapes,
+        legend_title_text='Streamflow Series',
     )
     figure = go.Figure(scatter_plots, layout=layout)
     if outformat == 'plotly':
@@ -979,7 +982,8 @@ def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs)
         title=__build_title('Historic Streamflow Simulation', reach_id, drain_area),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%Y'},
-        shapes=shapes
+        shapes=shapes,
+        legend_title_text='Streamflow Series',
     )
     figure = go.Figure(scatter_plots, layout=layout)
     if outformat == 'plotly':
@@ -1066,6 +1070,7 @@ def seasonal_plot(seasonal: pd.DataFrame, **kwargs):
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [plot_data['day_number'][0], plot_data['day_number'][1]],
                'hoverformat': '%b %d (%j)', 'tickformat': '%b'},
+        legend_title_text='Streamflow Series',
     )
     figure = go.Figure(scatter_plots, layout=layout)
     if outformat == 'plotly':
@@ -1144,6 +1149,7 @@ def flow_duration_curve_plot(hist: pd.DataFrame, **kwargs):
         title=__build_title('Flow Duration Curve', reach_id, drain_area),
         xaxis={'title': 'Exceedence Probability'},
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
+        legend_title_text='Streamflow Series',
     )
     figure = go.Figure(scatter_plots, layout=layout)
     if outformat == 'plotly':
