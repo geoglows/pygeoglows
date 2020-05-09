@@ -73,15 +73,7 @@ if __name__ == '__main__':
     stats, ensembles, warnings, records = get_forecast_data_with_reach_id_region(reach_id, region, endpoint)
     historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id)
     # historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id, forcing='era_interim')
-    plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods)
+    # plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods)
 
-    # print(stats.head(20))
-    # print(ensembles.head(20))
-    # print(records.head(20))
-    # rperiods = sf.return_periods(reach_id)
-    # sf.hydroviewer_plot(records, stats, ensembles, rperiods, record_days=20).show()
-    # sf.ensembles_plot(ensembles).show()
-
-    # sf.historical_plot(historical, rperiods).show()
-    # with open('/Users/riley/spatialdata/table.html', 'w') as t:
-    #     t.write(sf.return_periods_table(rperiods))
+    with open('/Users/riley/spatialdata/table.html', 'w') as t:
+        t.write(sf.probabilities_table(stats, ensembles, rperiods))

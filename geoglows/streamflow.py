@@ -1241,7 +1241,8 @@ def probabilities_table(stats: pd.DataFrame, ensembles: pd.DataFrame, rperiods: 
         r100.append(round(num100 * 100 / 52))
     path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates', 'probabilities_table.html'))
     with open(path) as template:
-        return jinja2.Template(template.read()).render(days=days, r2=r2, r5=r5, r10=r10, r25=r25, r50=r50, r100=r100)
+        return jinja2.Template(template.read()).render(days=days, r2=r2, r5=r5, r10=r10, r25=r25, r50=r50, r100=r100,
+                                                       colors=_plot_colors())
 
 
 def return_periods_table(rperiods: pd.DataFrame) -> str:
