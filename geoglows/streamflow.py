@@ -587,17 +587,19 @@ def hydroviewer_plot(records: pd.DataFrame,
         x=ensemble_data['x_1-51'],
         y=ensemble_data['ensemble_1'],
         visible='legendonly',
-        legendgroup='Ensembles',
+        legendgroup='ensembles',
         name='Forecast Ensembles',
+        line={'color': 'sandybrown'}
     ))
     for i in range(2, 52):
         figure.add_trace(go.Scatter(
             x=ensemble_data['x_1-51'],
             y=ensemble_data[f'ensemble_{i}'],
             visible='legendonly',
-            legendgroup='Ensembles',
+            legendgroup='ensembles',
             name=f'Ensemble {i}',
             showlegend=False,
+            line={'color': 'sandybrown'}
         ))
 
     figure.update_layout(
@@ -680,20 +682,48 @@ def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs):
         return plot_data
 
     scatter_plots = [
-        # Do 25/75 percentile + max/min flows each together so you can use fill='toself' to make the colors work right
+        # Plot together so you can use fill='toself' for the shaded box, also separately so the labels appear
         go.Scatter(name='Maximum & Minimum',
                    x=plot_data['x_stats'] + plot_data['x_stats'][::-1],
                    y=plot_data['flow_max'] + plot_data['flow_min'][::-1],
-                   legendgroup='Boundaries',
+                   legendgroup='boundaries',
                    fill='toself',
                    visible='legendonly',
                    line=dict(color='red', dash='dash')),
+        go.Scatter(name='Maximum',
+                   x=plot_data['x_stats'],
+                   y=plot_data['flow_max'],
+                   legendgroup='boundaries',
+                   visible='legendonly',
+                   showlegend=False,
+                   line=dict(color='red', dash='dash')),
+        go.Scatter(name='Minimum',
+                   x=plot_data['x_stats'],
+                   y=plot_data['flow_min'],
+                   legendgroup='boundaries',
+                   visible='legendonly',
+                   showlegend=False,
+                   line=dict(color='red', dash='dash')),
+
         go.Scatter(name='25-75 Percentile Flow',
                    x=plot_data['x_stats'] + plot_data['x_stats'][::-1],
                    y=plot_data['flow_75%'] + plot_data['flow_25%'][::-1],
                    legendgroup='percentile_flow',
                    fill='toself',
+                   line=dict(color='lightgreen'), ),
+        go.Scatter(name='75%',
+                   x=plot_data['x_stats'],
+                   y=plot_data['flow_75%'],
+                   showlegend=False,
+                   legendgroup='percentile_flow',
                    line=dict(color='green'), ),
+        go.Scatter(name='25%',
+                   x=plot_data['x_stats'],
+                   y=plot_data['flow_25%'],
+                   showlegend=False,
+                   legendgroup='percentile_flow',
+                   line=dict(color='green'), ),
+
         go.Scatter(name='Higher Resolution',
                    x=plot_data['x_hires'],
                    y=plot_data['high_res'],
@@ -772,8 +802,8 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None, **kwa
     plot_data = {
         'reach_id': reach_id,
         'drain_area': drain_area,
-        'x_1-51': ensembles['ensemble_01 (m^3/s)'].dropna(axis=0).index.tolist(),
-        'x_52': ensembles['ensemble_52 (m^3/s)'].dropna(axis=0).index.tolist(),
+        'x_1-51': ensembles['ensemble_01'].dropna(axis=0).index.tolist(),
+        'x_52': ensembles['ensemble_52'].dropna(axis=0).index.tolist(),
     }
 
     # add a dictionary entry for each of the ensemble members. the key for each series is the integer ensemble number
@@ -787,7 +817,6 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None, **kwa
         shapes = _rperiod_shapes(startdate, enddate, rperiods, plot_data['y_max'])
     else:
         shapes = []
-
     if outformat == 'json':
         return plot_data
 
@@ -880,7 +909,6 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs)
         shapes = _rperiod_shapes(startdate, enddate, rperiods, plot_data['y_max'])
     else:
         shapes = []
-
     if outformat == 'json':
         return plot_data
 
@@ -894,11 +922,10 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs)
     if outformat == 'plotly_scatters':
         return scatter_plots
 
-    # todo fix the x axis format tick option- refer to previous version of the code if necessary
     layout = go.Layout(
         title=__build_title('Forecasted Streamflow Record', reach_id, drain_area),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 1.2 * plot_data['y_max']]},
-        xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y'},
+        xaxis={'title': 'Date', 'range': [startdate, enddate]},
         shapes=shapes,
         legend_title_text='Streamflow Series',
     )
@@ -1039,7 +1066,6 @@ def seasonal_plot(seasonal: pd.DataFrame, **kwargs):
         'max_flow': seasonal['max_flow'].tolist(),
         'min_flow': seasonal['min_flow'].tolist(),
     }
-
     if outformat == 'json':
         return plot_data
 
