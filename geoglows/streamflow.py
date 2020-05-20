@@ -23,7 +23,7 @@ __all__ = ['forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecas
 ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
 AZURE_ENDPOINT = 'http://gsf-api-vm.eastus.cloudapp.azure.com/api/'
 BYU_ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
-LOCAL_ENDPOINT = 'https://0.0.0.0:8090/api/'
+LOCAL_ENDPOINT = 'http://0.0.0.0:8090/api/'
 
 
 # FUNCTIONS THAT CALL THE GLOBAL STREAMFLOW PREDICTION API
@@ -587,7 +587,7 @@ def hydroviewer_plot(records: pd.DataFrame,
     ensemble_data = ensembles_plot(ensembles, outformat='json')
     figure.add_trace(go.Scatter(
         x=ensemble_data['x_1-51'],
-        y=ensemble_data['ensemble_1'],
+        y=ensemble_data['ensemble_01_m^3/s'],
         visible='legendonly',
         legendgroup='ensembles',
         name='Forecast Ensembles',
@@ -596,7 +596,7 @@ def hydroviewer_plot(records: pd.DataFrame,
     for i in range(2, 52):
         figure.add_trace(go.Scatter(
             x=ensemble_data['x_1-51'],
-            y=ensemble_data[f'ensemble_{i}'],
+            y=ensemble_data[f'ensemble_{i:02}_m^3/s'],
             visible='legendonly',
             legendgroup='ensembles',
             name=f'Ensemble {i}',
@@ -804,14 +804,14 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None, **kwa
     plot_data = {
         'reach_id': reach_id,
         'drain_area': drain_area,
-        'x_1-51': ensembles['ensemble_01'].dropna(axis=0).index.tolist(),
-        'x_52': ensembles['ensemble_52'].dropna(axis=0).index.tolist(),
+        'x_1-51': ensembles['ensemble_01_m^3/s'].dropna(axis=0).index.tolist(),
+        'x_52': ensembles['ensemble_52_m^3/s'].dropna(axis=0).index.tolist(),
     }
 
     # add a dictionary entry for each of the ensemble members. the key for each series is the integer ensemble number
     for ensemble in ensembles.columns:
-        plot_data[f'ensemble_{int(ensemble[9:11])}'] = ensembles[ensemble].dropna(axis=0).tolist()
-        max_flows.append(max(plot_data[f'ensemble_{int(ensemble[9:11])}']))
+        plot_data[ensemble] = ensembles[ensemble].dropna(axis=0).tolist()
+        max_flows.append(max(plot_data[ensemble]))
     plot_data['y_max'] = max(max_flows)
 
     if rperiods is not None:
@@ -826,7 +826,7 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None, **kwa
     scatter_plots.append(go.Scatter(
         name='High Resolution',
         x=plot_data['x_52'],
-        y=plot_data['ensemble_52'],
+        y=plot_data['ensemble_52_m^3/s'],
         line=dict(color='black')
     ))
     # create a line for the rest of the ensembles (1-51)
@@ -834,7 +834,7 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None, **kwa
         scatter_plots.append(go.Scatter(
             name='Ensemble ' + str(i),
             x=plot_data['x_1-51'],
-            y=plot_data[f'ensemble_{i}'],
+            y=plot_data[f'ensemble_{i:02}_m^3/s'],
         ))
 
     if outformat == 'plotly_scatters':
