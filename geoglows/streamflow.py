@@ -20,12 +20,14 @@ __all__ = ['forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecas
            'flow_duration_curve_plot', 'probabilities_table', 'return_periods_table', 'reach_to_region',
            'latlon_to_reach']
 
+ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
+AZURE_ENDPOINT = 'http://gsf-api-vm.eastus.cloudapp.azure.com/api/'
 BYU_ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
-AZURE_HOST = 'http://gsf-api-vm.eastus.cloudapp.azure.com/api/'
+LOCAL_ENDPOINT = 'https://0.0.0.0:8090/api/'
 
 
 # FUNCTIONS THAT CALL THE GLOBAL STREAMFLOW PREDICTION API
-def forecast_stats(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv', **kwargs):
+def forecast_stats(reach_id: int, endpoint=ENDPOINT, return_format='csv', **kwargs):
     """
     Retrieves statistics that summarize the most recent streamflow forecast for a certain reach_id
 
@@ -63,7 +65,7 @@ def forecast_stats(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv', **
     return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
 
 
-def forecast_ensembles(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv', **kwargs):
+def forecast_ensembles(reach_id: int, endpoint=ENDPOINT, return_format='csv', **kwargs):
     """
     Retrieves each ensemble from the most recent streamflow forecast for a certain reach_id
 
@@ -101,7 +103,7 @@ def forecast_ensembles(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv'
     return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
 
 
-def forecast_warnings(region: str, endpoint=BYU_ENDPOINT, return_format='csv', **kwargs):
+def forecast_warnings(region: str, endpoint=ENDPOINT, return_format='csv', **kwargs):
     """
     Retrieves a csv listing streams likely to experience a return period level flow during the forecast period.
 
@@ -137,7 +139,7 @@ def forecast_warnings(region: str, endpoint=BYU_ENDPOINT, return_format='csv', *
     return _make_request(endpoint, method, {'region': region, 'return_format': return_format}, return_format)
 
 
-def forecast_records(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv', **kwargs):
+def forecast_records(reach_id: int, endpoint=ENDPOINT, return_format='csv', **kwargs):
     """
     Retrieves a csv listing streams likely to experience a return period level flow during the forecast period.
 
@@ -173,7 +175,7 @@ def forecast_records(reach_id: int, endpoint=BYU_ENDPOINT, return_format='csv', 
     return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
 
 
-def historic_simulation(reach_id: int, forcing='era_5', endpoint=BYU_ENDPOINT, return_format='csv', **kwargs):
+def historic_simulation(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_format='csv', **kwargs):
     """
     Retrieves a historical streamflow simulation derived from a specified forcing for a certain reach_id
 
@@ -213,7 +215,7 @@ def historic_simulation(reach_id: int, forcing='era_5', endpoint=BYU_ENDPOINT, r
     return _make_request(endpoint, method, params, return_format)
 
 
-def seasonal_average(reach_id: int, forcing='era_5', endpoint=BYU_ENDPOINT, return_format='csv', **kwargs):
+def seasonal_average(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_format='csv', **kwargs):
     """
     Retrieves the average flow for every day of the year at a certain reach_id.
 
@@ -253,7 +255,7 @@ def seasonal_average(reach_id: int, forcing='era_5', endpoint=BYU_ENDPOINT, retu
     return _make_request(endpoint, method, params, return_format)
 
 
-def return_periods(reach_id: int, forcing='era_5', endpoint=BYU_ENDPOINT, return_format='csv', **kwargs):
+def return_periods(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_format='csv', **kwargs):
     """
     Retrieves the return period thresholds based on a specified historic simulation forcing on a certain reach_id.
 
@@ -293,7 +295,7 @@ def return_periods(reach_id: int, forcing='era_5', endpoint=BYU_ENDPOINT, return
     return _make_request(endpoint, method, params, return_format)
 
 
-def available_data(endpoint=BYU_ENDPOINT, return_format='json') -> dict:
+def available_data(endpoint=ENDPOINT, return_format='json') -> dict:
     """
     Returns a dictionary with a key for each available_regions containing the available_dates for that region
 
@@ -320,7 +322,7 @@ def available_data(endpoint=BYU_ENDPOINT, return_format='json') -> dict:
     return _make_request(endpoint, method, {}, return_format)
 
 
-def available_regions(endpoint=BYU_ENDPOINT, return_format='json'):
+def available_regions(endpoint=ENDPOINT, return_format='json'):
     """
     Retrieves a list of regions available at the endpoint
 
@@ -346,7 +348,7 @@ def available_regions(endpoint=BYU_ENDPOINT, return_format='json'):
     return _make_request(endpoint, method, {}, return_format)
 
 
-def available_dates(reach_id=None, region=None, endpoint=BYU_ENDPOINT, return_format='json') -> dict:
+def available_dates(reach_id=None, region=None, endpoint=ENDPOINT, return_format='json') -> dict:
     """
     Retrieves the list of dates of stored streamflow forecasts. You need to specify either a reach_id or a region.
 
@@ -566,7 +568,7 @@ def hydroviewer_plot(records: pd.DataFrame,
     else:
         startdate = min(records_dates[0], stats_dates[0])
         enddate = max(records_dates[-1], stats_dates[-1])
-    max_flow = max(records['streamflow (m^3/s)'].max(), stats['flow_max_m^3/s'].max())
+    max_flow = max(records['streamflow_m^3/s'].max(), stats['flow_max_m^3/s'].max())
 
     # build a json of data for this plot by combining the other individual plot functions
     if outformat == 'json':
@@ -901,8 +903,8 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs)
         'reach_id': reach_id,
         'drain_area': drain_area,
         'x_records': dates,
-        'recorded_flows': records['streamflow (m^3/s)'].dropna(axis=0).tolist(),
-        'y_max': max(records['streamflow (m^3/s)']),
+        'recorded_flows': records['streamflow_m^3/s'].dropna(axis=0).tolist(),
+        'y_max': max(records['streamflow_m^3/s']),
     }
     if rperiods is not None:
         plot_data.update(list(json.loads(rperiods.to_json(orient='index')).items())[0][1])
@@ -983,8 +985,8 @@ def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs)
         'reach_id': reach_id,
         'drain_area': drain_area,
         'x_datetime': dates,
-        'y_flow': hist['streamflow (m^3/s)'].tolist(),
-        'y_max': max(hist['streamflow (m^3/s)']),
+        'y_flow': hist['streamflow_m^3/s'].tolist(),
+        'y_max': max(hist['streamflow_m^3/s']),
     }
     if rperiods is not None:
         plot_data.update(list(json.loads(rperiods.to_json(orient='index')).items())[0][1])
@@ -1062,7 +1064,7 @@ def seasonal_plot(seasonal: pd.DataFrame, **kwargs):
         'reach_id': reach_id,
         'drain_area': drain_area,
         'day_number': seasonal.index.tolist(),
-        'average_flow': seasonal['streamflow (m^3/s)'].tolist(),
+        'average_flow': seasonal['streamflow_m^3/s'].tolist(),
         'max_flow': seasonal['max_flow'].tolist(),
         'min_flow': seasonal['min_flow'].tolist(),
     }
@@ -1144,7 +1146,7 @@ def flow_duration_curve_plot(hist: pd.DataFrame, **kwargs):
         raise ValueError('invalid outformat specified. pick json or plotly or plotly_html')
 
     # process the hist dataframe to create the flow duration curve
-    sorted_hist = hist.sort_values(by='streamflow (m^3/s)', ascending=False)['streamflow (m^3/s)'].tolist()
+    sorted_hist = hist.sort_values(by='streamflow_m^3/s', ascending=False)['streamflow_m^3/s'].tolist()
 
     # ranks data from smallest to largest
     ranks = len(hist) - scipy.stats.rankdata(sorted_hist, method='average')

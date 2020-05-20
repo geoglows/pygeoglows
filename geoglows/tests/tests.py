@@ -33,7 +33,7 @@ def request_all_data_with_lat_lon(lat, lon):
            seasonal_int, seasonal_5, rperiods_int, rperiods_5
 
 
-def plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods):
+def plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods=None):
     # does not need warnings
     plot = sf.hydroviewer_plot(records, stats, ensembles, rperiods)
     plot.show()
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     endpoint = 'http://0.0.0.0:8090/api/'
 
     stats, ensembles, warnings, records = get_forecast_data_with_reach_id_region(reach_id, region, endpoint)
-    historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id, sf.BYU_ENDPOINT)
+    historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id, endpoint)
     # historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id, forcing='era_interim')
     # plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods)
     sf.hydroviewer_plot(records, stats, ensembles, rperiods).show()
