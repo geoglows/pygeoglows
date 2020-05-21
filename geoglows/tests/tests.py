@@ -61,7 +61,7 @@ def plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods
 
 
 if __name__ == '__main__':
-    reach_id = 3004224
+    reach_id = 3004334
     region = 'japan-geoglows'
     lat = 36.203917
     lon = 139.435292
@@ -71,14 +71,14 @@ if __name__ == '__main__':
     # historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id, forcing='era_interim')
     # plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods)
 
-    # with open('/Users/riley/spatialdata/table.html', 'w') as t:
-    #     t.write(sf.probabilities_table(stats, ensembles, rperiods))
-    stats = sf.forecast_stats(reach_id, endpoint=sf.LOCAL_ENDPOINT)
-    ensembles = sf.forecast_ensembles(reach_id, endpoint=sf.LOCAL_ENDPOINT)
-    warnings = sf.forecast_warnings(region, endpoint=sf.LOCAL_ENDPOINT)
-    records = sf.forecast_records(reach_id, endpoint=sf.LOCAL_ENDPOINT)
-    historical = sf.historic_simulation(reach_id, endpoint=sf.LOCAL_ENDPOINT)
-    seasonal = sf.seasonal_average(reach_id, endpoint=sf.LOCAL_ENDPOINT)
+    # stats = sf.forecast_stats(reach_id, endpoint=sf.LOCAL_ENDPOINT)
+    # ensembles = sf.forecast_ensembles(reach_id, endpoint=sf.LOCAL_ENDPOINT)
+    # warnings = sf.forecast_warnings(region, endpoint=sf.LOCAL_ENDPOINT)
+    # records = sf.forecast_records(reach_id, endpoint=sf.LOCAL_ENDPOINT)
+    # historical = sf.historic_simulation(reach_id, endpoint=sf.LOCAL_ENDPOINT)
+    # seasonal = sf.seasonal_average(reach_id, endpoint=sf.LOCAL_ENDPOINT)
     rperiods = sf.return_periods(reach_id, endpoint=sf.LOCAL_ENDPOINT)
-    plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods)
+    # plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods)
     # sf.hydroviewer_plot(records, stats, ensembles, rperiods).show()
+    with open('/Users/riley/spatialdata/rper_table.html', 'w') as t:
+        t.write(sf.return_periods_table(rperiods))

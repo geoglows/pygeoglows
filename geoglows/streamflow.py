@@ -1307,7 +1307,6 @@ def return_periods_table(rperiods: pd.DataFrame) -> str:
     rp = {key: round(value, 2) for key, value in sorted(rp.items(), key=lambda item: item[1])}
 
     with open(path) as template:
-        print(type(template.read()))
         return jinja2.Template(template.read()).render(reach_id=reach_id, rp=rp, colors=_plot_colors())
 
 
