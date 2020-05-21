@@ -34,7 +34,6 @@ def request_all_data_with_lat_lon(lat, lon):
 
 
 def plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods=None):
-    # does not need warnings
     plot = sf.hydroviewer_plot(records, stats, ensembles, rperiods)
     plot.show()
     plot = sf.forecast_plot(stats, rperiods)
@@ -42,8 +41,6 @@ def plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods
     plot = sf.ensembles_plot(ensembles, rperiods)
     plot.show()
     plot = sf.records_plot(records, rperiods)
-    plot.show()
-    plot = sf.records_plot(records)
     plot.show()
 
     plot = sf.historical_plot(historical, rperiods)
@@ -53,10 +50,10 @@ def plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods
     plot = sf.flow_duration_curve_plot(historical)
     plot.show()
 
-    # with open('/Users/riley/spatialdata/tables.html', 'w') as f:
+    # with open('/Users/riley/spatialdata/prob_table.html', 'w') as f:
     #     f.write(sf.probabilities_table(stats, ensembles, rperiods))
-    sf.probabilities_table(stats, ensembles, rperiods)
-    sf.return_periods_table(rperiods)
+    # with open('/Users/riley/spatialdata/rper_table.html', 'w') as f:
+    #     f.write(sf.return_periods_table(rperiods))
 
     print(warnings.head(10))
 
@@ -64,7 +61,7 @@ def plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods
 
 
 if __name__ == '__main__':
-    reach_id = 3001070
+    reach_id = 3004224
     region = 'japan-geoglows'
     lat = 36.203917
     lon = 139.435292
@@ -73,7 +70,6 @@ if __name__ == '__main__':
     # historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id, sf.LOCAL_ENDPOINT)
     # historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id, forcing='era_interim')
     # plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods)
-    # sf.hydroviewer_plot(records, stats, ensembles, rperiods).show()
 
     # with open('/Users/riley/spatialdata/table.html', 'w') as t:
     #     t.write(sf.probabilities_table(stats, ensembles, rperiods))
@@ -85,3 +81,4 @@ if __name__ == '__main__':
     seasonal = sf.seasonal_average(reach_id, endpoint=sf.LOCAL_ENDPOINT)
     rperiods = sf.return_periods(reach_id, endpoint=sf.LOCAL_ENDPOINT)
     plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods)
+    # sf.hydroviewer_plot(records, stats, ensembles, rperiods).show()

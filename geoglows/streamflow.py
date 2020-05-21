@@ -3,10 +3,10 @@ import json
 import os
 from collections import OrderedDict
 from io import StringIO
-import pandas as pd
 
 import jinja2
 import pandas
+import pandas as pd
 import plotly.graph_objs as go
 import requests
 import scipy.stats
@@ -555,7 +555,7 @@ def hydroviewer_plot(records: pd.DataFrame,
     if not isinstance(records, pd.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['json', 'plotly', 'plotly_html']:
-        raise ValueError('invalid outformat specified. pick json or html')
+        raise ValueError('invalid outformat specified. pick json, plotly, or plotly_html')
 
     # determine the bounds of the plot on the x and y axis
     stats_dates = stats.index.tolist()
@@ -591,7 +591,6 @@ def hydroviewer_plot(records: pd.DataFrame,
         visible='legendonly',
         legendgroup='ensembles',
         name='Forecast Ensembles',
-        line={'color': 'sandybrown'}
     ))
     for i in range(2, 52):
         figure.add_trace(go.Scatter(
@@ -601,14 +600,17 @@ def hydroviewer_plot(records: pd.DataFrame,
             legendgroup='ensembles',
             name=f'Ensemble {i}',
             showlegend=False,
-            line={'color': 'sandybrown'}
         ))
+    if rperiods is not None:
+        max_visible = max(stats['flow_75%_m^3/s'].max(), stats['flow_avg_m^3/s'].max(), stats['high_res_m^3/s'].max(),
+                          records['streamflow_m^3/s'].max())
+        for rp in _rperiod_scatters(startdate, enddate, rperiods, max_flow, max_visible):
+            figure.add_trace(rp)
 
     figure.update_layout(
         title=__build_title('Forecasted Streamflow', reach_id, drain_area),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
-        xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%Y'},
-        shapes=_rperiod_shapes(startdate, enddate, rperiods, max_flow),
+        xaxis={'title': 'Date', 'range': [startdate, enddate]},
     )
 
     if outformat == 'plotly':
@@ -654,7 +656,7 @@ def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs):
     if not isinstance(stats, pd.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
-        raise ValueError('invalid outformat specified. pick json or html')
+        raise ValueError('invalid outformat specified. pick json, plotly, plotly_scatters, or plotly_html')
 
     # Start processing the inputs
     dates = stats.index.tolist()
@@ -675,74 +677,74 @@ def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs):
         'high_res': list(stats['high_res_m^3/s'].dropna(axis=0)),
     }
     if rperiods is not None:
-        plot_data.update(list(json.loads(rperiods.to_json(orient='index')).items())[0][1])
-        shapes = _rperiod_shapes(startdate, enddate, rperiods, plot_data['y_max'])
+        plot_data.update(rperiods.to_dict(orient='index').items())
+        max_visible = max(max(plot_data['flow_75%']), max(plot_data['flow_avg']), max(plot_data['high_res']))
+        rperiod_scatters = _rperiod_scatters(startdate, enddate, rperiods, plot_data['y_max'], max_visible)
     else:
-        shapes = []
-
+        rperiod_scatters = []
     if outformat == 'json':
         return plot_data
 
     scatter_plots = [
-        # Plot together so you can use fill='toself' for the shaded box, also separately so the labels appear
-        go.Scatter(name='Maximum & Minimum',
-                   x=plot_data['x_stats'] + plot_data['x_stats'][::-1],
-                   y=plot_data['flow_max'] + plot_data['flow_min'][::-1],
-                   legendgroup='boundaries',
-                   fill='toself',
-                   visible='legendonly',
-                   line=dict(color='red', dash='dash')),
-        go.Scatter(name='Maximum',
-                   x=plot_data['x_stats'],
-                   y=plot_data['flow_max'],
-                   legendgroup='boundaries',
-                   visible='legendonly',
-                   showlegend=False,
-                   line=dict(color='red', dash='dash')),
-        go.Scatter(name='Minimum',
-                   x=plot_data['x_stats'],
-                   y=plot_data['flow_min'],
-                   legendgroup='boundaries',
-                   visible='legendonly',
-                   showlegend=False,
-                   line=dict(color='red', dash='dash')),
+                        # Plot together so you can use fill='toself' for the shaded box, also separately so the labels appear
+                        go.Scatter(name='Maximum & Minimum',
+                                   x=plot_data['x_stats'] + plot_data['x_stats'][::-1],
+                                   y=plot_data['flow_max'] + plot_data['flow_min'][::-1],
+                                   legendgroup='boundaries',
+                                   fill='toself',
+                                   visible='legendonly',
+                                   line=dict(color='lightblue', dash='dash')),
+                        go.Scatter(name='Maximum',
+                                   x=plot_data['x_stats'],
+                                   y=plot_data['flow_max'],
+                                   legendgroup='boundaries',
+                                   visible='legendonly',
+                                   showlegend=False,
+                                   line=dict(color='darkblue', dash='dash')),
+                        go.Scatter(name='Minimum',
+                                   x=plot_data['x_stats'],
+                                   y=plot_data['flow_min'],
+                                   legendgroup='boundaries',
+                                   visible='legendonly',
+                                   showlegend=False,
+                                   line=dict(color='darkblue', dash='dash')),
 
-        go.Scatter(name='25-75 Percentile Flow',
-                   x=plot_data['x_stats'] + plot_data['x_stats'][::-1],
-                   y=plot_data['flow_75%'] + plot_data['flow_25%'][::-1],
-                   legendgroup='percentile_flow',
-                   fill='toself',
-                   line=dict(color='lightgreen'), ),
-        go.Scatter(name='75%',
-                   x=plot_data['x_stats'],
-                   y=plot_data['flow_75%'],
-                   showlegend=False,
-                   legendgroup='percentile_flow',
-                   line=dict(color='green'), ),
-        go.Scatter(name='25%',
-                   x=plot_data['x_stats'],
-                   y=plot_data['flow_25%'],
-                   showlegend=False,
-                   legendgroup='percentile_flow',
-                   line=dict(color='green'), ),
+                        go.Scatter(name='25-75 Percentile Flow',
+                                   x=plot_data['x_stats'] + plot_data['x_stats'][::-1],
+                                   y=plot_data['flow_75%'] + plot_data['flow_25%'][::-1],
+                                   legendgroup='percentile_flow',
+                                   fill='toself',
+                                   line=dict(color='lightgreen'), ),
+                        go.Scatter(name='75%',
+                                   x=plot_data['x_stats'],
+                                   y=plot_data['flow_75%'],
+                                   showlegend=False,
+                                   legendgroup='percentile_flow',
+                                   line=dict(color='green'), ),
+                        go.Scatter(name='25%',
+                                   x=plot_data['x_stats'],
+                                   y=plot_data['flow_25%'],
+                                   showlegend=False,
+                                   legendgroup='percentile_flow',
+                                   line=dict(color='green'), ),
 
-        go.Scatter(name='Higher Resolution',
-                   x=plot_data['x_hires'],
-                   y=plot_data['high_res'],
-                   line={'color': 'black'}, ),
-        go.Scatter(name='Average',
-                   x=plot_data['x_stats'],
-                   y=plot_data['flow_avg'],
-                   line=dict(color='blue'), ),
-    ]
+                        go.Scatter(name='Higher Resolution',
+                                   x=plot_data['x_hires'],
+                                   y=plot_data['high_res'],
+                                   line={'color': 'black'}, ),
+                        go.Scatter(name='Average',
+                                   x=plot_data['x_stats'],
+                                   y=plot_data['flow_avg'],
+                                   line=dict(color='blue'), ),
+                    ] + rperiod_scatters
+
     if outformat == 'plotly_scatters':
         return scatter_plots
 
     layout = go.Layout(
         title=__build_title('Forecasted Streamflow', reach_id, drain_area),
-        yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 1.2 * plot_data['y_max']]},
-        xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%Y'},
-        shapes=shapes,
+        yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
+        xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%b %d %Y'},
         legend_title_text='Streamflow Series',
     )
     figure = go.Figure(scatter_plots, layout=layout)
@@ -788,8 +790,8 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None, **kwa
     # Validate a few of the important inputs
     if not isinstance(ensembles, pd.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
-    if outformat not in ['json', 'plotly', 'plotly_html']:
-        raise ValueError('invalid outformat specified. pick json or html')
+    if outformat not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
+        raise ValueError('invalid outformat specified. pick json, plotly, plotly_scatters, or plotly_html')
 
     # variables to determine the maximum flow and hold all the scatter plot lines
     max_flows = []
@@ -815,10 +817,10 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None, **kwa
     plot_data['y_max'] = max(max_flows)
 
     if rperiods is not None:
-        plot_data.update(list(json.loads(rperiods.to_json(orient='index')).items())[0][1])
-        shapes = _rperiod_shapes(startdate, enddate, rperiods, plot_data['y_max'])
+        plot_data.update(rperiods.to_dict(orient='index').items())
+        rperiod_scatters = _rperiod_scatters(startdate, enddate, rperiods, plot_data['y_max'])
     else:
-        shapes = []
+        rperiod_scatters = []
     if outformat == 'json':
         return plot_data
 
@@ -836,6 +838,7 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None, **kwa
             x=plot_data['x_1-51'],
             y=plot_data[f'ensemble_{i:02}_m^3/s'],
         ))
+    scatter_plots += rperiod_scatters
 
     if outformat == 'plotly_scatters':
         return scatter_plots
@@ -844,8 +847,7 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None, **kwa
     layout = go.Layout(
         title=__build_title('Ensemble Predicted Streamflow', reach_id, drain_area),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 1.2 * plot_data['y_max']]},
-        xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%Y'},
-        shapes=shapes,
+        xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%b %d %Y'},
         legend_title_text='Streamflow Series',
     )
     figure = go.Figure(scatter_plots, layout=layout)
@@ -891,8 +893,8 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs)
     # Validate a few of the important inputs
     if not isinstance(records, pd.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
-    if outformat not in ['json', 'plotly', 'plotly_html']:
-        raise ValueError('invalid outformat specified. pick json or html')
+    if outformat not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
+        raise ValueError('invalid outformat specified. pick json, plotly, plotly_scatters, or plotly_html')
 
     # Start processing the inputs
     dates = records.index.tolist()
@@ -907,10 +909,10 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs)
         'y_max': max(records['streamflow_m^3/s']),
     }
     if rperiods is not None:
-        plot_data.update(list(json.loads(rperiods.to_json(orient='index')).items())[0][1])
-        shapes = _rperiod_shapes(startdate, enddate, rperiods, plot_data['y_max'])
+        plot_data.update(rperiods.to_dict(orient='index').items())
+        rperiod_scatters = _rperiod_scatters(startdate, enddate, rperiods, plot_data['y_max'], plot_data['y_max'])
     else:
-        shapes = []
+        rperiod_scatters = []
     if outformat == 'json':
         return plot_data
 
@@ -919,7 +921,7 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs)
         x=plot_data['x_records'],
         y=plot_data['recorded_flows'],
         line=dict(color='gold'),
-    )]
+    )] + rperiod_scatters
 
     if outformat == 'plotly_scatters':
         return scatter_plots
@@ -928,7 +930,6 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs)
         title=__build_title('Forecasted Streamflow Record', reach_id, drain_area),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 1.2 * plot_data['y_max']]},
         xaxis={'title': 'Date', 'range': [startdate, enddate]},
-        shapes=shapes,
         legend_title_text='Streamflow Series',
     )
     figure = go.Figure(scatter_plots, layout=layout)
@@ -974,8 +975,8 @@ def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs)
     # Validate a few of the important inputs
     if not isinstance(hist, pd.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
-    if outformat not in ['json', 'plotly', 'plotly_html']:
-        raise ValueError('invalid outformat specified. pick json or plotly or plotly_html')
+    if outformat not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
+        raise ValueError('invalid outformat specified. pick json, plotly, plotly_scatters, or plotly_html')
 
     dates = hist.index.tolist()
     startdate = dates[0]
@@ -989,20 +990,20 @@ def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs)
         'y_max': max(hist['streamflow_m^3/s']),
     }
     if rperiods is not None:
-        plot_data.update(list(json.loads(rperiods.to_json(orient='index')).items())[0][1])
-        shapes = _rperiod_shapes(startdate, enddate, rperiods, plot_data['y_max'])
+        plot_data.update(rperiods.to_dict(orient='index').items())
+        rperiod_scatters = _rperiod_scatters(startdate, enddate, rperiods, plot_data['y_max'], plot_data['y_max'])
     else:
-        shapes = []
+        rperiod_scatters = []
 
     if outformat == 'json':
         return plot_data
 
     scatter_plots = [
-        go.Scatter(
-            name='Historic Simulation',
-            x=plot_data['x_datetime'],
-            y=plot_data['y_flow'])
-    ]
+                        go.Scatter(
+                            name='Historic Simulation',
+                            x=plot_data['x_datetime'],
+                            y=plot_data['y_flow'])
+                    ] + rperiod_scatters
 
     if outformat == 'plotly_scatters':
         return scatter_plots
@@ -1011,7 +1012,6 @@ def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame = None, **kwargs)
         title=__build_title('Historic Streamflow Simulation', reach_id, drain_area),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%Y'},
-        shapes=shapes,
         legend_title_text='Streamflow Series',
     )
     figure = go.Figure(scatter_plots, layout=layout)
@@ -1057,8 +1057,8 @@ def seasonal_plot(seasonal: pd.DataFrame, **kwargs):
     # Validate a few of the important inputs
     if not isinstance(seasonal, pd.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
-    if outformat not in ['json', 'plotly', 'plotly_html']:
-        raise ValueError('invalid outformat specified. pick json or plotly or plotly_html')
+    if outformat not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
+        raise ValueError('invalid outformat specified. pick json, plotly, plotly_scatters, or plotly_html')
 
     plot_data = {
         'reach_id': reach_id,
@@ -1142,8 +1142,8 @@ def flow_duration_curve_plot(hist: pd.DataFrame, **kwargs):
     # Validate a few of the important inputs
     if not isinstance(hist, pd.DataFrame):
         raise ValueError('Sorry, I only process pandas dataframes right now')
-    if outformat not in ['json', 'plotly', 'plotly_html']:
-        raise ValueError('invalid outformat specified. pick json or plotly or plotly_html')
+    if outformat not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
+        raise ValueError('invalid outformat specified. pick json, plotly, plotly_scatters, or plotly_html')
 
     # process the hist dataframe to create the flow duration curve
     sorted_hist = hist.sort_values(by='streamflow_m^3/s', ascending=False)['streamflow_m^3/s'].tolist()
@@ -1307,6 +1307,7 @@ def return_periods_table(rperiods: pd.DataFrame) -> str:
     rp = {key: round(value, 2) for key, value in sorted(rp.items(), key=lambda item: item[1])}
 
     with open(path) as template:
+        print(type(template.read()))
         return jinja2.Template(template.read()).render(reach_id=reach_id, rp=rp, colors=_plot_colors())
 
 
@@ -1331,94 +1332,55 @@ def _plot_colors():
     }
 
 
-def _rperiod_shapes(startdate: str, enddate: str, rperiods: pd.DataFrame, y_max: float):
+def _rperiod_scatters(startdate: str, enddate: str, rperiods: pd.DataFrame, y_max: float, max_visible: float = 0):
     colors = _plot_colors()
-    linestyle = {'width': .3}
+    x_vals = (startdate, enddate, enddate, startdate)
+    r2 = int(rperiods['return_period_2'].values[0])
+    if max_visible > r2:
+        visible = True
+    else:
+        visible = 'legendonly'
+
+    def template(name, y, color):
+        return go.Scatter(
+            name=name,
+            x=x_vals,
+            y=y,
+            legendgroup='returnperiods',
+            fill='toself',
+            visible=visible,
+            line=dict(color=color, width=0))
+
     if list(rperiods.columns) == ['max_flow', 'return_period_20', 'return_period_10', 'return_period_2']:
+        r10 = int(rperiods['return_period_10'].values[0])
+        r20 = int(rperiods['return_period_20'].values[0])
+        rmax = int(max(2 * r20 - r10, y_max))
         return [
-            go.layout.Shape(
-                type='rect',
-                x0=startdate,
-                x1=enddate,
-                y0=rperiods['return_period_2'].values[0],
-                y1=rperiods['return_period_10'].values[0],
-                line=linestyle,
-                fillcolor=colors['2 Year']
-            ),
-            go.layout.Shape(
-                type='rect',
-                x0=startdate,
-                x1=enddate,
-                y0=rperiods['return_period_10'].values[0],
-                y1=rperiods['return_period_20'].values[0],
-                line=linestyle,
-                fillcolor=colors['10 Year']
-            ),
-            go.layout.Shape(
-                type='rect',
-                x0=startdate,
-                x1=enddate,
-                y0=rperiods['return_period_10'].values[0],
-                y1=1.2 * y_max,
-                line=linestyle,
-                fillcolor=colors['20 Year']
-            ),
+            template(f'2 Year: {r2}', (r2, r2, r10, r10), colors['2 Year']),
+            template(f'10 Year: {r10}', (r10, r10, r20, r20), colors['10 Year']),
+            template(f'20 Year: {r20}', (r20, r20, rmax, rmax), colors['20 Year']),
         ]
-    return [
-        go.layout.Shape(
-            type='rect',
-            x0=startdate,
-            x1=enddate,
-            y0=rperiods['return_period_2'].values[0],
-            y1=rperiods['return_period_5'].values[0],
-            line=linestyle,
-            fillcolor=colors['2 Year']
-        ),
-        go.layout.Shape(
-            type='rect',
-            x0=startdate,
-            x1=enddate,
-            y0=rperiods['return_period_5'].values[0],
-            y1=rperiods['return_period_10'].values[0],
-            line=linestyle,
-            fillcolor=colors['5 Year']
-        ),
-        go.layout.Shape(
-            type='rect',
-            x0=startdate,
-            x1=enddate,
-            y0=rperiods['return_period_10'].values[0],
-            y1=rperiods['return_period_25'].values[0],
-            line=linestyle,
-            fillcolor=colors['10 Year']
-        ),
-        go.layout.Shape(
-            type='rect',
-            x0=startdate,
-            x1=enddate,
-            y0=rperiods['return_period_25'].values[0],
-            y1=rperiods['return_period_50'].values[0],
-            line=linestyle,
-            fillcolor=colors['25 Year']
-        ),
-        go.layout.Shape(
-            type='rect',
-            x0=startdate,
-            x1=enddate,
-            y0=rperiods['return_period_50'].values[0],
-            y1=rperiods['return_period_100'].values[0],
-            line=linestyle,
-            fillcolor=colors['50 Year']
-        ),
-        go.layout.Shape(
-            type='rect',
-            x0=startdate,
-            x1=enddate,
-            y0=rperiods['return_period_100'].values[0],
-            y1=1.2 * y_max,
-            line=linestyle,
-            fillcolor=colors['100 Year']
-        ),
+
+    else:
+        r5 = int(rperiods['return_period_5'].values[0])
+        r10 = int(rperiods['return_period_10'].values[0])
+        r25 = int(rperiods['return_period_25'].values[0])
+        r50 = int(rperiods['return_period_50'].values[0])
+        r100 = int(rperiods['return_period_100'].values[0])
+        rmax = int(max(2 * r100 - r25, y_max))
+        return [
+        go.Scatter(name='Return Periods',
+                   x=(startdate, enddate, enddate, startdate),
+                   y=(r2, r2, rmax, rmax),
+                   legendgroup='returnperiods',
+                   visible=visible,
+                   line=dict(color='rgba(0,0,0,0)', width=0)),
+        template(f'2 Year: {r2}', (r2, r2, r5, r5), colors['2 Year']),
+        template(f'5 Year: {r5}', (r5, r5, r10, r10), colors['5 Year']),
+        template(f'10 Year: {r10}', (r10, r10, r25, r25), colors['10 Year']),
+        template(f'25 Year: {r25}', (r25, r25, r50, r50), colors['25 Year']),
+        template(f'50 Year: {r50}', (r50, r50, r100, r100), colors['50 Year']),
+        template(f'100 Year: {r100}', (r100, r100, rmax, rmax), colors['100 Year']),
     ]
 
 
