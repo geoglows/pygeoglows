@@ -3,10 +3,13 @@ from setuptools import setup
 with open("README.md", "r") as readme:
     long_description = readme.read()
 
+with open('requirements.txt', 'r') as req:
+    install_requires = req.read().splitlines()
+
 setup(
     name='geoglows',
     packages=['geoglows'],
-    version='0.17.b7',
+    version='0.17.b9',
     description='Package for accessing data and APIs developed for the GEOGloWS initiative',
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -18,5 +21,17 @@ setup(
     package_data={'': ['*.ipynb', '*.html']},
     include_package_data=True,
     python_requires='>=3',
-    install_requires=['requests', 'plotly>=4.6', 'jinja2', 'pandas', 'shapely', 'scipy']
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'Programming Language :: Python :: 3',
+        'Topic :: Scientific/Engineering :: Hydrology',
+        'Topic :: Scientific/Engineering :: Visualization',
+        'Intended Audience :: Science/Research',
+        'License :: OSI Approved :: BSD License',
+        'Natural Language :: English',
+    ],
+    install_requires=install_requires
 )
+
+# todo docs
+# todo
