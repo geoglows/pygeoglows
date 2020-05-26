@@ -6,7 +6,7 @@ with open("README.md", "r") as readme:
 setup(
     name='geoglows',
     packages=['geoglows'],
-    version='0.16.3',
+    version='0.16.4',
     description='Package for accessing data and APIs developed for the GEOGloWS initiative',
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -17,6 +17,6 @@ setup(
     license_family='BSD',
     package_data={'': ['*.ipynb', '*.html']},
     include_package_data=True,
-    python_requires='>=3',
+    python_requires='>=3.4',
     install_requires=['requests', 'plotly', 'jinja2', 'pandas', 'shapely', 'scipy']
 )
