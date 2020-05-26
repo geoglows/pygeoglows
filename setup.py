@@ -20,7 +20,7 @@ setup(
     license_family='BSD',
     package_data={'': ['*.ipynb', '*.html']},
     include_package_data=True,
-    python_requires='>=3',
+    python_requires='>=3.4',
     classifiers=[
         'Development Status :: 4 - Beta',
         'Programming Language :: Python :: 3',
