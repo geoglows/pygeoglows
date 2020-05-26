@@ -2,10 +2,11 @@ import json
 import os
 from collections import OrderedDict
 from io import StringIO
+import pickle
 
 import pandas as pd
 import requests
-from shapely.geometry import Point, MultiPoint, box
+from shapely.geometry import Point, MultiPoint, shape
 from shapely.ops import nearest_points
 
 __all__ = ['forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecast_records', 'historic_simulation',
@@ -460,8 +461,8 @@ def latlon_to_reach(lat: float, lon: float) -> dict:
     point = Point(float(lat), float(lon))
 
     # open the region csv
-    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'delineation_data'))
-    df = pd.read_csv(os.path.join(base_path, region, 'comid_lat_lon_z.csv'), sep=',', header=0, index_col=0)
+    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'geometry'))
+    df = pd.read_pickle(os.path.join(base_path, f'{region}-geoglows-comid_lat_lon_z.pickle'))
     points_df = df.loc[:, "Lat":"Lon"].apply(Point, axis=1)
 
     # determine which point is closest
@@ -498,12 +499,13 @@ def latlon_to_region(lat: float, lon: float) -> str:
 
     # open the bounding boxes csv, figure out which regions the point lies within
     point = Point(float(lon), float(lat))
-    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'delineation_data'))
-    bb_csv = pd.read_csv(os.path.join(base_path, 'bounding_boxes.csv'), index_col='region')
-    for row in bb_csv.iterrows():
-        bbox = box(row[1][0], row[1][1], row[1][2], row[1][3])
-        if point.within(bbox):
-            return row[0]
+    bounds_pickle = os.path.abspath(os.path.join(os.path.dirname(__file__), 'geometry', 'boundaries.pickle'))
+    with open(bounds_pickle, 'rb') as f:
+        region_bounds = json.loads(pickle.load(f))
+    for region in region_bounds:
+        for polygon in region_bounds[region]['features']:
+            if shape(polygon['geometry']).contains(point):
+                return region
     # if there weren't any regions, return that there was an error
     raise ValueError('This point is not within any of the supported delineation regions.')
 

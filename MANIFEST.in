@@ -1,3 +1,4 @@
 include LICENSE
-recursive-include geoglows/delineation_data/ *.csv */*.csv
+include requirements.txt
+recursive-include geoglows/geometry/ *.pickle
 recursive-include geoglows/templates/ *.html

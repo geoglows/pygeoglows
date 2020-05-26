@@ -49,8 +49,10 @@ def plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods
 if __name__ == '__main__':
     reach_id = 3004334
     region = 'japan-geoglows'
-    lat = 36.203917
-    lon = 139.435292
+    lat = 38.840
+    lon = -90.112
+    print(geoglows.streamflow.latlon_to_reach(lat, lon))
+    exit()
 
     # stats, ensembles, warnings, records = get_forecast_data_with_reach_id_region(reach_id, region, geoglows.streamflow.LOCAL_ENDPOINT)
     # historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id, geoglows.streamflow.LOCAL_ENDPOINT)
@@ -71,22 +73,22 @@ if __name__ == '__main__':
     # corrected = geoglows.bias.correct2(hist, df)
     # geoglows.plots.historical_bias_corrected(corrected).show()
 
-    '''Get Simulated Data'''
-    url = f'https://www.hydroshare.org/resource/d222676fbd984a81911761ca1ba936bf/data/contents/Discharge_Data/{station}.csv'
-
-    s = requests.get(url, verify=True).text
-
-    observed_flow = pd.read_csv(io.StringIO(s), index_col=0)
-    observed_flow.index = pd.to_datetime(observed_flow.index)
-
-    datesDischarge = observed_flow.index.tolist()
-    dataDischarge = observed_flow.iloc[:, 0].values
-    dataDischarge.tolist()
-
-    if isinstance(dataDischarge[0], str):
-        dataDischarge = map(float, dataDischarge)
-
-    observed_df = pd.DataFrame(data=dataDischarge, index=datesDischarge, columns=['Observed Streamflow'])
-
-    corrected = geoglows.bias.correct_historical_simulation(hist, observed_df)
-    geoglows.plots.historical_bias_corrected(corrected, observed_df, hist, rperiods).show()
+    # '''Get Simulated Data'''
+    # url = f'https://www.hydroshare.org/resource/d222676fbd984a81911761ca1ba936bf/data/contents/Discharge_Data/{station}.csv'
+    #
+    # s = requests.get(url, verify=True).text
+    #
+    # observed_flow = pd.read_csv(io.StringIO(s), index_col=0)
+    # observed_flow.index = pd.to_datetime(observed_flow.index)
+    #
+    # datesDischarge = observed_flow.index.tolist()
+    # dataDischarge = observed_flow.iloc[:, 0].values
+    # dataDischarge.tolist()
+    #
+    # if isinstance(dataDischarge[0], str):
+    #     dataDischarge = map(float, dataDischarge)
+    #
+    # observed_df = pd.DataFrame(data=dataDischarge, index=datesDischarge, columns=['Observed Streamflow'])
+    #
+    # corrected = geoglows.bias.correct_historical_simulation(hist, observed_df)
+    # geoglows.plots.historical_bias_corrected(corrected, observed_df, hist, rperiods).show()
