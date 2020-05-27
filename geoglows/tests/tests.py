@@ -64,6 +64,7 @@ if __name__ == '__main__':
     comid = 9007292
     stats = geoglows.streamflow.forecast_stats(comid, endpoint=geoglows.streamflow.LOCAL_ENDPOINT)
     ens = geoglows.streamflow.forecast_ensembles(comid, endpoint=geoglows.streamflow.LOCAL_ENDPOINT)
+    records = geoglows.streamflow.forecast_records(comid, endpoint=geoglows.streamflow.LOCAL_ENDPOINT)
     hist = geoglows.streamflow.historic_simulation(comid)
     # rperiods = geoglows.streamflow.return_periods(comid)
 
@@ -83,8 +84,9 @@ if __name__ == '__main__':
     observed_df = pd.DataFrame(data=dataDischarge, index=datesDischarge, columns=['Observed Streamflow'])
 
     corrected = geoglows.bias.correct_forecast_flows(stats, hist, observed_df)
-    geoglows.plots.forecast_plot(stats).show()
-    geoglows.plots.forecast_plot(corrected).show()
-    corrected = geoglows.bias.correct_forecast_flows(ens, hist, observed_df)
-    geoglows.plots.ensembles_plot(corrected).show()
+    corrected_stats = geoglows.bias.correct_forecast_flows(stats, hist, observed_df)
+    corrected_ens = geoglows.bias.correct_forecast_flows(ens, hist, observed_df)
+    corrected_records = geoglows.bias.correct_forecast_flows(records, hist, observed_df)
+    geoglows.plots.hydroviewer_plot(records, stats, ens).show()
+    geoglows.plots.hydroviewer_plot(corrected_records, corrected_stats, corrected_ens).show()
 

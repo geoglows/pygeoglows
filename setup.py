@@ -9,7 +9,7 @@ with open('requirements.txt', 'r') as req:
 setup(
     name='geoglows',
     packages=['geoglows'],
-    version='0.17.b11',
+    version='0.17.b12',
     description='Package for accessing data and APIs developed for the GEOGloWS initiative',
     long_description=long_description,
     long_description_content_type="text/markdown",
@@ -33,5 +33,4 @@ setup(
     install_requires=install_requires
 )
 
-# todo docs
-# todo
+# todo the rest of the bias functions and add docs
