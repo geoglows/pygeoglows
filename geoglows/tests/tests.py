@@ -51,8 +51,6 @@ if __name__ == '__main__':
     region = 'japan-geoglows'
     lat = 38.840
     lon = -90.112
-    print(geoglows.streamflow.latlon_to_reach(lat, lon))
-    exit()
 
     # stats, ensembles, warnings, records = get_forecast_data_with_reach_id_region(reach_id, region, geoglows.streamflow.LOCAL_ENDPOINT)
     # historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id, geoglows.streamflow.LOCAL_ENDPOINT)
@@ -62,33 +60,31 @@ if __name__ == '__main__':
     import pandas as pd
     import io
 
-    station = 23187280
-    comid = 9004355
+    station = 23097040
+    comid = 9007292
+    stats = geoglows.streamflow.forecast_stats(comid, endpoint=geoglows.streamflow.LOCAL_ENDPOINT)
+    ens = geoglows.streamflow.forecast_ensembles(comid, endpoint=geoglows.streamflow.LOCAL_ENDPOINT)
     hist = geoglows.streamflow.historic_simulation(comid)
-    rperiods = geoglows.streamflow.return_periods(comid)
-    # data = requests.get(f'https://www.hydroshare.org/resource/d222676fbd984a81911761ca1ba936bf/data/'
-    #                     f'contents/Discharge_Data/{station}.csv').text
-    # df = pd.read_csv(io.StringIO(data), index_col=0)
-    # df.index = pd.to_datetime(df.index)
-    # corrected = geoglows.bias.correct2(hist, df)
-    # geoglows.plots.historical_bias_corrected(corrected).show()
+    # rperiods = geoglows.streamflow.return_periods(comid)
 
-    # '''Get Simulated Data'''
-    # url = f'https://www.hydroshare.org/resource/d222676fbd984a81911761ca1ba936bf/data/contents/Discharge_Data/{station}.csv'
-    #
-    # s = requests.get(url, verify=True).text
-    #
-    # observed_flow = pd.read_csv(io.StringIO(s), index_col=0)
-    # observed_flow.index = pd.to_datetime(observed_flow.index)
-    #
-    # datesDischarge = observed_flow.index.tolist()
-    # dataDischarge = observed_flow.iloc[:, 0].values
-    # dataDischarge.tolist()
-    #
-    # if isinstance(dataDischarge[0], str):
-    #     dataDischarge = map(float, dataDischarge)
-    #
-    # observed_df = pd.DataFrame(data=dataDischarge, index=datesDischarge, columns=['Observed Streamflow'])
-    #
-    # corrected = geoglows.bias.correct_historical_simulation(hist, observed_df)
-    # geoglows.plots.historical_bias_corrected(corrected, observed_df, hist, rperiods).show()
+    url = f'https://www.hydroshare.org/resource/d222676fbd984a81911761ca1ba936bf/data/contents/Discharge_Data/{station}.csv'
+    s = requests.get(url, verify=True).text
+
+    observed_flow = pd.read_csv(io.StringIO(s), index_col=0)
+    observed_flow.index = pd.to_datetime(observed_flow.index)
+
+    datesDischarge = observed_flow.index.tolist()
+    dataDischarge = observed_flow.iloc[:, 0].values
+    dataDischarge.tolist()
+
+    if isinstance(dataDischarge[0], str):
+        dataDischarge = map(float, dataDischarge)
+
+    observed_df = pd.DataFrame(data=dataDischarge, index=datesDischarge, columns=['Observed Streamflow'])
+
+    corrected = geoglows.bias.correct_forecast_flows(stats, hist, observed_df)
+    geoglows.plots.forecast_plot(stats).show()
+    geoglows.plots.forecast_plot(corrected).show()
+    corrected = geoglows.bias.correct_forecast_flows(ens, hist, observed_df)
+    geoglows.plots.ensembles_plot(corrected).show()
+
