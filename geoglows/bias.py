@@ -1,10 +1,12 @@
 import math
 
+import hydrostats as hs
+import hydrostats.data as hd
 import numpy as np
 import pandas as pd
 from scipy import interpolate
 
-__all__ = ['correct_historical_simulation', 'correct_forecast_flows']
+__all__ = ['correct_historical_simulation', 'correct_forecast_flows', 'make_statistics_tables']
 
 
 def correct_historical_simulation(simulated_data: pd.DataFrame, observed_data: pd.DataFrame) -> pd.DataFrame:
@@ -42,7 +44,7 @@ def correct_historical_simulation(simulated_data: pd.DataFrame, observed_data: p
 
 
 def correct_forecast_flows(forecasted_data: pd.DataFrame, simulated_data: pd.DataFrame,
-                           observed_data: pd.DataFrame) -> pd.DataFrame:
+                           observed_data: pd.DataFrame, use_month: int = 0) -> pd.DataFrame:
     """
     Accepts a short term forecast of streamflow, simulated historical flow, and observed flow timeseries and attempts
     to correct biases in the forecasted data
@@ -52,6 +54,8 @@ def correct_forecast_flows(forecasted_data: pd.DataFrame, simulated_data: pd.Dat
             forecast_stats, forecast_ensembles, forecast_records
         simulated_data: A dataframe with a datetime index and a single column of streamflow values
         observed_data: A dataframe with a datetime index and a single column of streamflow values
+        use_month: Optional: either 0 for correct the forecast based on the first month of the forecast data or -1 if
+            you want to correct based on the ending month of the forecast data
 
     Returns:
         pandas DataFrame with a copy of forecasted data with values updated in each column
@@ -60,8 +64,8 @@ def correct_forecast_flows(forecasted_data: pd.DataFrame, simulated_data: pd.Dat
     forecast_copy = forecasted_data.copy()
 
     # make the flow and probability interpolation functions
-    monthly_simulated = simulated_data[simulated_data.index.month == forecast_copy.index[0].month].dropna()
-    monthly_observed = observed_data[observed_data.index.month == forecast_copy.index[0].month].dropna()
+    monthly_simulated = simulated_data[simulated_data.index.month == forecast_copy.index[use_month].month].dropna()
+    monthly_observed = observed_data[observed_data.index.month == forecast_copy.index[use_month].month].dropna()
     to_prob = _flow_and_probability_mapper(monthly_simulated, to_probability=True, extrapolate=True)
     to_flow = _flow_and_probability_mapper(monthly_observed, to_flow=True, extrapolate=True)
 
@@ -71,6 +75,39 @@ def correct_forecast_flows(forecasted_data: pd.DataFrame, simulated_data: pd.Dat
         forecast_copy.update(pd.DataFrame(to_flow(to_prob(tmp.values)), index=tmp.index, columns=[column]))
 
     return forecast_copy
+
+
+def make_statistics_tables(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
+                           metrics: list = ['ME', 'RMSE', 'NRMSE (Mean)', 'MAPE', 'NSE', 'KGE (2009)', 'KGE (2012)']
+                           ) -> str:
+    """
+    Makes an html table of various statistical metrics for corrected vs observed data alongside the same metrics for
+    the simulated vs observed data as a way to see the improvement made by the bias correction.
+
+    Args:
+        corrected: A dataframe with a datetime index and a single column of streamflow values
+        simulated: A dataframe with a datetime index and a single column of streamflow values
+        observed: A dataframe with a datetime index and a single column of streamflow values
+        metrics: A list of abbreviated statistic names. See the documentation for hydrostats and HydroErr
+    """
+    # Merge Data
+    table1 = hs.make_table(
+        merged_dataframe=hd.merge_data(sim_df=simulated, obs_df=observed),
+        metrics=metrics,
+    )
+    table2 = hs.make_table(
+        merged_dataframe=hd.merge_data(sim_df=corrected, obs_df=observed),
+        metrics=metrics,
+    )
+
+    table2 = table2.rename(index={'Full Time Series': 'Corrected Full Time Series'})
+    table1 = table1.rename(index={'Full Time Series': 'Original Full Time Series'})
+    table1 = table1.transpose()
+    table2 = table2.transpose()
+
+    table_final = pd.merge(table1, table2, right_index=True, left_index=True)
+
+    return table_final.to_html()
 
 
 def _flow_and_probability_mapper(monthly_data: pd.DataFrame, to_probability: bool = False,

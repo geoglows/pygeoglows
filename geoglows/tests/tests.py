@@ -1,4 +1,5 @@
 import geoglows
+import pandas as pd
 
 
 def get_forecast_data_with_reach_id_region(reach_id, region, endpoint):
@@ -46,47 +47,33 @@ def plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods
     return
 
 
+def test_bias_correction():
+        station = 23097040
+        comid = 9007292
+        stats = geoglows.streamflow.forecast_stats(comid, endpoint=geoglows.streamflow.LOCAL_ENDPOINT)
+        ens = geoglows.streamflow.forecast_ensembles(comid, endpoint=geoglows.streamflow.LOCAL_ENDPOINT)
+        records = geoglows.streamflow.forecast_records(comid, endpoint=geoglows.streamflow.LOCAL_ENDPOINT)
+        hist = geoglows.streamflow.historic_simulation(comid)
+        observed_df = pd.read_csv('/Users/riley/Downloads/23187280.csv', index_col=0)
+        observed_df.index = pd.to_datetime(observed_df.index).tz_localize('UTC')
+        observed_df.index.name = 'datetime'
+        corrected = geoglows.bias.correct_historical_simulation(hist, observed_df)
+        cor_stats = geoglows.bias.correct_forecast_flows(stats, hist, observed_df)
+        cor_ens = geoglows.bias.correct_forecast_flows(ens, hist, observed_df)
+        cor_recr = geoglows.bias.correct_forecast_flows(records, hist, observed_df, use_month=-1)
+        geoglows.plots.hydroviewer_plot(cor_recr, cor_stats, cor_ens).show()
+        geoglows.plots.bias_corrected_scatterplots(corrected, hist, observed_df).show()
+        geoglows.plots.bias_corrected_daily_averages(corrected, hist, observed_df).show()
+        geoglows.plots.bias_corrected_monthly_averages(corrected, hist, observed_df).show()
+        geoglows.plots.bias_corrected_volume_comparison(corrected, hist, observed_df).show()
+        html = geoglows.bias.make_statistics_tables(corrected, hist, observed_df)
+        with open('/Users/riley/spatialdata/testtable.html', 'w') as f:
+            f.write(html)
+        return
+
+
 if __name__ == '__main__':
     reach_id = 3004334
     region = 'japan-geoglows'
     lat = 38.840
     lon = -90.112
-
-    # stats, ensembles, warnings, records = get_forecast_data_with_reach_id_region(reach_id, region, geoglows.streamflow.LOCAL_ENDPOINT)
-    # historical, seasonal, rperiods = get_historical_data_with_reach_id(reach_id, geoglows.streamflow.LOCAL_ENDPOINT)
-    # plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods)
-
-    import requests
-    import pandas as pd
-    import io
-
-    station = 23097040
-    comid = 9007292
-    stats = geoglows.streamflow.forecast_stats(comid, endpoint=geoglows.streamflow.LOCAL_ENDPOINT)
-    ens = geoglows.streamflow.forecast_ensembles(comid, endpoint=geoglows.streamflow.LOCAL_ENDPOINT)
-    records = geoglows.streamflow.forecast_records(comid, endpoint=geoglows.streamflow.LOCAL_ENDPOINT)
-    hist = geoglows.streamflow.historic_simulation(comid)
-    # rperiods = geoglows.streamflow.return_periods(comid)
-
-    url = f'https://www.hydroshare.org/resource/d222676fbd984a81911761ca1ba936bf/data/contents/Discharge_Data/{station}.csv'
-    s = requests.get(url, verify=True).text
-
-    observed_flow = pd.read_csv(io.StringIO(s), index_col=0)
-    observed_flow.index = pd.to_datetime(observed_flow.index)
-
-    datesDischarge = observed_flow.index.tolist()
-    dataDischarge = observed_flow.iloc[:, 0].values
-    dataDischarge.tolist()
-
-    if isinstance(dataDischarge[0], str):
-        dataDischarge = map(float, dataDischarge)
-
-    observed_df = pd.DataFrame(data=dataDischarge, index=datesDischarge, columns=['Observed Streamflow'])
-
-    corrected = geoglows.bias.correct_forecast_flows(stats, hist, observed_df)
-    corrected_stats = geoglows.bias.correct_forecast_flows(stats, hist, observed_df)
-    corrected_ens = geoglows.bias.correct_forecast_flows(ens, hist, observed_df)
-    corrected_records = geoglows.bias.correct_forecast_flows(records, hist, observed_df)
-    geoglows.plots.hydroviewer_plot(records, stats, ens).show()
-    geoglows.plots.hydroviewer_plot(corrected_records, corrected_stats, corrected_ens).show()
-

@@ -2,6 +2,7 @@ import datetime
 import json
 import os
 
+import hydrostats.data as hd
 import jinja2
 import pandas as pd
 import plotly.graph_objs as go
@@ -9,7 +10,8 @@ import scipy.stats
 from plotly.offline import plot as offline_plot
 
 __all__ = ['hydroviewer_plot', 'forecast_plot', 'records_plot', 'ensembles_plot', 'historical_plot', 'seasonal_plot',
-           'flow_duration_curve_plot', 'probabilities_table', 'return_periods_table', 'historical_bias_corrected']
+           'flow_duration_curve_plot', 'probabilities_table', 'return_periods_table', 'bias_corrected_historical',
+           'bias_corrected_scatterplots', 'bias_corrected_daily_averages', 'bias_corrected_monthly_averages']
 
 
 # FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
@@ -740,9 +742,9 @@ def return_periods_table(rperiods: pd.DataFrame) -> str:
 
 
 # BIAS CORRECTION PLOTS
-def historical_bias_corrected(corrected: pd.DataFrame,
+def bias_corrected_historical(corrected: pd.DataFrame,
+                              simulated: pd.DataFrame,
                               observed: pd.DataFrame,
-                              hist: pd.DataFrame,
                               rperiods: pd.DataFrame = None,
                               title_headers: dict = None,
                               outformat: str = 'plotly'):
@@ -751,8 +753,8 @@ def historical_bias_corrected(corrected: pd.DataFrame,
 
     Args:
         corrected: the response from the geoglows.bias.correct_historical_simulation function\
+        simulated: the csv response from historic_simulation
         observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
-        hist: the csv response from historic_simulation
         rperiods: the csv response from return_periods
         outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
         title_headers: (dict) Extra info to show on the title of the plot. For example:
@@ -772,9 +774,9 @@ def historical_bias_corrected(corrected: pd.DataFrame,
         'x_simulated': corrected.index.tolist(),
         'x_observed': observed.index.tolist(),
         'y_corrected': corrected.values.flatten(),
-        'y_simulated': hist.values.flatten(),
+        'y_simulated': simulated.values.flatten(),
         'y_observed': observed.values.flatten(),
-        'y_max': max(corrected.values.max(), observed.values.max(), hist.values.max()),
+        'y_max': max(corrected.values.max(), observed.values.max(), simulated.values.max()),
     }
     if rperiods is not None:
         plot_data.update(rperiods.to_dict(orient='index').items())
@@ -824,6 +826,204 @@ def historical_bias_corrected(corrected: pd.DataFrame,
             include_plotlyjs=False
         )
     raise ValueError('Invalid outformat chosen. Choose json, plotly, plotly_scatters, or plotly_html')
+
+
+def bias_corrected_scatterplots(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
+                                title_headers: dict = None) -> go.Figure:
+    """
+    Creates a plot of corrected discharge, observered discharge, and simulated discharge
+
+    Args:
+        corrected: the response from the geoglows.bias.correct_historical_simulation function
+        simulated: the csv response from historic_simulation
+        observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
+        title_headers: (dict) Extra info to show on the title of the plot. For example:
+            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+
+    Returns:
+         plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
+    """
+    # merge the datasets together
+    merged_df = hd.merge_data(sim_df=simulated, obs_df=observed)
+    merged_df2 = hd.merge_data(sim_df=corrected, obs_df=observed)
+
+    # get the min/max values for plotting the 45 degree line
+    min_value = min(min(merged_df.iloc[:, 1].values), min(merged_df.iloc[:, 0].values))
+    max_value = max(max(merged_df.iloc[:, 1].values), max(merged_df.iloc[:, 0].values))
+
+    # do a linear regression on both of the merged dataframes
+    slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(merged_df.iloc[:, 0].values,
+                                                                         merged_df.iloc[:, 1].values)
+    slope2, intercept2, r_value2, p_value2, std_err2 = scipy.stats.linregress(merged_df2.iloc[:, 0].values,
+                                                                              merged_df2.iloc[:, 1].values)
+    scatter_sets = [
+        go.Scatter(
+            x=merged_df.iloc[:, 0].values,
+            y=merged_df.iloc[:, 1].values,
+            mode='markers',
+            name='Original Data',
+            marker=dict(color='#ef553b')
+        ),
+        go.Scatter(
+            x=merged_df2.iloc[:, 0].values,
+            y=merged_df2.iloc[:, 1].values,
+            mode='markers',
+            name='Corrected',
+            marker=dict(color='#00cc96')
+        ),
+        go.Scatter(
+            x=[min_value, max_value],
+            y=[min_value, max_value],
+            mode='lines',
+            name='45 degree line',
+            line=dict(color='black')
+        ),
+        go.Scatter(
+            x=[min_value, max_value],
+            y=[slope * min_value + intercept, slope * max_value + intercept],
+            mode='lines',
+            name=f'Y = {round(slope, 2)}x + {round(intercept, 2)} (Original)',
+            line=dict(color='red')
+        ),
+        go.Scatter(
+            x=[min_value, max_value],
+            y=[slope2 * min_value + intercept2, slope2 * max_value + intercept2],
+            mode='lines',
+            name=f'Y = {round(slope2, 2)}x + {round(intercept2, 2)} (Corrected)',
+            line=dict(color='green')
+        )
+    ]
+
+    updatemenus = [
+        dict(active=0,
+             buttons=[dict(label='Linear Scale',
+                           method='update',
+                           args=[{'visible': [True, True]},
+                                 {'title': 'Linear scale',
+                                  'yaxis': {'type': 'linear'}}]),
+                      dict(label='Log Scale',
+                           method='update',
+                           args=[{'visible': [True, True]},
+                                 {'title': 'Log scale',
+                                  'xaxis': {'type': 'log'},
+                                  'yaxis': {'type': 'log'}}]),
+                      ]
+             )
+    ]
+
+    layout = go.Layout(title=__build_title('Bias Correction Scatter Plot', title_headers),
+                       xaxis=dict(title='Simulated', ),
+                       yaxis=dict(title='Observed', autorange=True),
+                       showlegend=True, updatemenus=updatemenus)
+    return go.Figure(data=scatter_sets, layout=layout)
+
+
+def bias_corrected_monthly_averages(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
+                                    title_headers: dict = None) -> go.Figure:
+    """
+    Calculates and plots the monthly average streamflow
+
+    Args:
+        corrected: the response from the geoglows.bias.correct_historical_simulation function
+        simulated: the csv response from historic_simulation
+        observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
+        title_headers: (dict) Extra info to show on the title of the plot. For example:
+            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+
+    Returns:
+         plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
+    """
+    monthly_avg = hd.monthly_average(hd.merge_data(sim_df=simulated, obs_df=observed))
+    monthly_avg2 = hd.monthly_average(hd.merge_data(sim_df=corrected, obs_df=observed))
+
+    scatters = [
+        go.Scatter(x=monthly_avg.index, y=monthly_avg.iloc[:, 1].values, name='Observed Data'),
+        go.Scatter(x=monthly_avg.index, y=monthly_avg.iloc[:, 0].values, name='Simulated Data'),
+        go.Scatter(x=monthly_avg2.index, y=monthly_avg2.iloc[:, 0].values, name='Corrected Simulated Data'),
+    ]
+
+    layout = go.Layout(
+        title=__build_title('Monthly Average Streamflow Comparison', title_headers),
+        xaxis=dict(title='Month'), yaxis=dict(title='Discharge (m<sup>3</sup>/s)', autorange=True),
+        showlegend=True)
+
+    return go.Figure(data=scatters, layout=layout)
+
+
+def bias_corrected_daily_averages(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
+                                  title_headers: dict = None) -> go.Figure:
+    """
+    Calculates and plots the daily average streamflow
+
+    Args:
+        corrected: the response from the geoglows.bias.correct_historical_simulation function
+        simulated: the csv response from historic_simulation
+        observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
+        title_headers: (dict) Extra info to show on the title of the plot. For example:
+            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+
+    Returns:
+         plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
+    """
+    daily_avg = hd.daily_average(hd.merge_data(sim_df=simulated, obs_df=observed))
+    daily_avg2 = hd.daily_average(hd.merge_data(sim_df=corrected, obs_df=observed))
+
+    scatters = [
+        go.Scatter(x=daily_avg.index, y=daily_avg.iloc[:, 1].values, name='Observed Data'),
+        go.Scatter(x=daily_avg.index, y=daily_avg.iloc[:, 0].values, name='Simulated Data'),
+        go.Scatter(x=daily_avg2.index, y=daily_avg2.iloc[:, 0].values, name='Corrected Simulated Data'),
+    ]
+
+    layout = go.Layout(
+        title=__build_title('Daily Average Streamflow Comparison', title_headers),
+        xaxis=dict(title='Days'), yaxis=dict(title='Discharge (m<sup>3</sup>/s)', autorange=True),
+        showlegend=True)
+
+    return go.Figure(data=scatters, layout=layout)
+
+
+def bias_corrected_volume_comparison(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
+                                     title_headers: dict = None) -> go.Figure:
+    merged_df = hd.merge_data(sim_df=simulated, obs_df=observed)
+    merged_df2 = hd.merge_data(sim_df=corrected, obs_df=observed)
+
+    sim_array = merged_df.iloc[:, 0].values
+    obs_array = merged_df.iloc[:, 1].values
+    corr_array = merged_df2.iloc[:, 0].values
+
+    sim_volume_dt = sim_array * 0.0864
+    obs_volume_dt = obs_array * 0.0864
+    corr_volume_dt = corr_array * 0.0864
+
+    sim_volume_cum = []
+    obs_volume_cum = []
+    corr_volume_cum = []
+    sum_sim = 0
+    sum_obs = 0
+    sum_corr = 0
+
+    for i in sim_volume_dt:
+        sum_sim = sum_sim + i
+        sim_volume_cum.append(sum_sim)
+
+    for j in obs_volume_dt:
+        sum_obs = sum_obs + j
+        obs_volume_cum.append(sum_obs)
+
+    for k in corr_volume_dt:
+        sum_corr = sum_corr + k
+        corr_volume_cum.append(sum_corr)
+
+    observed_volume = go.Scatter(x=merged_df.index, y=obs_volume_cum, name='Observed', )
+    simulated_volume = go.Scatter(x=merged_df.index, y=sim_volume_cum, name='Simulated', )
+    corrected_volume = go.Scatter(x=merged_df2.index, y=corr_volume_cum, name='Corrected Simulated', )
+
+    layout = go.Layout(
+        title=__build_title('Observed & Simulated Volume Comparison', title_headers),
+        xaxis=dict(title='Datetime', ), yaxis=dict(title='Volume (m<sup>3</sup>)', autorange=True),
+        showlegend=True)
+
+    return go.Figure(data=[observed_volume, simulated_volume, corrected_volume], layout=layout)
 
 
 # PLOTTING AUXILIARY FUNCTIONS
