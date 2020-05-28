@@ -38,18 +38,6 @@ GEOGloWS Model Utilities
         available_data, available_regions, available_dates, reach_to_region, latlon_to_reach, latlon_to_region
     :noindex:
 
-Plot Generating Functions
-~~~~~~~~~~~~~~~~~~~~~~~~~
-The following functions turn the results of the API functions into plots or easily plotable data. These produce
-dictionaries, plotly python objects (compatible with showing plots in notebooks), or plotly html code to use in web
-applications.
-
-.. automodule:: geoglows.streamflow
-    :members:
-        forecast_plot, ensembles_plot, records_plot, historical_plot, seasonal_plot, flow_duration_curve_plot,
-        probabilities_table, return_periods_table
-    :noindex:
-
 FAQ
 ~~~
 

@@ -11,7 +11,7 @@
       <td>2-yr Return Period</td>
       {% for r in r2 %}
         {% if r != 0 %}
-          <td style="background-color: rgba(134, 206, 250, calc(9 * {{ r }} / 1000 + .1))">{{ r }}%</td>
+          <td style="background-color: {{ colors['2 Year']}}">{{ r }}%</td>
         {% else %}
           <td>-</td>
         {% endif %}
@@ -21,7 +21,7 @@
       <td>5-yr Return Period</td>
       {% for r in r5 %}
         {% if r != 0 %}
-          <td style="background-color: rgba(115, 185, 238, calc(9 * {{ r }} / 1000 + .1))">{{ r }}%</td>
+          <td style="background-color: {{ colors['5 Year']}}">{{ r }}%</td>
         {% else %}
           <td>-</td>
         {% endif %}
@@ -31,7 +31,7 @@
       <td>10-yr Return Period</td>
       {% for r in r10 %}
         {% if r != 0 %}
-          <td style="background-color: rgba(84, 148, 218, calc(9 * {{ r }} / 1000 + .1))">{{ r }}%</td>
+          <td style="background-color: {{ colors['10 Year']}}">{{ r }}%</td>
         {% else %}
           <td>-</td>
         {% endif %}
@@ -41,7 +41,7 @@
       <td>25-yr Return Period</td>
       {% for r in r25 %}
         {% if r != 0 %}
-          <td style="background-color: rgba(51, 115, 196, calc(9 * {{ r }} / 1000 + .1))">{{ r }}%</td>
+          <td style="background-color: {{ colors['25 Year']}}">{{ r }}%</td>
         {% else %}
           <td>-</td>
         {% endif %}
@@ -51,7 +51,7 @@
       <td>50-yr Return Period</td>
       {% for r in r50 %}
         {% if r != 0 %}
-          <td style="background-color: rgba(23, 80, 172, calc(9 * {{ r }} / 1000 + .1))">{{ r }}%</td>
+          <td style="background-color: {{ colors['50 Year']}}">{{ r }}%</td>
         {% else %}
           <td>-</td>
         {% endif %}
@@ -61,7 +61,7 @@
       <td>100-yr Return Period</td>
       {% for r in r100 %}
         {% if r != 0 %}
-          <td style="background-color: rgba(0, 51, 150, calc(9 * {{ r }} / 1000 + .1))">{{ r }}%</td>
+          <td style="background-color: {{ colors['100 Year']}}">{{ r }}%</td>
         {% else %}
           <td>-</td>
         {% endif %}
