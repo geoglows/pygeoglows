@@ -3,18 +3,9 @@ import os
 import pickle
 from collections import OrderedDict
 from io import StringIO
-import pickle
+
 import pandas as pd
 import requests
-
-
-import jinja2
-import pandas
-import pandas as pd
-import plotly.graph_objs as go
-import requests
-import scipy.stats
-from plotly.offline import plot as offline_plot
 from shapely.geometry import Point, MultiPoint, shape
 from shapely.ops import nearest_points
 
