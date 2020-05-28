@@ -1,11 +1,20 @@
 import json
 import os
+import pickle
 from collections import OrderedDict
 from io import StringIO
 import pickle
-
 import pandas as pd
 import requests
+
+
+import jinja2
+import pandas
+import pandas as pd
+import plotly.graph_objs as go
+import requests
+import scipy.stats
+from plotly.offline import plot as offline_plot
 from shapely.geometry import Point, MultiPoint, shape
 from shapely.ops import nearest_points
 
@@ -444,12 +453,6 @@ def latlon_to_reach(lat: float, lon: float) -> dict:
     Return:
         a dictionary containing the reach_id as well as the name of the region and the distance
         from the provided lat and lon to the stream in units of degrees.
-
-    Example:
-        .. code-block:: python
-
-            stream_data = latlon_to_reach(10, 50)
-            {'reach_id': 123456, 'region': 'example_region-geoglows', 'distance': .05}
     """
     if lat is False or lon is False:
         raise ValueError('provide a valid latitude and longitude to in order to find a reach_id')
@@ -488,11 +491,6 @@ def latlon_to_region(lat: float, lon: float) -> str:
 
     Return:
         the name of a region
-
-    Example:
-        .. code-block:: python
-
-            stream_data = latlon_to_region(10, 50)
     """
     if lat is False or lon is False:
         raise ValueError('provide a valid latitude and longitude to in order to find a region')
