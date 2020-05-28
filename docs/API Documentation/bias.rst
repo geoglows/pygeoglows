@@ -1,6 +1,6 @@
-====
-bias
-====
+=============
+geoglows.bias
+=============
 
 Bias Correction
 ~~~~~~~~~~~~~~~

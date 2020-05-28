@@ -5,6 +5,7 @@
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 import os
 import sys
+
 sys.path.insert(0, os.path.abspath('..'))
 
 # -- Project information -----------------------------------------------------
@@ -39,6 +40,9 @@ autodoc_mock_imports = [
     'jinja2',
     'shapely',
     'scipy',
+    'numpy',
+    'hydrostats',
+    'HydroErr',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

@@ -1,6 +1,6 @@
-=====
-plots
-=====
+==============
+geoglows.plots
+==============
 
 Plots for Streamflow Data
 ~~~~~~~~~~~~~~~~~~~~~~~~~
