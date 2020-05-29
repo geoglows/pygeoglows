@@ -1,6 +1,7 @@
 import json
 import os
 import pickle
+import warnings
 from collections import OrderedDict
 from io import StringIO
 
@@ -11,7 +12,7 @@ from shapely.ops import nearest_points
 
 __all__ = ['forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecast_records', 'historic_simulation',
            'seasonal_average', 'return_periods', 'available_data', 'available_dates', 'available_regions',
-           'reach_to_region', 'latlon_to_reach']
+           'reach_to_region', 'reach_to_latlon', 'latlon_to_reach', 'latlon_to_region']
 
 ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
 AZURE_ENDPOINT = 'http://gsf-api-vm.eastus.cloudapp.azure.com/api/'
@@ -433,6 +434,28 @@ def reach_to_region(reach_id: int) -> str:
     raise ValueError(f'{reach_id} not in the range of reach_ids for this model')
 
 
+def reach_to_latlon(reach_id: int, region: str = False) -> tuple:
+    """
+    Finds the latitude and longitude of the centroid of the stream with the specified reach_id. Does not validate that
+    the reach_id exists, but it will raise an error if the reach_id does not exist
+
+    Args:
+        reach_id: the ID for a stream
+        region: if known, you can specify the region of your reach_id
+
+    Returns:
+        tuple(latitude, longitude)
+    """
+    if not region:
+        region = reach_to_region(reach_id)
+    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'geometry'))
+    df = pd.read_pickle(os.path.join(base_path, f'{region}-comid_lat_lon_z.pickle'))
+    df = df[df.index == reach_id]
+    if len(df.index) == 0:
+        raise LookupError(f'The reach_id "{reach_id}" was not found in region "{region}"')
+    return float(df['Lat'].values[0]), float(df['Lon'].values[0])
+
+
 def latlon_to_reach(lat: float, lon: float) -> dict:
     """
     Uses a list of lat/lon for each reach_id to find the closest stream reach to a given lat/lon location
@@ -506,13 +529,14 @@ def _make_request(endpoint: str, method: str, params: dict, return_format: str):
 
     # request the data from the API
     data = requests.get(endpoint + method, params=params)
+    if data.status_code != 200:
+        warnings.warn('Recieved an error from the Streamflow REST API: ' + data.text)
+        raise RuntimeError('Unable to retrieve information from the Streamflow REST API')
 
     # process the response from the API as appropriate to make the corresponding python object
     if return_format == 'csv':
-        if method == 'ForecastWarnings/':
-            return pd.read_csv(StringIO(data.text), index_col='comid')
-        if method == 'ReturnPeriods/':
-            return pd.read_csv(StringIO(data.text), index_col='rivid')
+        if method == 'ForecastWarnings/' or method == 'ReturnPeriods/':
+            return pd.read_csv(StringIO(data.text), index_col=0)
         if method == 'SeasonalAverage/':
             tmp = pd.read_csv(StringIO(data.text), index_col='day_of_year')
             tmp.index = pd.to_datetime(tmp.index + 1, format='%j').strftime('%b %d')

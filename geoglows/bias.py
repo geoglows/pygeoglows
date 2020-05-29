@@ -6,10 +6,10 @@ import numpy as np
 import pandas as pd
 from scipy import interpolate
 
-__all__ = ['correct_historical_simulation', 'correct_forecast_flows', 'make_statistics_tables']
+__all__ = ['correct_historical_sim', 'correct_forecast', 'make_statistics_tables']
 
 
-def correct_historical_simulation(simulated_data: pd.DataFrame, observed_data: pd.DataFrame) -> pd.DataFrame:
+def correct_historical_sim(simulated_data: pd.DataFrame, observed_data: pd.DataFrame) -> pd.DataFrame:
     """
     Accepts a historically simulated flow timeseries and observed flow timeseries and attempts to correct biases in the
     simulation on a monthly basis.
@@ -43,14 +43,14 @@ def correct_historical_simulation(simulated_data: pd.DataFrame, observed_data: p
     return corrected
 
 
-def correct_forecast_flows(forecasted_data: pd.DataFrame, simulated_data: pd.DataFrame,
-                           observed_data: pd.DataFrame, use_month: int = 0) -> pd.DataFrame:
+def correct_forecast(forecast_data: pd.DataFrame, simulated_data: pd.DataFrame,
+                     observed_data: pd.DataFrame, use_month: int = 0) -> pd.DataFrame:
     """
     Accepts a short term forecast of streamflow, simulated historical flow, and observed flow timeseries and attempts
     to correct biases in the forecasted data
 
     Args:
-        forecasted_data: A dataframe with a datetime index and any number of columns of forecasted flow. Compatible with
+        forecast_data: A dataframe with a datetime index and any number of columns of forecasted flow. Compatible with
             forecast_stats, forecast_ensembles, forecast_records
         simulated_data: A dataframe with a datetime index and a single column of streamflow values
         observed_data: A dataframe with a datetime index and a single column of streamflow values
@@ -61,7 +61,7 @@ def correct_forecast_flows(forecasted_data: pd.DataFrame, simulated_data: pd.Dat
         pandas DataFrame with a copy of forecasted data with values updated in each column
     """
     # make a copy of the forecasts which we update and return so the original data is not changed
-    forecast_copy = forecasted_data.copy()
+    forecast_copy = forecast_data.copy()
 
     # make the flow and probability interpolation functions
     monthly_simulated = simulated_data[simulated_data.index.month == forecast_copy.index[use_month].month].dropna()
@@ -78,8 +78,7 @@ def correct_forecast_flows(forecasted_data: pd.DataFrame, simulated_data: pd.Dat
 
 
 def make_statistics_tables(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
-                           metrics: list = ['ME', 'RMSE', 'NRMSE (Mean)', 'MAPE', 'NSE', 'KGE (2009)', 'KGE (2012)']
-                           ) -> str:
+                           metrics: list = None) -> str:
     """
     Makes an html table of various statistical metrics for corrected vs observed data alongside the same metrics for
     the simulated vs observed data as a way to see the improvement made by the bias correction.
@@ -88,8 +87,10 @@ def make_statistics_tables(corrected: pd.DataFrame, simulated: pd.DataFrame, obs
         corrected: A dataframe with a datetime index and a single column of streamflow values
         simulated: A dataframe with a datetime index and a single column of streamflow values
         observed: A dataframe with a datetime index and a single column of streamflow values
-        metrics: A list of abbreviated statistic names. See the documentation for hydrostats and HydroErr
+        metrics: A list of abbreviated statistic names. See the documentation for HydroErr
     """
+    if metrics is None:
+        metrics = ['ME', 'RMSE', 'NRMSE (Mean)', 'MAPE', 'NSE', 'KGE (2009)', 'KGE (2012)']
     # Merge Data
     table1 = hs.make_table(
         merged_dataframe=hd.merge_data(sim_df=simulated, obs_df=observed),

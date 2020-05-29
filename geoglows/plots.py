@@ -9,28 +9,24 @@ import plotly.graph_objs as go
 import scipy.stats
 from plotly.offline import plot as offline_plot
 
-__all__ = ['hydroviewer_plot', 'forecast_plot', 'records_plot', 'ensembles_plot', 'historical_plot', 'seasonal_plot',
-           'flow_duration_curve_plot', 'probabilities_table', 'return_periods_table', 'corrected_historical',
-           'corrected_scatterplots', 'corrected_day_averages', 'corrected_month_average']
+__all__ = ['hydroviewer', 'forecast_stats', 'forecast_records', 'forecast_ensembles', 'historic_simulation',
+           'seasonal_average', 'flow_duration_curve',
+           'probabilities_table', 'return_periods_table', 'corrected_historical', 'corrected_scatterplots',
+           'corrected_day_average', 'corrected_month_average']
 
 
 # FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
-def hydroviewer_plot(records: pd.DataFrame,
-                     stats: pd.DataFrame,
-                     ensembles: pd.DataFrame,
-                     rperiods: pd.DataFrame = None,
-                     record_days: int = 7,
-                     outformat: str = 'plotly',
-                     titles: dict = False) -> go.Figure:
+def hydroviewer(recs: pd.DataFrame, stats: pd.DataFrame, ensem: pd.DataFrame, rperiods: pd.DataFrame = None,
+                record_days: int = 7, outformat: str = 'plotly', titles: dict = False) -> go.Figure:
     """
     Creates the standard plot for a hydroviewer
 
     Args:
-        records: the response from forecast_records
+        recs: the response from forecast_records
         stats: the response from forecast_stats
-        ensembles: the csv response from forecast_ensembles
+        ensem: the response from forecast_ensembles
         rperiods: (optional) the response from return_periods
-        outformat: (optional) either 'json', 'plotly', or 'plotly_html' (default plotly)
+        outformat: (optional) either 'plotly' or 'plotly_html' (default plotly)
         record_days: (optional) number of days of forecast records to show before the start of the forecast
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
@@ -43,40 +39,29 @@ def hydroviewer_plot(records: pd.DataFrame,
 
             data = geoglows.streamflow.hydroviewer_plot(records, stats, rperiods)
     """
-    # Validate a few of the important inputs
-    if not isinstance(records, pd.DataFrame):
-        raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['plotly', 'plotly_html']:
         raise ValueError('invalid outformat specified. pick plotly or plotly_html')
 
     # determine the bounds of the plot on the x and y axis
     stats_dates = stats.index.tolist()
     # limit the forecast records to 7 days before the start of the forecast
-    records = records[records.index >= pd.to_datetime(stats_dates[0] - datetime.timedelta(days=record_days))]
-    records_dates = records.index.tolist()
+    recs = recs[recs.index >= pd.to_datetime(stats_dates[0] - datetime.timedelta(days=record_days))]
+    records_dates = recs.index.tolist()
     if len(records_dates) == 0:
         startdate = stats_dates[0]
         enddate = stats_dates[-1]
     else:
         startdate = min(records_dates[0], stats_dates[0])
         enddate = max(records_dates[-1], stats_dates[-1])
-    max_flow = max(records['streamflow_m^3/s'].max(), stats['flow_max_m^3/s'].max())
-
-    # build a json of data for this plot by combining the other individual plot functions
-    if outformat == 'json':
-        plot_data = forecast_plot(stats, rperiods, outformat='json')
-        plot_data.update(ensembles_plot(ensembles, outformat='json'))
-        plot_data.update(records_plot(records, outformat='json'))
-        plot_data['y_max'] = max_flow
-        return plot_data
+    max_flow = max(recs['streamflow_m^3/s'].max(), stats['flow_max_m^3/s'].max())
 
     # start building the plotly graph object
-    figure = records_plot(records, outformat='plotly')
-    for new_scatter in forecast_plot(stats, outformat='plotly_scatters'):
+    figure = forecast_records(recs, outformat='plotly')
+    for new_scatter in forecast_stats(stats, outformat='plotly_scatters'):
         figure.add_trace(new_scatter)
 
     # do the ensembles separately so we can group then and make only 1 legend entry
-    ensemble_data = ensembles_plot(ensembles, outformat='json')
+    ensemble_data = forecast_ensembles(ensem, outformat='json')
     figure.add_trace(go.Scatter(
         x=ensemble_data['x_1-51'],
         y=ensemble_data['ensemble_01_m^3/s'],
@@ -95,7 +80,7 @@ def hydroviewer_plot(records: pd.DataFrame,
         ))
     if rperiods is not None:
         max_visible = max(stats['flow_75%_m^3/s'].max(), stats['flow_avg_m^3/s'].max(), stats['high_res_m^3/s'].max(),
-                          records['streamflow_m^3/s'].max())
+                          recs['streamflow_m^3/s'].max())
         for rp in _rperiod_scatters(startdate, enddate, rperiods, max_flow, max_visible):
             figure.add_trace(rp)
 
@@ -107,18 +92,16 @@ def hydroviewer_plot(records: pd.DataFrame,
 
     if outformat == 'plotly':
         return figure
-    if outformat == 'plotly_html':
+    else:  # outformat == 'plotly_html':
         return offline_plot(
             figure,
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
-    return
 
 
-def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame = None,
-                  titles: dict = False, outformat: str = 'plotly'):
+def forecast_stats(stats: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False, outformat: str = 'plotly'):
     """
     Makes the streamflow data and optional metadata into a plotly plot
 
@@ -137,9 +120,6 @@ def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame = None,
 
             data = geoglows.streamflow.forecast_plot(stats, rperiods)
     """
-    # Validate a few of the important inputs
-    if not isinstance(stats, pd.DataFrame):
-        raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
         raise ValueError('invalid outformat specified. pick json, plotly, plotly_scatters, or plotly_html')
 
@@ -229,7 +209,6 @@ def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame = None,
         title=__build_title('Forecasted Streamflow', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%b %d %Y'},
-        legend_title_text='Streamflow Series',
     )
     figure = go.Figure(scatter_plots, layout=layout)
     if outformat == 'plotly':
@@ -244,13 +223,13 @@ def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame = None,
     return
 
 
-def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None,
-                   titles: dict = False, outformat: str = 'plotly'):
+def forecast_ensembles(ensem: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False,
+                       outformat: str = 'plotly'):
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
-        ensembles: the csv response from forecast_ensembles
+        ensem: the csv response from forecast_ensembles
         rperiods: the csv response from return_periods
         outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
         titles: (dict) Extra info to show on the title of the plot. For example:
@@ -263,9 +242,6 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None,
 
             data = geoglows.streamflow.ensembles_plot(ensembles, rperiods)
     """
-    # Validate a few of the important inputs
-    if not isinstance(ensembles, pd.DataFrame):
-        raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
         raise ValueError('invalid outformat specified. pick json, plotly, plotly_scatters, or plotly_html')
 
@@ -274,19 +250,19 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None,
     scatter_plots = []
 
     # determine the threshold values for return periods and the start/end dates so we can plot them
-    dates = ensembles.index.tolist()
+    dates = ensem.index.tolist()
     startdate = dates[0]
     enddate = dates[-1]
 
     # process the series' components and store them in a dictionary
     plot_data = {
-        'x_1-51': ensembles['ensemble_01_m^3/s'].dropna(axis=0).index.tolist(),
-        'x_52': ensembles['ensemble_52_m^3/s'].dropna(axis=0).index.tolist(),
+        'x_1-51': ensem['ensemble_01_m^3/s'].dropna(axis=0).index.tolist(),
+        'x_52': ensem['ensemble_52_m^3/s'].dropna(axis=0).index.tolist(),
     }
 
     # add a dictionary entry for each of the ensemble members. the key for each series is the integer ensemble number
-    for ensemble in ensembles.columns:
-        plot_data[ensemble] = ensembles[ensemble].dropna(axis=0).tolist()
+    for ensemble in ensem.columns:
+        plot_data[ensemble] = ensem[ensemble].dropna(axis=0).tolist()
         max_flows.append(max(plot_data[ensemble]))
     plot_data['y_max'] = max(max_flows)
 
@@ -322,7 +298,6 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None,
         title=__build_title('Ensemble Predicted Streamflow', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%b %d %Y'},
-        legend_title_text='Streamflow Series',
     )
     figure = go.Figure(scatter_plots, layout=layout)
     if outformat == 'plotly':
@@ -337,13 +312,13 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None,
     return
 
 
-def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame = None,
-                 titles: dict = False, outformat: str = 'plotly'):
+def forecast_records(recs: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False,
+                     outformat: str = 'plotly'):
     """
     Makes the streamflow saved forecast data and metadata into a plotly plot
 
     Args:
-        records: the csv response from forecast_records
+        recs: the csv response from forecast_records
         rperiods: the csv response from return_periods
         outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
         titles: (dict) Extra info to show on the title of the plot. For example:
@@ -357,21 +332,18 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame = None,
 
             data = geoglows.streamflow.record_plot(records, rperiods)
     """
-    # Validate a few of the important inputs
-    if not isinstance(records, pd.DataFrame):
-        raise ValueError('Sorry, I only process pandas dataframes right now')
     if outformat not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
         raise ValueError('invalid outformat specified. pick json, plotly, plotly_scatters, or plotly_html')
 
     # Start processing the inputs
-    dates = records.index.tolist()
+    dates = recs.index.tolist()
     startdate = dates[0]
     enddate = dates[-1]
 
     plot_data = {
         'x_records': dates,
-        'recorded_flows': records['streamflow_m^3/s'].dropna(axis=0).tolist(),
-        'y_max': max(records['streamflow_m^3/s']),
+        'recorded_flows': recs['streamflow_m^3/s'].dropna(axis=0).tolist(),
+        'y_max': max(recs['streamflow_m^3/s']),
     }
     if rperiods is not None:
         plot_data.update(rperiods.to_dict(orient='index').items())
@@ -395,7 +367,6 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame = None,
         title=__build_title('Forecasted Streamflow Record', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [startdate, enddate]},
-        legend_title_text='Streamflow Series',
     )
     figure = go.Figure(scatter_plots, layout=layout)
     if outformat == 'plotly':
@@ -410,8 +381,8 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame = None,
     return
 
 
-def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame = None,
-                    titles: dict = False, outformat: str = 'plotly'):
+def historic_simulation(hist: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False,
+                        outformat: str = 'plotly'):
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
@@ -430,9 +401,8 @@ def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame = None,
 
             data = geoglows.streamflow.historic_plot(hist, rperiods)
     """
-    # Validate a few of the important inputs
-    if not isinstance(hist, pd.DataFrame):
-        raise ValueError('Sorry, I only process pandas dataframes right now')
+    if outformat not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
+        raise ValueError('invalid outformat specified. pick json, plotly, plotly_scatters, or plotly_html')
 
     dates = hist.index.tolist()
     startdate = dates[0]
@@ -466,7 +436,6 @@ def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame = None,
         title=__build_title('Historic Streamflow Simulation', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%Y'},
-        legend_title_text='Streamflow Series',
     )
     figure = go.Figure(scatter_plots, layout=layout)
     if outformat == 'plotly':
@@ -481,12 +450,12 @@ def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame = None,
     raise ValueError('Invalid outformat chosen. Choose json, plotly, plotly_scatters, or plotly_html')
 
 
-def seasonal_plot(seasonal: pd.DataFrame, titles: dict = False, outformat: str = 'plotly'):
+def seasonal_average(seas: pd.DataFrame, titles: dict = False, outformat: str = 'plotly'):
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
-        seasonal: the csv response from seasonal_average
+        seas: the csv response from seasonal_average
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
         outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
@@ -500,15 +469,14 @@ def seasonal_plot(seasonal: pd.DataFrame, titles: dict = False, outformat: str =
             data = geoglows.streamflow.seasonal_plot(
                 seasonal, reach_id=123456789, drain_area='123 km^2', outformat='json')
     """
-    # Validate a few of the important inputs
-    if not isinstance(seasonal, pd.DataFrame):
-        raise ValueError('Sorry, I only process pandas dataframes right now')
+    if outformat not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
+        raise ValueError('invalid outformat specified. pick json, plotly, plotly_scatters, or plotly_html')
 
     plot_data = {
-        'day_number': seasonal.index.tolist(),
-        'average_flow': seasonal['streamflow_m^3/s'].tolist(),
-        'max_flow': seasonal['max_flow'].tolist(),
-        'min_flow': seasonal['min_flow'].tolist(),
+        'day_number': seas.index.tolist(),
+        'average_flow': seas['streamflow_m^3/s'].tolist(),
+        'max_flow': seas['max_flow'].tolist(),
+        'min_flow': seas['min_flow'].tolist(),
     }
     if outformat == 'json':
         return plot_data
@@ -540,7 +508,6 @@ def seasonal_plot(seasonal: pd.DataFrame, titles: dict = False, outformat: str =
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [plot_data['day_number'][0], plot_data['day_number'][-1]],
                'hoverformat': '%b %d (%j)', 'tickformat': '%b'},
-        legend_title_text='Streamflow Series',
     )
     figure = go.Figure(scatter_plots, layout=layout)
     if outformat == 'plotly':
@@ -555,7 +522,7 @@ def seasonal_plot(seasonal: pd.DataFrame, titles: dict = False, outformat: str =
     raise ValueError('Invalid outformat chosen. Choose json, plotly, plotly_scatters, or plotly_html')
 
 
-def flow_duration_curve_plot(hist: pd.DataFrame, titles: dict = False, outformat: str = 'plotly'):
+def flow_duration_curve(hist: pd.DataFrame, titles: dict = False, outformat: str = 'plotly'):
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
@@ -573,9 +540,8 @@ def flow_duration_curve_plot(hist: pd.DataFrame, titles: dict = False, outformat
 
             data = geoglows.streamflow.flow_duration_curve_plot(hist)
     """
-    # Validate a few of the important inputs
-    if not isinstance(hist, pd.DataFrame):
-        raise ValueError('Sorry, I only process pandas dataframes right now')
+    if outformat not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
+        raise ValueError('invalid outformat specified. pick json, plotly, plotly_scatters, or plotly_html')
 
     # process the hist dataframe to create the flow duration curve
     sorted_hist = hist.sort_values(by='streamflow_m^3/s', ascending=False)['streamflow_m^3/s'].tolist()
@@ -607,7 +573,6 @@ def flow_duration_curve_plot(hist: pd.DataFrame, titles: dict = False, outformat
         title=__build_title('Flow Duration Curve', titles),
         xaxis={'title': 'Exceedence Probability'},
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
-        legend_title_text='Streamflow Series',
     )
     figure = go.Figure(scatter_plots, layout=layout)
     if outformat == 'plotly':
@@ -622,14 +587,15 @@ def flow_duration_curve_plot(hist: pd.DataFrame, titles: dict = False, outformat
     raise ValueError('Invalid outformat chosen. Choose json, plotly, plotly_scatters, or plotly_html')
 
 
-def probabilities_table(stats: pd.DataFrame, ensembles: pd.DataFrame, rperiods: pd.DataFrame) -> str:
+# STREAMFLOW HTML TABLES
+def probabilities_table(stats: pd.DataFrame, ensem: pd.DataFrame, rperiods: pd.DataFrame) -> str:
     """
     Processes the results of forecast_stats , forecast_ensembles, and return_periods and uses jinja2 template
     rendering to generate html code that shows the probabilities of exceeding the return period flow on each day.
 
     Args:
         stats: the csv response from forecast_stats
-        ensembles: the csv response from forecast_ensembles
+        ensem: the csv response from forecast_ensembles
         rperiods: the csv response from return_periods
 
     Return:
@@ -661,7 +627,7 @@ def probabilities_table(stats: pd.DataFrame, ensembles: pd.DataFrame, rperiods: 
     r50 = []
     r100 = []
     for i in range(len(uniqueday) - 1):  # (-1) omit the extra day used for reference only
-        tmp = ensembles.loc[uniqueday[i]:uniqueday[i + 1]]
+        tmp = ensem.loc[uniqueday[i]:uniqueday[i + 1]]
         days.append(uniqueday[i].strftime('%b %d'))
         num2 = 0
         num5 = 0
@@ -728,12 +694,12 @@ def return_periods_table(rperiods: pd.DataFrame) -> str:
     reach_id = str(tmp.index[0])
     js = json.loads(tmp.to_json())
     rp = {}
-    for item in js:
-        if item.startswith('return_period'):
-            year = item.split('_')[-1]
-            rp[f'{year} Year'] = js[item][reach_id]
-        elif item == 'max_flow':
-            rp['Max Simulated Flow'] = js[item][reach_id]
+    for i in js:
+        if i.startswith('return_period'):
+            year = i.split('_')[-1]
+            rp[f'{year} Year'] = js[i][reach_id]
+        elif i == 'max_flow':
+            rp['Max Simulated Flow'] = js[i][reach_id]
 
     rp = {key: round(value, 2) for key, value in sorted(rp.items(), key=lambda item: item[1])}
 
@@ -743,7 +709,7 @@ def return_periods_table(rperiods: pd.DataFrame) -> str:
 
 # BIAS CORRECTION PLOTS
 def corrected_historical(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
-                         rperiods: pd.DataFrame = None, titles: dict = None, outformat: str = 'plotly') -> go.Figure:
+                         rperiods: pd.DataFrame = None, titles: dict = None, outformat: str = 'plotly'):
     """
     Creates a plot of corrected discharge, observered discharge, and simulated discharge
 
@@ -759,10 +725,6 @@ def corrected_historical(corrected: pd.DataFrame, simulated: pd.DataFrame, obser
     Returns:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    # Validate a few of the important inputs
-    if not isinstance(corrected, pd.DataFrame):
-        raise ValueError('Sorry, I only process pandas dataframes right now')
-
     startdate = corrected.index[0]
     enddate = corrected.index[-1]
 
@@ -825,14 +787,19 @@ def corrected_historical(corrected: pd.DataFrame, simulated: pd.DataFrame, obser
 
 
 def corrected_scatterplots(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
+                           merged_sim_obs: pd.DataFrame = False, merged_cor_obs: pd.DataFrame = False,
                            titles: dict = None, outformat: str = 'plotly') -> go.Figure:
     """
-    Creates a plot of corrected discharge, observered discharge, and simulated discharge
+    Creates a plot of corrected discharge, observered discharge, and simulated discharge. This function uses
+    hydrostats.data.merge_data on the 3 inputs. If you have already computed these because you are doing a full
+    comparison of bias correction, you can provide them to save time
 
     Args:
         corrected: the response from the geoglows.bias.correct_historical_simulation function
         simulated: the csv response from historic_simulation
         observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
+        merged_sim_obs: (optional) if you have already computed it, hydrostats.data.merge_data(simulated, observed)
+        merged_cor_obs: (optional) if you have already computed it, hydrostats.data.merge_data(corrected, observed)
         outformat: either 'plotly' or 'plotly_html' (default plotly)
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
@@ -840,30 +807,34 @@ def corrected_scatterplots(corrected: pd.DataFrame, simulated: pd.DataFrame, obs
     Returns:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    # merge the datasets together
-    merged_df = hd.merge_data(sim_df=simulated, obs_df=observed)
-    merged_df2 = hd.merge_data(sim_df=corrected, obs_df=observed)
+    if corrected is False and simulated is False and observed is False:
+        if merged_sim_obs is not False and merged_cor_obs is not False:
+            pass  # if you provided the merged dataframes already, we use those
+    else:
+        # merge the datasets together
+        merged_sim_obs = hd.merge_data(sim_df=simulated, obs_df=observed)
+        merged_cor_obs = hd.merge_data(sim_df=corrected, obs_df=observed)
 
     # get the min/max values for plotting the 45 degree line
-    min_value = min(min(merged_df.iloc[:, 1].values), min(merged_df.iloc[:, 0].values))
-    max_value = max(max(merged_df.iloc[:, 1].values), max(merged_df.iloc[:, 0].values))
+    min_value = min(min(merged_sim_obs.iloc[:, 1].values), min(merged_sim_obs.iloc[:, 0].values))
+    max_value = max(max(merged_sim_obs.iloc[:, 1].values), max(merged_sim_obs.iloc[:, 0].values))
 
     # do a linear regression on both of the merged dataframes
-    slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(merged_df.iloc[:, 0].values,
-                                                                         merged_df.iloc[:, 1].values)
-    slope2, intercept2, r_value2, p_value2, std_err2 = scipy.stats.linregress(merged_df2.iloc[:, 0].values,
-                                                                              merged_df2.iloc[:, 1].values)
+    slope, intercept, r_value, p_value, std_err = scipy.stats.linregress(merged_sim_obs.iloc[:, 0].values,
+                                                                         merged_sim_obs.iloc[:, 1].values)
+    slope2, intercept2, r_value2, p_value2, std_err2 = scipy.stats.linregress(merged_cor_obs.iloc[:, 0].values,
+                                                                              merged_cor_obs.iloc[:, 1].values)
     scatter_sets = [
         go.Scatter(
-            x=merged_df.iloc[:, 0].values,
-            y=merged_df.iloc[:, 1].values,
+            x=merged_sim_obs.iloc[:, 0].values,
+            y=merged_sim_obs.iloc[:, 1].values,
             mode='markers',
             name='Original Data',
             marker=dict(color='#ef553b')
         ),
         go.Scatter(
-            x=merged_df2.iloc[:, 0].values,
-            y=merged_df2.iloc[:, 1].values,
+            x=merged_cor_obs.iloc[:, 0].values,
+            y=merged_cor_obs.iloc[:, 1].values,
             mode='markers',
             name='Corrected',
             marker=dict(color='#00cc96')
@@ -925,14 +896,19 @@ def corrected_scatterplots(corrected: pd.DataFrame, simulated: pd.DataFrame, obs
 
 
 def corrected_month_average(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
+                            merged_sim_obs: pd.DataFrame = False, merged_cor_obs: pd.DataFrame = False,
                             titles: dict = None, outformat: str = 'plotly') -> go.Figure:
     """
-    Calculates and plots the monthly average streamflow
+    Calculates and plots the monthly average streamflow. This function uses
+    hydrostats.data.merge_data on the 3 inputs. If you have already computed these because you are doing a full
+    comparison of bias correction, you can provide them to save time
 
     Args:
         corrected: the response from the geoglows.bias.correct_historical_simulation function
         simulated: the csv response from historic_simulation
         observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
+        merged_sim_obs: (optional) if you have already computed it, hydrostats.data.merge_data(simulated, observed)
+        merged_cor_obs: (optional) if you have already computed it, hydrostats.data.merge_data(corrected, observed)
         outformat: either 'plotly' or 'plotly_html' (default plotly)
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
@@ -940,8 +916,15 @@ def corrected_month_average(corrected: pd.DataFrame, simulated: pd.DataFrame, ob
     Returns:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    monthly_avg = hd.monthly_average(hd.merge_data(sim_df=simulated, obs_df=observed))
-    monthly_avg2 = hd.monthly_average(hd.merge_data(sim_df=corrected, obs_df=observed))
+    if corrected is False and simulated is False and observed is False:
+        if merged_sim_obs is not False and merged_cor_obs is not False:
+            pass  # if you provided the merged dataframes already, we use those
+    else:
+        # merge the datasets together
+        merged_sim_obs = hd.merge_data(sim_df=simulated, obs_df=observed)
+        merged_cor_obs = hd.merge_data(sim_df=corrected, obs_df=observed)
+    monthly_avg = hd.monthly_average(merged_sim_obs)
+    monthly_avg2 = hd.monthly_average(merged_cor_obs)
 
     scatters = [
         go.Scatter(x=monthly_avg.index, y=monthly_avg.iloc[:, 1].values, name='Observed Data'),
@@ -966,14 +949,19 @@ def corrected_month_average(corrected: pd.DataFrame, simulated: pd.DataFrame, ob
     raise ValueError('Invalid outformat chosen. Choose plotly or plotly_html')
 
 
-def corrected_day_averages(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
-                           titles: dict = None, outformat: str = 'plotly') -> go.Figure:
+def corrected_day_average(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
+                          merged_sim_obs: pd.DataFrame = False, merged_cor_obs: pd.DataFrame = False,
+                          titles: dict = None, outformat: str = 'plotly') -> go.Figure:
     """
-    Calculates and plots the daily average streamflow
+    Calculates and plots the daily average streamflow. This function uses
+    hydrostats.data.merge_data on the 3 inputs. If you have already computed these because you are doing a full
+    comparison of bias correction, you can provide them to save time
 
     Args:
         corrected: the response from the geoglows.bias.correct_historical_simulation function
         simulated: the csv response from historic_simulation
+        merged_sim_obs: (optional) if you have already computed it, hydrostats.data.merge_data(simulated, observed)
+        merged_cor_obs: (optional) if you have already computed it, hydrostats.data.merge_data(corrected, observed)
         observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
         outformat: either 'plotly' or 'plotly_html' (default plotly)
         titles: (dict) Extra info to show on the title of the plot. For example:
@@ -982,8 +970,15 @@ def corrected_day_averages(corrected: pd.DataFrame, simulated: pd.DataFrame, obs
     Returns:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    daily_avg = hd.daily_average(hd.merge_data(sim_df=simulated, obs_df=observed))
-    daily_avg2 = hd.daily_average(hd.merge_data(sim_df=corrected, obs_df=observed))
+    if corrected is False and simulated is False and observed is False:
+        if merged_sim_obs is not False and merged_cor_obs is not False:
+            pass  # if you provided the merged dataframes already, we use those
+    else:
+        # merge the datasets together
+        merged_sim_obs = hd.merge_data(sim_df=simulated, obs_df=observed)
+        merged_cor_obs = hd.merge_data(sim_df=corrected, obs_df=observed)
+    daily_avg = hd.daily_average(merged_sim_obs)
+    daily_avg2 = hd.daily_average(merged_cor_obs)
 
     scatters = [
         go.Scatter(x=daily_avg.index, y=daily_avg.iloc[:, 1].values, name='Observed Data'),
@@ -1009,6 +1004,7 @@ def corrected_day_averages(corrected: pd.DataFrame, simulated: pd.DataFrame, obs
 
 
 def corrected_volume_compare(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
+                             merged_sim_obs: pd.DataFrame = False, merged_cor_obs: pd.DataFrame = False,
                              titles: dict = None, outformat: str = 'plotly') -> go.Figure:
     """
     Calculates and plots the cumulative volume output on each of the 3 datasets provided
@@ -1017,6 +1013,8 @@ def corrected_volume_compare(corrected: pd.DataFrame, simulated: pd.DataFrame, o
         corrected: the response from the geoglows.bias.correct_historical_simulation function
         simulated: the csv response from historic_simulation
         observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
+        merged_sim_obs: (optional) if you have already computed it, hydrostats.data.merge_data(simulated, observed)
+        merged_cor_obs: (optional) if you have already computed it, hydrostats.data.merge_data(corrected, observed)
         outformat: either 'plotly' or 'plotly_html' (default plotly)
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
@@ -1024,12 +1022,17 @@ def corrected_volume_compare(corrected: pd.DataFrame, simulated: pd.DataFrame, o
     Returns:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    merged_df = hd.merge_data(sim_df=simulated, obs_df=observed)
-    merged_df2 = hd.merge_data(sim_df=corrected, obs_df=observed)
+    if corrected is False and simulated is False and observed is False:
+        if merged_sim_obs is not False and merged_cor_obs is not False:
+            pass  # if you provided the merged dataframes already, we use those
+    else:
+        # merge the datasets together
+        merged_sim_obs = hd.merge_data(sim_df=simulated, obs_df=observed)
+        merged_cor_obs = hd.merge_data(sim_df=corrected, obs_df=observed)
 
-    sim_array = merged_df.iloc[:, 0].values
-    obs_array = merged_df.iloc[:, 1].values
-    corr_array = merged_df2.iloc[:, 0].values
+    sim_array = merged_sim_obs.iloc[:, 0].values
+    obs_array = merged_sim_obs.iloc[:, 1].values
+    corr_array = merged_cor_obs.iloc[:, 0].values
 
     sim_volume_dt = sim_array * 0.0864
     obs_volume_dt = obs_array * 0.0864
@@ -1054,9 +1057,9 @@ def corrected_volume_compare(corrected: pd.DataFrame, simulated: pd.DataFrame, o
         sum_corr = sum_corr + k
         corr_volume_cum.append(sum_corr)
 
-    observed_volume = go.Scatter(x=merged_df.index, y=obs_volume_cum, name='Observed', )
-    simulated_volume = go.Scatter(x=merged_df.index, y=sim_volume_cum, name='Simulated', )
-    corrected_volume = go.Scatter(x=merged_df2.index, y=corr_volume_cum, name='Corrected Simulated', )
+    observed_volume = go.Scatter(x=merged_sim_obs.index, y=obs_volume_cum, name='Observed', )
+    simulated_volume = go.Scatter(x=merged_sim_obs.index, y=sim_volume_cum, name='Simulated', )
+    corrected_volume = go.Scatter(x=merged_cor_obs.index, y=corr_volume_cum, name='Corrected Simulated', )
 
     layout = go.Layout(
         title=__build_title('Observed & Simulated Volume Comparison', titles),
@@ -1079,7 +1082,11 @@ def corrected_volume_compare(corrected: pd.DataFrame, simulated: pd.DataFrame, o
 def __build_title(base, title_headers):
     if not title_headers:
         return base
+    if 'bias_corrected' in title_headers.keys():
+        base += '<br>Bias Corrected'
     for head in title_headers:
+        if head == 'bias_corrected':
+            continue
         base += f'<br>{head}: {title_headers[head]}'
     return base
 

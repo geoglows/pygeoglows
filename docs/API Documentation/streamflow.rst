@@ -30,5 +30,5 @@ GEOGloWS Model Utilities
 
 .. automodule:: geoglows.streamflow
     :members:
-        available_data, available_regions, available_dates, reach_to_region, latlon_to_reach, latlon_to_region
+        available_data, available_regions, available_dates, reach_to_region, reach_to_latlon, latlon_to_reach, latlon_to_region
     :noindex:

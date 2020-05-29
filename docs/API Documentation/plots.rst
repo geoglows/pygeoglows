@@ -23,5 +23,5 @@ Plots for Bias Corrected Data
 
 .. automodule:: geoglows.plots
     :members:
-        bias_corrected_historical, bias_corrected_scatterplots, bias_corrected_daily_averages, bias_corrected_monthly_averages, bias_corrected_volume_comparison
+        corrected_historical, corrected_scatterplots, corrected_day_averages, corrected_month_averages, corrected_volume_compare
     :noindex:
