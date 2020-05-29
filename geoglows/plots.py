@@ -10,8 +10,8 @@ import scipy.stats
 from plotly.offline import plot as offline_plot
 
 __all__ = ['hydroviewer_plot', 'forecast_plot', 'records_plot', 'ensembles_plot', 'historical_plot', 'seasonal_plot',
-           'flow_duration_curve_plot', 'probabilities_table', 'return_periods_table', 'bias_corrected_historical',
-           'bias_corrected_scatterplots', 'bias_corrected_daily_averages', 'bias_corrected_monthly_averages']
+           'flow_duration_curve_plot', 'probabilities_table', 'return_periods_table', 'corrected_historical',
+           'corrected_scatterplots', 'corrected_day_averages', 'corrected_month_average']
 
 
 # FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
@@ -21,7 +21,7 @@ def hydroviewer_plot(records: pd.DataFrame,
                      rperiods: pd.DataFrame = None,
                      record_days: int = 7,
                      outformat: str = 'plotly',
-                     title_headers: dict = False) -> go.Figure:
+                     titles: dict = False) -> go.Figure:
     """
     Creates the standard plot for a hydroviewer
 
@@ -32,7 +32,7 @@ def hydroviewer_plot(records: pd.DataFrame,
         rperiods: (optional) the response from return_periods
         outformat: (optional) either 'json', 'plotly', or 'plotly_html' (default plotly)
         record_days: (optional) number of days of forecast records to show before the start of the forecast
-        title_headers: (dict) Extra info to show on the title of the plot. For example:
+        titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
 
     Return:
@@ -100,7 +100,7 @@ def hydroviewer_plot(records: pd.DataFrame,
             figure.add_trace(rp)
 
     figure.update_layout(
-        title=__build_title('Forecasted Streamflow', title_headers),
+        title=__build_title('Forecasted Streamflow', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [startdate, enddate]},
     )
@@ -118,14 +118,14 @@ def hydroviewer_plot(records: pd.DataFrame,
 
 
 def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame = None,
-                  title_headers: dict = False, outformat: str = 'plotly'):
+                  titles: dict = False, outformat: str = 'plotly'):
     """
     Makes the streamflow data and optional metadata into a plotly plot
 
     Args:
         stats: the csv response from forecast_stats
         rperiods: the csv response from return_periods
-        title_headers: (dict) Extra info to show on the title of the plot. For example:
+        titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
         outformat: 'json', 'plotly', 'plotly_scatters', or 'plotly_html' (default plotly)
 
@@ -226,7 +226,7 @@ def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame = None,
         return scatter_plots
 
     layout = go.Layout(
-        title=__build_title('Forecasted Streamflow', title_headers),
+        title=__build_title('Forecasted Streamflow', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%b %d %Y'},
         legend_title_text='Streamflow Series',
@@ -245,7 +245,7 @@ def forecast_plot(stats: pd.DataFrame, rperiods: pd.DataFrame = None,
 
 
 def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None,
-                   title_headers: dict = False, outformat: str = 'plotly'):
+                   titles: dict = False, outformat: str = 'plotly'):
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
@@ -253,7 +253,7 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None,
         ensembles: the csv response from forecast_ensembles
         rperiods: the csv response from return_periods
         outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
-        title_headers: (dict) Extra info to show on the title of the plot. For example:
+        titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
@@ -319,7 +319,7 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None,
 
     # define a layout for the plot
     layout = go.Layout(
-        title=__build_title('Ensemble Predicted Streamflow', title_headers),
+        title=__build_title('Ensemble Predicted Streamflow', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%b %d %Y'},
         legend_title_text='Streamflow Series',
@@ -338,7 +338,7 @@ def ensembles_plot(ensembles: pd.DataFrame, rperiods: pd.DataFrame = None,
 
 
 def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame = None,
-                 title_headers: dict = False, outformat: str = 'plotly'):
+                 titles: dict = False, outformat: str = 'plotly'):
     """
     Makes the streamflow saved forecast data and metadata into a plotly plot
 
@@ -346,7 +346,7 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame = None,
         records: the csv response from forecast_records
         rperiods: the csv response from return_periods
         outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
-        title_headers: (dict) Extra info to show on the title of the plot. For example:
+        titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
 
     Return:
@@ -392,7 +392,7 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame = None,
         return scatter_plots
 
     layout = go.Layout(
-        title=__build_title('Forecasted Streamflow Record', title_headers),
+        title=__build_title('Forecasted Streamflow Record', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [startdate, enddate]},
         legend_title_text='Streamflow Series',
@@ -411,7 +411,7 @@ def records_plot(records: pd.DataFrame, rperiods: pd.DataFrame = None,
 
 
 def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame = None,
-                    title_headers: dict = False, outformat: str = 'plotly'):
+                    titles: dict = False, outformat: str = 'plotly'):
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
@@ -419,7 +419,7 @@ def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame = None,
         hist: the csv response from historic_simulation
         rperiods: the csv response from return_periods
         outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
-        title_headers: (dict) Extra info to show on the title of the plot. For example:
+        titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
 
     Return:
@@ -463,7 +463,7 @@ def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame = None,
         return scatter_plots
 
     layout = go.Layout(
-        title=__build_title('Historic Streamflow Simulation', title_headers),
+        title=__build_title('Historic Streamflow Simulation', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%Y'},
         legend_title_text='Streamflow Series',
@@ -481,13 +481,13 @@ def historical_plot(hist: pd.DataFrame, rperiods: pd.DataFrame = None,
     raise ValueError('Invalid outformat chosen. Choose json, plotly, plotly_scatters, or plotly_html')
 
 
-def seasonal_plot(seasonal: pd.DataFrame, title_headers: dict = False, outformat: str = 'plotly'):
+def seasonal_plot(seasonal: pd.DataFrame, titles: dict = False, outformat: str = 'plotly'):
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
         seasonal: the csv response from seasonal_average
-        title_headers: (dict) Extra info to show on the title of the plot. For example:
+        titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
         outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
 
@@ -536,7 +536,7 @@ def seasonal_plot(seasonal: pd.DataFrame, title_headers: dict = False, outformat
     if outformat == 'plotly_scatters':
         return scatter_plots
     layout = go.Layout(
-        title=__build_title('Daily Average Streamflow (Historic Simulation)', title_headers),
+        title=__build_title('Daily Average Streamflow (Historic Simulation)', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [plot_data['day_number'][0], plot_data['day_number'][-1]],
                'hoverformat': '%b %d (%j)', 'tickformat': '%b'},
@@ -555,13 +555,13 @@ def seasonal_plot(seasonal: pd.DataFrame, title_headers: dict = False, outformat
     raise ValueError('Invalid outformat chosen. Choose json, plotly, plotly_scatters, or plotly_html')
 
 
-def flow_duration_curve_plot(hist: pd.DataFrame, title_headers: dict = False, outformat: str = 'plotly'):
+def flow_duration_curve_plot(hist: pd.DataFrame, titles: dict = False, outformat: str = 'plotly'):
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
         hist: the csv response from historic_simulation
-        title_headers: (dict) Extra info to show on the title of the plot. For example:
+        titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
         outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
 
@@ -604,7 +604,7 @@ def flow_duration_curve_plot(hist: pd.DataFrame, title_headers: dict = False, ou
     if outformat == 'plotly_scatters':
         return scatter_plots
     layout = go.Layout(
-        title=__build_title('Flow Duration Curve', title_headers),
+        title=__build_title('Flow Duration Curve', titles),
         xaxis={'title': 'Exceedence Probability'},
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         legend_title_text='Streamflow Series',
@@ -742,12 +742,8 @@ def return_periods_table(rperiods: pd.DataFrame) -> str:
 
 
 # BIAS CORRECTION PLOTS
-def bias_corrected_historical(corrected: pd.DataFrame,
-                              simulated: pd.DataFrame,
-                              observed: pd.DataFrame,
-                              rperiods: pd.DataFrame = None,
-                              title_headers: dict = None,
-                              outformat: str = 'plotly'):
+def corrected_historical(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
+                         rperiods: pd.DataFrame = None, titles: dict = None, outformat: str = 'plotly') -> go.Figure:
     """
     Creates a plot of corrected discharge, observered discharge, and simulated discharge
 
@@ -757,7 +753,7 @@ def bias_corrected_historical(corrected: pd.DataFrame,
         observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
         rperiods: the csv response from return_periods
         outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
-        title_headers: (dict) Extra info to show on the title of the plot. For example:
+        titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
 
     Returns:
@@ -810,7 +806,7 @@ def bias_corrected_historical(corrected: pd.DataFrame,
     scatters += rperiod_scatters
 
     layout = go.Layout(
-        title=__build_title("Corrected Historical Simulation", title_headers),
+        title=__build_title("Corrected Historical Simulation", titles),
         yaxis={'title': 'Discharge (m<sup>3</sup>/s)'},
         xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%Y'},
     )
@@ -828,8 +824,8 @@ def bias_corrected_historical(corrected: pd.DataFrame,
     raise ValueError('Invalid outformat chosen. Choose json, plotly, plotly_scatters, or plotly_html')
 
 
-def bias_corrected_scatterplots(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
-                                title_headers: dict = None) -> go.Figure:
+def corrected_scatterplots(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
+                           titles: dict = None, outformat: str = 'plotly') -> go.Figure:
     """
     Creates a plot of corrected discharge, observered discharge, and simulated discharge
 
@@ -837,7 +833,8 @@ def bias_corrected_scatterplots(corrected: pd.DataFrame, simulated: pd.DataFrame
         corrected: the response from the geoglows.bias.correct_historical_simulation function
         simulated: the csv response from historic_simulation
         observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
-        title_headers: (dict) Extra info to show on the title of the plot. For example:
+        outformat: either 'plotly' or 'plotly_html' (default plotly)
+        titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
 
     Returns:
@@ -911,15 +908,24 @@ def bias_corrected_scatterplots(corrected: pd.DataFrame, simulated: pd.DataFrame
              )
     ]
 
-    layout = go.Layout(title=__build_title('Bias Correction Scatter Plot', title_headers),
+    layout = go.Layout(title=__build_title('Bias Correction Scatter Plot', titles),
                        xaxis=dict(title='Simulated', ),
                        yaxis=dict(title='Observed', autorange=True),
                        showlegend=True, updatemenus=updatemenus)
-    return go.Figure(data=scatter_sets, layout=layout)
+    if outformat == 'plotly':
+        return go.Figure(data=scatter_sets, layout=layout)
+    elif outformat == 'plotly_html':
+        return offline_plot(
+            go.Figure(data=scatter_sets, layout=layout),
+            config={'autosizable': True, 'responsive': True},
+            output_type='div',
+            include_plotlyjs=False
+        )
+    raise ValueError('Invalid outformat chosen. Choose plotly or plotly_html')
 
 
-def bias_corrected_monthly_averages(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
-                                    title_headers: dict = None) -> go.Figure:
+def corrected_month_average(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
+                            titles: dict = None, outformat: str = 'plotly') -> go.Figure:
     """
     Calculates and plots the monthly average streamflow
 
@@ -927,7 +933,8 @@ def bias_corrected_monthly_averages(corrected: pd.DataFrame, simulated: pd.DataF
         corrected: the response from the geoglows.bias.correct_historical_simulation function
         simulated: the csv response from historic_simulation
         observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
-        title_headers: (dict) Extra info to show on the title of the plot. For example:
+        outformat: either 'plotly' or 'plotly_html' (default plotly)
+        titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
 
     Returns:
@@ -943,15 +950,24 @@ def bias_corrected_monthly_averages(corrected: pd.DataFrame, simulated: pd.DataF
     ]
 
     layout = go.Layout(
-        title=__build_title('Monthly Average Streamflow Comparison', title_headers),
+        title=__build_title('Monthly Average Streamflow Comparison', titles),
         xaxis=dict(title='Month'), yaxis=dict(title='Discharge (m<sup>3</sup>/s)', autorange=True),
         showlegend=True)
 
-    return go.Figure(data=scatters, layout=layout)
+    if outformat == 'plotly':
+        return go.Figure(data=scatters, layout=layout)
+    elif outformat == 'plotly_html':
+        return offline_plot(
+            go.Figure(data=scatters, layout=layout),
+            config={'autosizable': True, 'responsive': True},
+            output_type='div',
+            include_plotlyjs=False
+        )
+    raise ValueError('Invalid outformat chosen. Choose plotly or plotly_html')
 
 
-def bias_corrected_daily_averages(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
-                                  title_headers: dict = None) -> go.Figure:
+def corrected_day_averages(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
+                           titles: dict = None, outformat: str = 'plotly') -> go.Figure:
     """
     Calculates and plots the daily average streamflow
 
@@ -959,7 +975,8 @@ def bias_corrected_daily_averages(corrected: pd.DataFrame, simulated: pd.DataFra
         corrected: the response from the geoglows.bias.correct_historical_simulation function
         simulated: the csv response from historic_simulation
         observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
-        title_headers: (dict) Extra info to show on the title of the plot. For example:
+        outformat: either 'plotly' or 'plotly_html' (default plotly)
+        titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
 
     Returns:
@@ -975,15 +992,38 @@ def bias_corrected_daily_averages(corrected: pd.DataFrame, simulated: pd.DataFra
     ]
 
     layout = go.Layout(
-        title=__build_title('Daily Average Streamflow Comparison', title_headers),
+        title=__build_title('Daily Average Streamflow Comparison', titles),
         xaxis=dict(title='Days'), yaxis=dict(title='Discharge (m<sup>3</sup>/s)', autorange=True),
         showlegend=True)
 
-    return go.Figure(data=scatters, layout=layout)
+    if outformat == 'plotly':
+        return go.Figure(data=scatters, layout=layout)
+    elif outformat == 'plotly_html':
+        return offline_plot(
+            go.Figure(data=scatters, layout=layout),
+            config={'autosizable': True, 'responsive': True},
+            output_type='div',
+            include_plotlyjs=False
+        )
+    raise ValueError('Invalid outformat chosen. Choose plotly or plotly_html')
 
 
-def bias_corrected_volume_comparison(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
-                                     title_headers: dict = None) -> go.Figure:
+def corrected_volume_compare(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
+                             titles: dict = None, outformat: str = 'plotly') -> go.Figure:
+    """
+    Calculates and plots the cumulative volume output on each of the 3 datasets provided
+
+    Args:
+        corrected: the response from the geoglows.bias.correct_historical_simulation function
+        simulated: the csv response from historic_simulation
+        observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
+        outformat: either 'plotly' or 'plotly_html' (default plotly)
+        titles: (dict) Extra info to show on the title of the plot. For example:
+            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+
+    Returns:
+         plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
+    """
     merged_df = hd.merge_data(sim_df=simulated, obs_df=observed)
     merged_df2 = hd.merge_data(sim_df=corrected, obs_df=observed)
 
@@ -1019,11 +1059,20 @@ def bias_corrected_volume_comparison(corrected: pd.DataFrame, simulated: pd.Data
     corrected_volume = go.Scatter(x=merged_df2.index, y=corr_volume_cum, name='Corrected Simulated', )
 
     layout = go.Layout(
-        title=__build_title('Observed & Simulated Volume Comparison', title_headers),
+        title=__build_title('Observed & Simulated Volume Comparison', titles),
         xaxis=dict(title='Datetime', ), yaxis=dict(title='Volume (m<sup>3</sup>)', autorange=True),
         showlegend=True)
 
-    return go.Figure(data=[observed_volume, simulated_volume, corrected_volume], layout=layout)
+    if outformat == 'plotly':
+        return go.Figure(data=[observed_volume, simulated_volume, corrected_volume], layout=layout)
+    elif outformat == 'plotly_html':
+        return offline_plot(
+            go.Figure(data=[observed_volume, simulated_volume, corrected_volume], layout=layout),
+            config={'autosizable': True, 'responsive': True},
+            output_type='div',
+            include_plotlyjs=False
+        )
+    raise ValueError('Invalid outformat chosen. Choose plotly or plotly_html')
 
 
 # PLOTTING AUXILIARY FUNCTIONS
