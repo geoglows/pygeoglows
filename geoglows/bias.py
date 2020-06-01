@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 from scipy import interpolate
 
-__all__ = ['correct_historical_sim', 'correct_forecast', 'make_statistics_tables']
+__all__ = ['correct_historical_sim', 'correct_forecast', 'statistics_tables']
 
 
 def correct_historical_sim(simulated_data: pd.DataFrame, observed_data: pd.DataFrame) -> pd.DataFrame:
@@ -77,29 +77,36 @@ def correct_forecast(forecast_data: pd.DataFrame, simulated_data: pd.DataFrame,
     return forecast_copy
 
 
-def make_statistics_tables(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
-                           metrics: list = None) -> str:
+def statistics_tables(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
+                      merged_sim_obs: pd.DataFrame = False, merged_cor_obs: pd.DataFrame = False,
+                      metrics: list = None) -> str:
     """
     Makes an html table of various statistical metrics for corrected vs observed data alongside the same metrics for
-    the simulated vs observed data as a way to see the improvement made by the bias correction.
+    the simulated vs observed data as a way to see the improvement made by the bias correction. This function uses
+    hydrostats.data.merge_data on the 3 inputs. If you have already computed these because you are doing a full
+    comparison of bias correction, you can provide them to save time
 
     Args:
         corrected: A dataframe with a datetime index and a single column of streamflow values
         simulated: A dataframe with a datetime index and a single column of streamflow values
         observed: A dataframe with a datetime index and a single column of streamflow values
+        merged_sim_obs: (optional) if you have already computed it, hydrostats.data.merge_data(simulated, observed)
+        merged_cor_obs: (optional) if you have already computed it, hydrostats.data.merge_data(corrected, observed)
         metrics: A list of abbreviated statistic names. See the documentation for HydroErr
     """
+    if corrected is False and simulated is False and observed is False:
+        if merged_sim_obs is not False and merged_cor_obs is not False:
+            pass  # if you provided the merged dataframes already, we use those
+    else:
+        # merge the datasets together
+        merged_sim_obs = hd.merge_data(sim_df=simulated, obs_df=observed)
+        merged_cor_obs = hd.merge_data(sim_df=corrected, obs_df=observed)
+
     if metrics is None:
         metrics = ['ME', 'RMSE', 'NRMSE (Mean)', 'MAPE', 'NSE', 'KGE (2009)', 'KGE (2012)']
     # Merge Data
-    table1 = hs.make_table(
-        merged_dataframe=hd.merge_data(sim_df=simulated, obs_df=observed),
-        metrics=metrics,
-    )
-    table2 = hs.make_table(
-        merged_dataframe=hd.merge_data(sim_df=corrected, obs_df=observed),
-        metrics=metrics,
-    )
+    table1 = hs.make_table(merged_dataframe=merged_sim_obs, metrics=metrics)
+    table2 = hs.make_table(merged_dataframe=merged_cor_obs, metrics=metrics)
 
     table2 = table2.rename(index={'Full Time Series': 'Corrected Full Time Series'})
     table1 = table1.rename(index={'Full Time Series': 'Original Full Time Series'})

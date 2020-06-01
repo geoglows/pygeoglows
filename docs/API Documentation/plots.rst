@@ -7,7 +7,7 @@ Plots for Streamflow Data
 
 .. automodule:: geoglows.plots
     :members:
-        forecast_plot, ensembles_plot, records_plot, historical_plot, seasonal_plot, flow_duration_curve_plot
+        hydroviewer, forecast_stats, forecast_records, forecast_ensembles, historic_simulation, seasonal_average, flow_duration_curve
     :noindex:
 
 Tables for Streamflow Data
@@ -23,5 +23,5 @@ Plots for Bias Corrected Data
 
 .. automodule:: geoglows.plots
     :members:
-        corrected_historical, corrected_scatterplots, corrected_day_averages, corrected_month_averages, corrected_volume_compare
+        corrected_historical, corrected_scatterplots, corrected_day_average, corrected_month_average, corrected_volume_compare
     :noindex:

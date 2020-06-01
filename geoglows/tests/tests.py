@@ -48,30 +48,40 @@ def plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods
     return
 
 
-def test_bias_correction():
-    station = 23097040
-    comid = 9007292
+def test_bias_correction(comid=9004355, station=23187280):
+    # streamflow api data
     stats = geoglows.streamflow.forecast_stats(comid)
     ens = geoglows.streamflow.forecast_ensembles(comid)
     records = geoglows.streamflow.forecast_records(comid)
     hist = geoglows.streamflow.historic_simulation(comid)
-    observed_df = pd.read_csv('/Users/rileyhales/Downloads/23187280.csv', index_col=0)
+    # get observations
+    observed_df = pd.read_csv(
+        f'https://www.hydroshare.org/resource/d222676fbd984a81911761ca1ba936bf/data/contents/Discharge_Data/{station}.csv',
+        index_col=0)
     observed_df.index = pd.to_datetime(observed_df.index).tz_localize('UTC')
     observed_df.index.name = 'datetime'
+    # bias adjustments
     corrected = geoglows.bias.correct_historical_sim(hist, observed_df)
     cor_stats = geoglows.bias.correct_forecast(stats, hist, observed_df)
     cor_ens = geoglows.bias.correct_forecast(ens, hist, observed_df)
     cor_recr = geoglows.bias.correct_forecast(records, hist, observed_df, use_month=-1)
-    geoglows.plots.hydroviewer(cor_recr, cor_stats, cor_ens).show()
-    geoglows.plots.corrected_scatterplots(corrected, hist, observed_df).show()
-    geoglows.plots.corrected_day_average(corrected, hist, observed_df).show()
-    geoglows.plots.corrected_month_average(corrected, hist, observed_df).show()
-    geoglows.plots.corrected_volume_compare(corrected, hist, observed_df).show()
-    html = geoglows.bias.make_statistics_tables(corrected, hist, observed_df)
+    # plots
+    titles = {'bias_corrected': True, 'Reach ID': comid, 'Gauge/Station ID': station}
+    geoglows.plots.hydroviewer(cor_recr, cor_stats, cor_ens, titles=titles).show()
+    geoglows.plots.corrected_scatterplots(corrected, hist, observed_df, titles=titles).show()
+    geoglows.plots.corrected_day_average(corrected, hist, observed_df, titles=titles).show()
+    geoglows.plots.corrected_month_average(corrected, hist, observed_df, titles=titles).show()
+    geoglows.plots.corrected_volume_compare(corrected, hist, observed_df, titles=titles).show()
+    html = geoglows.bias.statistics_tables(corrected, hist, observed_df)
     with open('/Users/riley/spatialdata/testtable.html', 'w') as f:
         f.write(html)
     return
 
 
 if __name__ == '__main__':
-    test_bias_correction()
+    # reach_id = 9007292
+    # stats, ensembles, warnings, records = get_forecast_data_with_reach_id_region(reach_id, 'south_america-geoglows')
+    # historical, seasonal, rperiods = get_historical_data_with_reach_id(9007292)
+    # plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods)
+
+    test_bias_correction(9004355, 23187280)

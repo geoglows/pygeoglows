@@ -10,9 +10,9 @@ import scipy.stats
 from plotly.offline import plot as offline_plot
 
 __all__ = ['hydroviewer', 'forecast_stats', 'forecast_records', 'forecast_ensembles', 'historic_simulation',
-           'seasonal_average', 'flow_duration_curve',
-           'probabilities_table', 'return_periods_table', 'corrected_historical', 'corrected_scatterplots',
-           'corrected_day_average', 'corrected_month_average']
+           'seasonal_average', 'flow_duration_curve', 'probabilities_table', 'return_periods_table',
+           'corrected_historical', 'corrected_scatterplots', 'corrected_day_average', 'corrected_month_average',
+           'corrected_volume_compare']
 
 
 # FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
@@ -85,7 +85,7 @@ def hydroviewer(recs: pd.DataFrame, stats: pd.DataFrame, ensem: pd.DataFrame, rp
             figure.add_trace(rp)
 
     figure.update_layout(
-        title=__build_title('Forecasted Streamflow', titles),
+        title=_build_title('Forecasted Streamflow', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [startdate, enddate]},
     )
@@ -206,7 +206,7 @@ def forecast_stats(stats: pd.DataFrame, rperiods: pd.DataFrame = None, titles: d
         return scatter_plots
 
     layout = go.Layout(
-        title=__build_title('Forecasted Streamflow', titles),
+        title=_build_title('Forecasted Streamflow', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%b %d %Y'},
     )
@@ -295,7 +295,7 @@ def forecast_ensembles(ensem: pd.DataFrame, rperiods: pd.DataFrame = None, title
 
     # define a layout for the plot
     layout = go.Layout(
-        title=__build_title('Ensemble Predicted Streamflow', titles),
+        title=_build_title('Ensemble Predicted Streamflow', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%b %d %Y'},
     )
@@ -364,7 +364,7 @@ def forecast_records(recs: pd.DataFrame, rperiods: pd.DataFrame = None, titles: 
         return scatter_plots
 
     layout = go.Layout(
-        title=__build_title('Forecasted Streamflow Record', titles),
+        title=_build_title('Forecasted Streamflow Record', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [startdate, enddate]},
     )
@@ -433,7 +433,7 @@ def historic_simulation(hist: pd.DataFrame, rperiods: pd.DataFrame = None, title
         return scatter_plots
 
     layout = go.Layout(
-        title=__build_title('Historic Streamflow Simulation', titles),
+        title=_build_title('Historic Streamflow Simulation', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%Y'},
     )
@@ -504,7 +504,7 @@ def seasonal_average(seas: pd.DataFrame, titles: dict = False, outformat: str = 
     if outformat == 'plotly_scatters':
         return scatter_plots
     layout = go.Layout(
-        title=__build_title('Daily Average Streamflow (Historic Simulation)', titles),
+        title=_build_title('Daily Average Streamflow (Historic Simulation)', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date', 'range': [plot_data['day_number'][0], plot_data['day_number'][-1]],
                'hoverformat': '%b %d (%j)', 'tickformat': '%b'},
@@ -570,7 +570,7 @@ def flow_duration_curve(hist: pd.DataFrame, titles: dict = False, outformat: str
     if outformat == 'plotly_scatters':
         return scatter_plots
     layout = go.Layout(
-        title=__build_title('Flow Duration Curve', titles),
+        title=_build_title('Flow Duration Curve', titles),
         xaxis={'title': 'Exceedence Probability'},
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
     )
@@ -709,7 +709,8 @@ def return_periods_table(rperiods: pd.DataFrame) -> str:
 
 # BIAS CORRECTION PLOTS
 def corrected_historical(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
-                         rperiods: pd.DataFrame = None, titles: dict = None, outformat: str = 'plotly'):
+                         rperiods: pd.DataFrame = None, titles: dict = None,
+                         outformat: str = 'plotly') -> go.Figure or str:
     """
     Creates a plot of corrected discharge, observered discharge, and simulated discharge
 
@@ -762,13 +763,13 @@ def corrected_historical(corrected: pd.DataFrame, simulated: pd.DataFrame, obser
             name='Corrected Simulated Data',
             x=plot_data['x_simulated'],
             y=plot_data['y_corrected'],
-            line=dict(color='orange')
+            line=dict(color='green')
         ),
     ]
     scatters += rperiod_scatters
 
     layout = go.Layout(
-        title=__build_title("Corrected Historical Simulation", titles),
+        title=_build_title("Historical Simulation Comparison", titles),
         yaxis={'title': 'Discharge (m<sup>3</sup>/s)'},
         xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%Y'},
     )
@@ -788,7 +789,7 @@ def corrected_historical(corrected: pd.DataFrame, simulated: pd.DataFrame, obser
 
 def corrected_scatterplots(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
                            merged_sim_obs: pd.DataFrame = False, merged_cor_obs: pd.DataFrame = False,
-                           titles: dict = None, outformat: str = 'plotly') -> go.Figure:
+                           titles: dict = None, outformat: str = 'plotly') -> go.Figure or str:
     """
     Creates a plot of corrected discharge, observered discharge, and simulated discharge. This function uses
     hydrostats.data.merge_data on the 3 inputs. If you have already computed these because you are doing a full
@@ -879,7 +880,7 @@ def corrected_scatterplots(corrected: pd.DataFrame, simulated: pd.DataFrame, obs
              )
     ]
 
-    layout = go.Layout(title=__build_title('Bias Correction Scatter Plot', titles),
+    layout = go.Layout(title=_build_title('Bias Correction Scatter Plot', titles),
                        xaxis=dict(title='Simulated', ),
                        yaxis=dict(title='Observed', autorange=True),
                        showlegend=True, updatemenus=updatemenus)
@@ -897,7 +898,7 @@ def corrected_scatterplots(corrected: pd.DataFrame, simulated: pd.DataFrame, obs
 
 def corrected_month_average(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
                             merged_sim_obs: pd.DataFrame = False, merged_cor_obs: pd.DataFrame = False,
-                            titles: dict = None, outformat: str = 'plotly') -> go.Figure:
+                            titles: dict = None, outformat: str = 'plotly') -> go.Figure or str:
     """
     Calculates and plots the monthly average streamflow. This function uses
     hydrostats.data.merge_data on the 3 inputs. If you have already computed these because you are doing a full
@@ -933,7 +934,7 @@ def corrected_month_average(corrected: pd.DataFrame, simulated: pd.DataFrame, ob
     ]
 
     layout = go.Layout(
-        title=__build_title('Monthly Average Streamflow Comparison', titles),
+        title=_build_title('Monthly Average Streamflow Comparison', titles),
         xaxis=dict(title='Month'), yaxis=dict(title='Discharge (m<sup>3</sup>/s)', autorange=True),
         showlegend=True)
 
@@ -951,7 +952,7 @@ def corrected_month_average(corrected: pd.DataFrame, simulated: pd.DataFrame, ob
 
 def corrected_day_average(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
                           merged_sim_obs: pd.DataFrame = False, merged_cor_obs: pd.DataFrame = False,
-                          titles: dict = None, outformat: str = 'plotly') -> go.Figure:
+                          titles: dict = None, outformat: str = 'plotly') -> go.Figure or str:
     """
     Calculates and plots the daily average streamflow. This function uses
     hydrostats.data.merge_data on the 3 inputs. If you have already computed these because you are doing a full
@@ -987,7 +988,7 @@ def corrected_day_average(corrected: pd.DataFrame, simulated: pd.DataFrame, obse
     ]
 
     layout = go.Layout(
-        title=__build_title('Daily Average Streamflow Comparison', titles),
+        title=_build_title('Daily Average Streamflow Comparison', titles),
         xaxis=dict(title='Days'), yaxis=dict(title='Discharge (m<sup>3</sup>/s)', autorange=True),
         showlegend=True)
 
@@ -1005,9 +1006,11 @@ def corrected_day_average(corrected: pd.DataFrame, simulated: pd.DataFrame, obse
 
 def corrected_volume_compare(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
                              merged_sim_obs: pd.DataFrame = False, merged_cor_obs: pd.DataFrame = False,
-                             titles: dict = None, outformat: str = 'plotly') -> go.Figure:
+                             titles: dict = None, outformat: str = 'plotly') -> go.Figure or str:
     """
-    Calculates and plots the cumulative volume output on each of the 3 datasets provided
+    Calculates and plots the cumulative volume output on each of the 3 datasets provided. This function uses
+    hydrostats.data.merge_data on the 3 inputs. If you have already computed these because you are doing a full
+    comparison of bias correction, you can provide them to save time
 
     Args:
         corrected: the response from the geoglows.bias.correct_historical_simulation function
@@ -1062,7 +1065,7 @@ def corrected_volume_compare(corrected: pd.DataFrame, simulated: pd.DataFrame, o
     corrected_volume = go.Scatter(x=merged_cor_obs.index, y=corr_volume_cum, name='Corrected Simulated', )
 
     layout = go.Layout(
-        title=__build_title('Observed & Simulated Volume Comparison', titles),
+        title=_build_title('Cumulative Volume Comparison', titles),
         xaxis=dict(title='Datetime', ), yaxis=dict(title='Volume (m<sup>3</sup>)', autorange=True),
         showlegend=True)
 
@@ -1079,11 +1082,11 @@ def corrected_volume_compare(corrected: pd.DataFrame, simulated: pd.DataFrame, o
 
 
 # PLOTTING AUXILIARY FUNCTIONS
-def __build_title(base, title_headers):
+def _build_title(base, title_headers):
     if not title_headers:
         return base
     if 'bias_corrected' in title_headers.keys():
-        base += '<br>Bias Corrected'
+        base = 'Bias Corrected ' + base
     for head in title_headers:
         if head == 'bias_corrected':
             continue
