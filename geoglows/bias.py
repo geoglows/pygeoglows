@@ -5,11 +5,12 @@ import hydrostats.data as hd
 import numpy as np
 import pandas as pd
 from scipy import interpolate
+import warnings
 
-__all__ = ['correct_historical_sim', 'correct_forecast', 'statistics_tables']
+__all__ = ['correct_historical', 'correct_forecast', 'statistics_tables']
 
 
-def correct_historical_sim(simulated_data: pd.DataFrame, observed_data: pd.DataFrame) -> pd.DataFrame:
+def correct_historical(simulated_data: pd.DataFrame, observed_data: pd.DataFrame) -> pd.DataFrame:
     """
     Accepts a historically simulated flow timeseries and observed flow timeseries and attempts to correct biases in the
     simulation on a monthly basis.
@@ -126,6 +127,10 @@ def _flow_and_probability_mapper(monthly_data: pd.DataFrame, to_probability: boo
     # get maximum value to bound histogram
     max_val = math.ceil(np.max(monthly_data.max()))
     min_val = math.floor(np.min(monthly_data.min()))
+
+    if max_val == min_val:
+        warnings.warn('The observational data has the same max and min value. You may get unanticipated results.')
+        max_val += .1
 
     # determine number of histograms bins needed
     number_of_points = len(monthly_data.values)
