@@ -490,7 +490,7 @@ def monthly_averages(monavg: pd.DataFrame, titles: dict = False, outformat: str 
     scatter_plots = [
         go.Scatter(
             name='Average Monthly Flow',
-            x=pd.to_datetime([f'{i:02}' for i in monavg.index], format='%m').strftime('%B'),
+            x=pd.to_datetime(monavg.index, format='%m').strftime('%B'),
             y=monavg.values.flatten(),
             line=dict(color='blue')
         ),

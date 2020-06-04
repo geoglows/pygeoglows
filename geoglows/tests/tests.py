@@ -12,10 +12,11 @@ def get_forecast_data_with_reach_id_region(reach_id, region, endpoint=geoglows.s
 
 
 def get_historical_data_with_reach_id(reach_id, endpoint=geoglows.streamflow.ENDPOINT, forcing='era_5'):
-    historical = geoglows.streamflow.historic_simulation(reach_id, forcing, endpoint=endpoint)
-    seasonal = geoglows.streamflow.seasonal_average(reach_id, forcing, endpoint=endpoint)
-    rperiods = geoglows.streamflow.return_periods(reach_id, forcing, endpoint=endpoint)
-    return historical, seasonal, rperiods
+    hist = geoglows.streamflow.historic_simulation(reach_id, forcing, endpoint=endpoint)
+    day = geoglows.streamflow.daily_averages(reach_id)
+    mon = geoglows.streamflow.monthly_averages(reach_id)
+    rp = geoglows.streamflow.return_periods(reach_id, forcing, endpoint=endpoint)
+    return hist, day, mon, rp
 
 
 def request_all_data_with_lat_lon(lat, lon):
@@ -29,13 +30,14 @@ def request_all_data_with_lat_lon(lat, lon):
     return stats, ensembles, warnings, records, historical, seasonal, rperiods
 
 
-def plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods=None):
+def plot_all(stats, ensembles, warnings, records, historical, dayavg, monavg, rperiods=None):
     geoglows.plots.hydroviewer(records, stats, ensembles, rperiods).show()
     geoglows.plots.forecast_stats(stats, rperiods).show()
     geoglows.plots.forecast_ensembles(ensembles, rperiods).show()
     geoglows.plots.forecast_records(records, rperiods).show()
     geoglows.plots.historic_simulation(historical, rperiods).show()
-    geoglows.plots.seasonal_average(seasonal).show()
+    geoglows.plots.daily_averages(dayavg).show()
+    geoglows.plots.monthly_averages(monavg).show()
     geoglows.plots.flow_duration_curve(historical).show()
 
     # with open('/Users/riley/spatialdata/prob_table.html', 'w') as f:
@@ -81,8 +83,8 @@ def test_bias_correction(comid=9004355, station=23187280):
 if __name__ == '__main__':
     reach_id = 9007292
     stats, ensembles, warnings, records = get_forecast_data_with_reach_id_region(reach_id, 'south_america-geoglows')
-    historical, seasonal, rperiods = get_historical_data_with_reach_id(9007292)
-    plot_all(stats, ensembles, warnings, records, historical, seasonal, rperiods)
+    historical, dayavg, monavg, rperiods = get_historical_data_with_reach_id(9007292)
+    plot_all(stats, ensembles, warnings, records, historical, dayavg, monavg, rperiods)
     # geoglows.plots.flow_duration_curve(geoglows.streamflow.historic_simulation(reach_id)).show()
 
     # test_bias_correction(9004355, 23187280)
