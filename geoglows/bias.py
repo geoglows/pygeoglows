@@ -5,11 +5,12 @@ import hydrostats.data as hd
 import numpy as np
 import pandas as pd
 from scipy import interpolate
+import warnings
 
-__all__ = ['correct_historical_simulation', 'correct_forecast_flows', 'make_statistics_tables']
+__all__ = ['correct_historical', 'correct_forecast', 'statistics_tables']
 
 
-def correct_historical_simulation(simulated_data: pd.DataFrame, observed_data: pd.DataFrame) -> pd.DataFrame:
+def correct_historical(simulated_data: pd.DataFrame, observed_data: pd.DataFrame) -> pd.DataFrame:
     """
     Accepts a historically simulated flow timeseries and observed flow timeseries and attempts to correct biases in the
     simulation on a monthly basis.
@@ -43,14 +44,14 @@ def correct_historical_simulation(simulated_data: pd.DataFrame, observed_data: p
     return corrected
 
 
-def correct_forecast_flows(forecasted_data: pd.DataFrame, simulated_data: pd.DataFrame,
-                           observed_data: pd.DataFrame, use_month: int = 0) -> pd.DataFrame:
+def correct_forecast(forecast_data: pd.DataFrame, simulated_data: pd.DataFrame,
+                     observed_data: pd.DataFrame, use_month: int = 0) -> pd.DataFrame:
     """
     Accepts a short term forecast of streamflow, simulated historical flow, and observed flow timeseries and attempts
     to correct biases in the forecasted data
 
     Args:
-        forecasted_data: A dataframe with a datetime index and any number of columns of forecasted flow. Compatible with
+        forecast_data: A dataframe with a datetime index and any number of columns of forecasted flow. Compatible with
             forecast_stats, forecast_ensembles, forecast_records
         simulated_data: A dataframe with a datetime index and a single column of streamflow values
         observed_data: A dataframe with a datetime index and a single column of streamflow values
@@ -61,7 +62,7 @@ def correct_forecast_flows(forecasted_data: pd.DataFrame, simulated_data: pd.Dat
         pandas DataFrame with a copy of forecasted data with values updated in each column
     """
     # make a copy of the forecasts which we update and return so the original data is not changed
-    forecast_copy = forecasted_data.copy()
+    forecast_copy = forecast_data.copy()
 
     # make the flow and probability interpolation functions
     monthly_simulated = simulated_data[simulated_data.index.month == forecast_copy.index[use_month].month].dropna()
@@ -77,28 +78,36 @@ def correct_forecast_flows(forecasted_data: pd.DataFrame, simulated_data: pd.Dat
     return forecast_copy
 
 
-def make_statistics_tables(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
-                           metrics: list = ['ME', 'RMSE', 'NRMSE (Mean)', 'MAPE', 'NSE', 'KGE (2009)', 'KGE (2012)']
-                           ) -> str:
+def statistics_tables(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
+                      merged_sim_obs: pd.DataFrame = False, merged_cor_obs: pd.DataFrame = False,
+                      metrics: list = None) -> str:
     """
     Makes an html table of various statistical metrics for corrected vs observed data alongside the same metrics for
-    the simulated vs observed data as a way to see the improvement made by the bias correction.
+    the simulated vs observed data as a way to see the improvement made by the bias correction. This function uses
+    hydrostats.data.merge_data on the 3 inputs. If you have already computed these because you are doing a full
+    comparison of bias correction, you can provide them to save time
 
     Args:
         corrected: A dataframe with a datetime index and a single column of streamflow values
         simulated: A dataframe with a datetime index and a single column of streamflow values
         observed: A dataframe with a datetime index and a single column of streamflow values
-        metrics: A list of abbreviated statistic names. See the documentation for hydrostats and HydroErr
+        merged_sim_obs: (optional) if you have already computed it, hydrostats.data.merge_data(simulated, observed)
+        merged_cor_obs: (optional) if you have already computed it, hydrostats.data.merge_data(corrected, observed)
+        metrics: A list of abbreviated statistic names. See the documentation for HydroErr
     """
+    if corrected is False and simulated is False and observed is False:
+        if merged_sim_obs is not False and merged_cor_obs is not False:
+            pass  # if you provided the merged dataframes already, we use those
+    else:
+        # merge the datasets together
+        merged_sim_obs = hd.merge_data(sim_df=simulated, obs_df=observed)
+        merged_cor_obs = hd.merge_data(sim_df=corrected, obs_df=observed)
+
+    if metrics is None:
+        metrics = ['ME', 'RMSE', 'NRMSE (Mean)', 'MAPE', 'NSE', 'KGE (2009)', 'KGE (2012)']
     # Merge Data
-    table1 = hs.make_table(
-        merged_dataframe=hd.merge_data(sim_df=simulated, obs_df=observed),
-        metrics=metrics,
-    )
-    table2 = hs.make_table(
-        merged_dataframe=hd.merge_data(sim_df=corrected, obs_df=observed),
-        metrics=metrics,
-    )
+    table1 = hs.make_table(merged_dataframe=merged_sim_obs, metrics=metrics)
+    table2 = hs.make_table(merged_dataframe=merged_cor_obs, metrics=metrics)
 
     table2 = table2.rename(index={'Full Time Series': 'Corrected Full Time Series'})
     table1 = table1.rename(index={'Full Time Series': 'Original Full Time Series'})
@@ -118,6 +127,10 @@ def _flow_and_probability_mapper(monthly_data: pd.DataFrame, to_probability: boo
     # get maximum value to bound histogram
     max_val = math.ceil(np.max(monthly_data.max()))
     min_val = math.floor(np.min(monthly_data.min()))
+
+    if max_val == min_val:
+        warnings.warn('The observational data has the same max and min value. You may get unanticipated results.')
+        max_val += .1
 
     # determine number of histograms bins needed
     number_of_points = len(monthly_data.values)

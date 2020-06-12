@@ -1,6 +1,7 @@
 import json
 import os
 import pickle
+import warnings
 from collections import OrderedDict
 from io import StringIO
 
@@ -10,8 +11,10 @@ from shapely.geometry import Point, MultiPoint, shape
 from shapely.ops import nearest_points
 
 __all__ = ['forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecast_records', 'historic_simulation',
-           'seasonal_average', 'return_periods', 'available_data', 'available_dates', 'available_regions',
-           'reach_to_region', 'latlon_to_reach']
+           'daily_averages', 'monthly_averages', 'return_periods', 'available_data', 'available_dates',
+           'available_regions', 'reach_to_region', 'reach_to_latlon', 'latlon_to_reach', 'latlon_to_region',
+           # deprecated
+           'seasonal_average']
 
 ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
 AZURE_ENDPOINT = 'http://gsf-api-vm.eastus.cloudapp.azure.com/api/'
@@ -52,7 +55,7 @@ def forecast_stats(reach_id: int, endpoint=ENDPOINT, return_format='csv', **kwar
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return endpoint + method + '?reach_id={0}'.format(reach_id)
+        return endpoint + method + f'?reach_id={reach_id}'
 
     # return the requested data
     return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
@@ -90,13 +93,13 @@ def forecast_ensembles(reach_id: int, endpoint=ENDPOINT, return_format='csv', **
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return endpoint + method + '?reach_id={0}'.format(reach_id)
+        return endpoint + method + f'?reach_id={reach_id}'
 
     # return the requested data
     return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
 
 
-def forecast_warnings(region: str, endpoint=ENDPOINT, return_format='csv', **kwargs):
+def forecast_warnings(region: str = 'all', endpoint=ENDPOINT, return_format='csv', **kwargs):
     """
     Retrieves a csv listing streams likely to experience a return period level flow during the forecast period.
 
@@ -126,7 +129,7 @@ def forecast_warnings(region: str, endpoint=ENDPOINT, return_format='csv', **kwa
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return endpoint + method + '?region={0}'.format(region)
+        return endpoint + method + f'?region={region}'
 
     # return the requested data
     return _make_request(endpoint, method, {'region': region, 'return_format': return_format}, return_format)
@@ -208,7 +211,7 @@ def historic_simulation(reach_id: int, forcing='era_5', endpoint=ENDPOINT, retur
     return _make_request(endpoint, method, params, return_format)
 
 
-def seasonal_average(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_format='csv', **kwargs):
+def daily_averages(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_format='csv', **kwargs):
     """
     Retrieves the average flow for every day of the year at a certain reach_id.
 
@@ -233,7 +236,47 @@ def seasonal_average(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_f
 
             data = geoglows.streamflow.seasonal_average(12341234)
     """
-    method = 'SeasonalAverage/'
+    method = 'DailyAverages/'
+
+    # handle the lat and lon inputs if you don't have the reach_id
+    if not reach_id:
+        reach_id = latlon_to_reach(kwargs.get('lat', False), kwargs.get('lon', False))['reach_id']
+
+    # if you only wanted the url, quit here
+    if return_format == 'url':
+        return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}'
+
+    # return the requested data
+    params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
+    return _make_request(endpoint, method, params, return_format)
+
+
+def monthly_averages(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_format='csv', **kwargs):
+    """
+    Retrieves the average flow for each month at a certain reach_id.
+
+    Args:
+        reach_id: the ID of a stream
+        forcing: the runoff dataset used to drive the historic simulation (era_interim or era_5)
+        endpoint: the endpoint of an api instance
+        return_format: 'csv', 'json', 'waterml', 'request', 'url'
+
+    Keyword Args:
+        lat, lon: the lat/lon where you want streamflow for when reach_id is not known. Must provide both lat and lon.
+
+    Return Format:
+        - return_format='csv' returns a pandas dataframe
+        - return_format='json' returns a json
+        - return_format='waterml' returns a waterml string
+        - return_format='request' returns a request response object
+        - return_format='url' returns a url string for using in a request or web browser
+
+    Example:
+        .. code-block:: python
+
+            data = geoglows.streamflow.seasonal_average(12341234)
+    """
+    method = 'MonthlyAverages/'
 
     # handle the lat and lon inputs if you don't have the reach_id
     if not reach_id:
@@ -433,6 +476,28 @@ def reach_to_region(reach_id: int) -> str:
     raise ValueError(f'{reach_id} not in the range of reach_ids for this model')
 
 
+def reach_to_latlon(reach_id: int, region: str = False) -> tuple:
+    """
+    Finds the latitude and longitude of the centroid of the stream with the specified reach_id. Does not validate that
+    the reach_id exists, but it will raise an error if the reach_id does not exist
+
+    Args:
+        reach_id: the ID for a stream
+        region: if known, you can specify the region of your reach_id
+
+    Returns:
+        tuple(latitude, longitude)
+    """
+    if not region:
+        region = reach_to_region(reach_id)
+    base_path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'geometry'))
+    df = pd.read_pickle(os.path.join(base_path, f'{region}-comid_lat_lon_z.pickle'))
+    df = df[df.index == reach_id]
+    if len(df.index) == 0:
+        raise LookupError(f'The reach_id "{reach_id}" was not found in region "{region}"')
+    return float(df['Lat'].values[0]), float(df['Lon'].values[0])
+
+
 def latlon_to_reach(lat: float, lon: float) -> dict:
     """
     Uses a list of lat/lon for each reach_id to find the closest stream reach to a given lat/lon location
@@ -506,21 +571,21 @@ def _make_request(endpoint: str, method: str, params: dict, return_format: str):
 
     # request the data from the API
     data = requests.get(endpoint + method, params=params)
+    if data.status_code != 200:
+        warnings.warn('Recieved an error from the Streamflow REST API: ' + data.text)
+        raise RuntimeError('Unable to retrieve information from the Streamflow REST API')
 
     # process the response from the API as appropriate to make the corresponding python object
     if return_format == 'csv':
-        if method == 'ForecastWarnings/':
-            return pd.read_csv(StringIO(data.text), index_col='comid')
-        if method == 'ReturnPeriods/':
-            return pd.read_csv(StringIO(data.text), index_col='rivid')
-        if method == 'SeasonalAverage/':
-            tmp = pd.read_csv(StringIO(data.text), index_col='day_of_year')
-            tmp.index = pd.to_datetime(tmp.index + 1, format='%j').strftime('%b %d')
-            return tmp
-        tmp = pd.read_csv(StringIO(data.text), index_col='datetime')
-        tmp.index = pd.to_datetime(tmp.index)
+        tmp = pd.read_csv(StringIO(data.text), index_col=0)
         if 'z' in tmp.columns:
             del tmp['z']
+        if method in ('ForecastWarnings/', 'ReturnPeriods/', 'DailyAverages/', 'MonthlyAverages/'):
+            return tmp
+        if method == 'SeasonalAverage/':
+            tmp.index = pd.to_datetime(tmp.index + 1, format='%j').strftime('%b %d')
+            return tmp
+        tmp.index = pd.to_datetime(tmp.index)
         return tmp
     elif return_format == 'json':
         return json.loads(data.text)
@@ -530,3 +595,45 @@ def _make_request(endpoint: str, method: str, params: dict, return_format: str):
         return data
     else:
         raise ValueError('Unsupported return format requested: ' + str(return_format))
+
+
+# DEPRECATED
+def seasonal_average(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_format='csv', **kwargs):
+    """
+    Retrieves the average flow for every day of the year at a certain reach_id.
+
+    Args:
+        reach_id: the ID of a stream
+        forcing: the runoff dataset used to drive the historic simulation (era_interim or era_5)
+        endpoint: the endpoint of an api instance
+        return_format: 'csv', 'json', 'waterml', 'request', 'url'
+
+    Keyword Args:
+        lat, lon: the lat/lon where you want streamflow for when reach_id is not known. Must provide both lat and lon.
+
+    Return Format:
+        - return_format='csv' returns a pandas dataframe
+        - return_format='json' returns a json
+        - return_format='waterml' returns a waterml string
+        - return_format='request' returns a request response object
+        - return_format='url' returns a url string for using in a request or web browser
+
+    Example:
+        .. code-block:: python
+
+            data = geoglows.streamflow.seasonal_average(12341234)
+    """
+    method = 'SeasonalAverage/'
+    warnings.warn('SeasonalAverage is deprecated. Please convert to DailyAverages and MonthlyAverages')
+
+    # handle the lat and lon inputs if you don't have the reach_id
+    if not reach_id:
+        reach_id = latlon_to_reach(kwargs.get('lat', False), kwargs.get('lon', False))['reach_id']
+
+    # if you only wanted the url, quit here
+    if return_format == 'url':
+        return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}'
+
+    # return the requested data
+    params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
+    return _make_request(endpoint, method, params, return_format)
