@@ -15,7 +15,7 @@ copyright = '2020, Riley Hales'
 author = 'Riley Hales'
 
 # The full version, including alpha/beta/rc tags
-release = '0.18.1'
+release = '0.19'
 master_doc = 'index'
 
 # -- General configuration ---------------------------------------------------

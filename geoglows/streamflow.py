@@ -12,18 +12,15 @@ from shapely.ops import nearest_points
 
 __all__ = ['forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecast_records', 'historic_simulation',
            'daily_averages', 'monthly_averages', 'return_periods', 'available_data', 'available_dates',
-           'available_regions', 'reach_to_region', 'reach_to_latlon', 'latlon_to_reach', 'latlon_to_region',
-           # deprecated
-           'seasonal_average']
+           'available_regions', 'reach_to_region', 'reach_to_latlon', 'latlon_to_reach', 'latlon_to_region', ]
 
-ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
+ENDPOINT = 'https://geoglows.ecmwf.int/api/'
 AZURE_ENDPOINT = 'http://gsf-api-vm.eastus.cloudapp.azure.com/api/'
 BYU_ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
-LOCAL_ENDPOINT = 'http://0.0.0.0:8090/api/'
 
 
 # FUNCTIONS THAT CALL THE GLOBAL STREAMFLOW PREDICTION API
-def forecast_stats(reach_id: int, endpoint=ENDPOINT, return_format='csv', **kwargs):
+def forecast_stats(reach_id: int, endpoint: str = ENDPOINT, return_format: str = 'csv') -> pd.DataFrame:
     """
     Retrieves statistics that summarize the most recent streamflow forecast for a certain reach_id
 
@@ -31,9 +28,6 @@ def forecast_stats(reach_id: int, endpoint=ENDPOINT, return_format='csv', **kwar
         reach_id: the ID of a stream
         endpoint: the endpoint of an api instance
         return_format: 'csv', 'json', 'waterml', 'request', 'url'
-
-    Keyword Args:
-        lat, lon: the lat/lon where you want streamflow for when reach_id is not known. Must provide both lat and lon.
 
     Return Format:
         - return_format='csv' returns a pd.DataFrame()
@@ -49,10 +43,6 @@ def forecast_stats(reach_id: int, endpoint=ENDPOINT, return_format='csv', **kwar
     """
     method = 'ForecastStats/'
 
-    # handle the lat and lon inputs if you don't have the reach_id
-    if not reach_id:
-        reach_id = latlon_to_reach(kwargs.get('lat', False), kwargs.get('lon', False))['reach_id']
-
     # if you only wanted the url, quit here
     if return_format == 'url':
         return endpoint + method + f'?reach_id={reach_id}'
@@ -61,7 +51,7 @@ def forecast_stats(reach_id: int, endpoint=ENDPOINT, return_format='csv', **kwar
     return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
 
 
-def forecast_ensembles(reach_id: int, endpoint=ENDPOINT, return_format='csv', **kwargs):
+def forecast_ensembles(reach_id: int, endpoint: str = ENDPOINT, return_format: str = 'csv') -> pd.DataFrame:
     """
     Retrieves each ensemble from the most recent streamflow forecast for a certain reach_id
 
@@ -69,9 +59,6 @@ def forecast_ensembles(reach_id: int, endpoint=ENDPOINT, return_format='csv', **
         reach_id (int): the ID of a stream
         endpoint (str): the endpoint of an api instance
         return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
-
-    Keyword Args:
-        lat, lon: the lat/lon where you want streamflow for when reach_id is not known. Must provide both lat and lon.
 
     Return Format:
         - return_format='csv' returns a pandas dataframe
@@ -86,10 +73,6 @@ def forecast_ensembles(reach_id: int, endpoint=ENDPOINT, return_format='csv', **
             data = geoglows.streamflow.forecast_ensembles(12341234)
     """
     method = 'ForecastEnsembles/'
-
-    # handle the lat and lon inputs if you don't have the reach_id
-    if not reach_id:
-        reach_id = latlon_to_reach(kwargs.get('lat', False), kwargs.get('lon', False))['reach_id']
 
     # if you only wanted the url, quit here
     if return_format == 'url':
@@ -107,9 +90,6 @@ def forecast_warnings(region: str = 'all', endpoint=ENDPOINT, return_format='csv
         region: the name of a region as shown in the available_regions request
         endpoint: the endpoint of an api instance
         return_format: 'csv', 'json', 'waterml', 'request', 'url'
-
-    Keyword Args:
-        lat, lon: the lat/lon of an area you want to retrieve warnings for
 
     Return Format:
         - return_format='csv' returns a pandas dataframe
@@ -135,7 +115,7 @@ def forecast_warnings(region: str = 'all', endpoint=ENDPOINT, return_format='csv
     return _make_request(endpoint, method, {'region': region, 'return_format': return_format}, return_format)
 
 
-def forecast_records(reach_id: int, endpoint=ENDPOINT, return_format='csv', **kwargs):
+def forecast_records(reach_id: int, endpoint: str = ENDPOINT, return_format: str = 'csv') -> pd.DataFrame:
     """
     Retrieves a csv listing streams likely to experience a return period level flow during the forecast period.
 
@@ -143,9 +123,6 @@ def forecast_records(reach_id: int, endpoint=ENDPOINT, return_format='csv', **kw
         reach_id: the ID of a stream
         endpoint: the endpoint of an api instance
         return_format (str): 'csv', 'json', 'waterml', 'request', 'url'
-
-    Keyword Args:
-        lat, lon: the lat/lon where you want streamflow for when reach_id is not known. Must provide both lat and lon.
 
     Return Format:
         - return_format='csv' returns a pandas dataframe
@@ -159,10 +136,6 @@ def forecast_records(reach_id: int, endpoint=ENDPOINT, return_format='csv', **kw
     """
     method = 'ForecastRecords/'
 
-    # handle the lat and lon inputs if you don't have the reach_id
-    if not reach_id:
-        reach_id = latlon_to_reach(kwargs.get('lat', False), kwargs.get('lon', False))['reach_id']
-
     # if you only wanted the url, quit here
     if return_format == 'url':
         return f'{endpoint}{method}?reach_id={reach_id}'
@@ -171,7 +144,8 @@ def forecast_records(reach_id: int, endpoint=ENDPOINT, return_format='csv', **kw
     return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
 
 
-def historic_simulation(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_format='csv', **kwargs):
+def historic_simulation(reach_id: int, forcing='era_5', endpoint: str = ENDPOINT,
+                        return_format: str = 'csv') -> pd.DataFrame:
     """
     Retrieves a historical streamflow simulation derived from a specified forcing for a certain reach_id
 
@@ -180,9 +154,6 @@ def historic_simulation(reach_id: int, forcing='era_5', endpoint=ENDPOINT, retur
         forcing: the runoff dataset used to drive the historic simulation (era_interim or era_5)
         endpoint: the endpoint of an api instance
         return_format: 'csv', 'json', 'waterml', 'request', 'url'
-
-    Keyword Args:
-        lat, lon: the lat/lon where you want streamflow for when reach_id is not known. Must provide both lat and lon.
 
     Return Format:
         - return_format='csv' returns a pandas dataframe
@@ -198,10 +169,6 @@ def historic_simulation(reach_id: int, forcing='era_5', endpoint=ENDPOINT, retur
     """
     method = 'HistoricSimulation/'
 
-    # handle the lat and lon inputs if you don't have the reach_id
-    if not reach_id:
-        reach_id = latlon_to_reach(kwargs.get('lat', False), kwargs.get('lon', False))['reach_id']
-
     # if you only wanted the url, quit here
     if return_format == 'url':
         return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}'
@@ -211,7 +178,8 @@ def historic_simulation(reach_id: int, forcing='era_5', endpoint=ENDPOINT, retur
     return _make_request(endpoint, method, params, return_format)
 
 
-def daily_averages(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_format='csv', **kwargs):
+def daily_averages(reach_id: int, forcing='era_5', endpoint: str = ENDPOINT,
+                   return_format: str = 'csv') -> pd.DataFrame:
     """
     Retrieves the average flow for every day of the year at a certain reach_id.
 
@@ -220,9 +188,6 @@ def daily_averages(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_for
         forcing: the runoff dataset used to drive the historic simulation (era_interim or era_5)
         endpoint: the endpoint of an api instance
         return_format: 'csv', 'json', 'waterml', 'request', 'url'
-
-    Keyword Args:
-        lat, lon: the lat/lon where you want streamflow for when reach_id is not known. Must provide both lat and lon.
 
     Return Format:
         - return_format='csv' returns a pandas dataframe
@@ -238,10 +203,6 @@ def daily_averages(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_for
     """
     method = 'DailyAverages/'
 
-    # handle the lat and lon inputs if you don't have the reach_id
-    if not reach_id:
-        reach_id = latlon_to_reach(kwargs.get('lat', False), kwargs.get('lon', False))['reach_id']
-
     # if you only wanted the url, quit here
     if return_format == 'url':
         return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}'
@@ -251,7 +212,8 @@ def daily_averages(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_for
     return _make_request(endpoint, method, params, return_format)
 
 
-def monthly_averages(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_format='csv', **kwargs):
+def monthly_averages(reach_id: int, forcing='era_5', endpoint: str = ENDPOINT,
+                     return_format: str = 'csv') -> pd.DataFrame:
     """
     Retrieves the average flow for each month at a certain reach_id.
 
@@ -260,9 +222,6 @@ def monthly_averages(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_f
         forcing: the runoff dataset used to drive the historic simulation (era_interim or era_5)
         endpoint: the endpoint of an api instance
         return_format: 'csv', 'json', 'waterml', 'request', 'url'
-
-    Keyword Args:
-        lat, lon: the lat/lon where you want streamflow for when reach_id is not known. Must provide both lat and lon.
 
     Return Format:
         - return_format='csv' returns a pandas dataframe
@@ -278,10 +237,6 @@ def monthly_averages(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_f
     """
     method = 'MonthlyAverages/'
 
-    # handle the lat and lon inputs if you don't have the reach_id
-    if not reach_id:
-        reach_id = latlon_to_reach(kwargs.get('lat', False), kwargs.get('lon', False))['reach_id']
-
     # if you only wanted the url, quit here
     if return_format == 'url':
         return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}'
@@ -291,7 +246,8 @@ def monthly_averages(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_f
     return _make_request(endpoint, method, params, return_format)
 
 
-def return_periods(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_format='csv', **kwargs):
+def return_periods(reach_id: int, forcing='era_5', endpoint: str = ENDPOINT,
+                   return_format: str = 'csv') -> pd.DataFrame:
     """
     Retrieves the return period thresholds based on a specified historic simulation forcing on a certain reach_id.
 
@@ -300,9 +256,6 @@ def return_periods(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_for
         forcing: the runoff dataset used to drive the historic simulation (era_interim or era_5)
         endpoint: the endpoint of an api instance
         return_format: 'csv', 'json', 'waterml', 'request', 'url'
-
-    Keyword Args:
-        lat, lon: the lat/lon where you want streamflow for when reach_id is not known. Must provide both lat and lon.
 
     Return Format:
         - return_format='csv' returns a pandas dataframe
@@ -318,10 +271,6 @@ def return_periods(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_for
     """
     method = 'ReturnPeriods/'
 
-    # handle the lat and lon inputs if you don't have the reach_id
-    if not reach_id:
-        reach_id = latlon_to_reach(kwargs.get('lat', False), kwargs.get('lon', False))['reach_id']
-
     # if you only wanted the url, quit here
     if return_format == 'url':
         return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}'
@@ -331,7 +280,7 @@ def return_periods(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_for
     return _make_request(endpoint, method, params, return_format)
 
 
-def available_data(endpoint=ENDPOINT, return_format='json') -> dict:
+def available_data(endpoint: str = ENDPOINT, return_format='json') -> dict:
     """
     Returns a dictionary with a key for each available_regions containing the available_dates for that region
 
@@ -567,7 +516,7 @@ def latlon_to_region(lat: float, lon: float) -> str:
 # API AUXILIARY FUNCTION
 def _make_request(endpoint: str, method: str, params: dict, return_format: str):
     if return_format == 'request':
-        params['return_format'] == 'csv'
+        params['return_format'] = 'csv'
 
     # request the data from the API
     data = requests.get(endpoint + method, params=params)
@@ -595,45 +544,3 @@ def _make_request(endpoint: str, method: str, params: dict, return_format: str):
         return data
     else:
         raise ValueError('Unsupported return format requested: ' + str(return_format))
-
-
-# DEPRECATED
-def seasonal_average(reach_id: int, forcing='era_5', endpoint=ENDPOINT, return_format='csv', **kwargs):
-    """
-    Retrieves the average flow for every day of the year at a certain reach_id.
-
-    Args:
-        reach_id: the ID of a stream
-        forcing: the runoff dataset used to drive the historic simulation (era_interim or era_5)
-        endpoint: the endpoint of an api instance
-        return_format: 'csv', 'json', 'waterml', 'request', 'url'
-
-    Keyword Args:
-        lat, lon: the lat/lon where you want streamflow for when reach_id is not known. Must provide both lat and lon.
-
-    Return Format:
-        - return_format='csv' returns a pandas dataframe
-        - return_format='json' returns a json
-        - return_format='waterml' returns a waterml string
-        - return_format='request' returns a request response object
-        - return_format='url' returns a url string for using in a request or web browser
-
-    Example:
-        .. code-block:: python
-
-            data = geoglows.streamflow.seasonal_average(12341234)
-    """
-    method = 'SeasonalAverage/'
-    warnings.warn('SeasonalAverage is deprecated. Please convert to DailyAverages and MonthlyAverages')
-
-    # handle the lat and lon inputs if you don't have the reach_id
-    if not reach_id:
-        reach_id = latlon_to_reach(kwargs.get('lat', False), kwargs.get('lon', False))['reach_id']
-
-    # if you only wanted the url, quit here
-    if return_format == 'url':
-        return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}'
-
-    # return the requested data
-    params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
-    return _make_request(endpoint, method, params, return_format)
