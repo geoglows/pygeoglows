@@ -15,6 +15,7 @@ __all__ = ['forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecas
 
 ECMWF = 'https://geoglows.ecmwf.int/api/'
 AZURE = 'http://40.85.162.42/localsptapi/api/'
+ENDPOINT = ECMWF
 
 
 # FUNCTIONS THAT CALL THE GLOBAL STREAMFLOW PREDICTION API
