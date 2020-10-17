@@ -3,7 +3,7 @@ import pandas as pd
 import geoglows
 
 
-def get_forecast_data_with_reach_id_region(reach_id, region, endpoint=geoglows.streamflow.ENDPOINT):
+def get_forecasts(reach_id, region, endpoint=geoglows.streamflow.ECMWF):
     stats = geoglows.streamflow.forecast_stats(reach_id, endpoint=endpoint)
     ensembles = geoglows.streamflow.forecast_ensembles(reach_id, endpoint=endpoint)
     warnings = geoglows.streamflow.forecast_warnings(region, endpoint=endpoint)
@@ -11,7 +11,7 @@ def get_forecast_data_with_reach_id_region(reach_id, region, endpoint=geoglows.s
     return stats, ensembles, warnings, records
 
 
-def get_historical_data_with_reach_id(reach_id, endpoint=geoglows.streamflow.ENDPOINT, forcing='era_5'):
+def get_historical(reach_id, endpoint=geoglows.streamflow.ECMWF, forcing='era_5'):
     hist = geoglows.streamflow.historic_simulation(reach_id, forcing, endpoint=endpoint)
     day = geoglows.streamflow.daily_averages(reach_id)
     mon = geoglows.streamflow.monthly_averages(reach_id)
