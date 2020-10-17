@@ -20,14 +20,19 @@ BYU_ENDPOINT = 'https://tethys2.byu.edu/localsptapi/api/'
 
 
 # FUNCTIONS THAT CALL THE GLOBAL STREAMFLOW PREDICTION API
-def forecast_stats(reach_id: int, endpoint: str = ENDPOINT, return_format: str = 'csv') -> pd.DataFrame:
+def forecast_stats(reach_id: int, return_format: str = 'csv',
+                   lat: float = False, lon: float = False,
+                   endpoint: str = ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
     """
     Retrieves statistics that summarize the most recent streamflow forecast for a certain reach_id
 
     Args:
         reach_id: the ID of a stream
-        endpoint: the endpoint of an api instance
         return_format: 'csv', 'json', 'waterml', 'request', 'url'
+        lat: the latitude near which you want the streamflow
+        lon: the longitude near which you want the streamflow
+        endpoint: the endpoint of an api instance
+        s: requests.Session instance connected to the api endpoint
 
     Return Format:
         - return_format='csv' returns a pd.DataFrame()
@@ -48,10 +53,12 @@ def forecast_stats(reach_id: int, endpoint: str = ENDPOINT, return_format: str =
         return endpoint + method + f'?reach_id={reach_id}'
 
     # return the requested data
-    return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
+    return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format, s)
 
 
-def forecast_ensembles(reach_id: int, endpoint: str = ENDPOINT, return_format: str = 'csv') -> pd.DataFrame:
+def forecast_ensembles(reach_id: int, return_format: str = 'csv',
+                       lat: float = False, lon: float = False,
+                       endpoint: str = ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
     """
     Retrieves each ensemble from the most recent streamflow forecast for a certain reach_id
 
@@ -82,7 +89,9 @@ def forecast_ensembles(reach_id: int, endpoint: str = ENDPOINT, return_format: s
     return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
 
 
-def forecast_warnings(region: str = 'all', endpoint=ENDPOINT, return_format='csv', **kwargs):
+def forecast_warnings(region: str = 'all', return_format='csv',
+                      lat: float = False, lon: float = False,
+                      endpoint=ENDPOINT, s: requests.Session = False):
     """
     Retrieves a csv listing streams likely to experience a return period level flow during the forecast period.
 
@@ -115,7 +124,9 @@ def forecast_warnings(region: str = 'all', endpoint=ENDPOINT, return_format='csv
     return _make_request(endpoint, method, {'region': region, 'return_format': return_format}, return_format)
 
 
-def forecast_records(reach_id: int, endpoint: str = ENDPOINT, return_format: str = 'csv') -> pd.DataFrame:
+def forecast_records(reach_id: int, return_format='csv',
+                     lat: float = False, lon: float = False,
+                     endpoint=ENDPOINT, s: requests.Session = False):
     """
     Retrieves a csv listing streams likely to experience a return period level flow during the forecast period.
 
@@ -144,8 +155,9 @@ def forecast_records(reach_id: int, endpoint: str = ENDPOINT, return_format: str
     return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format)
 
 
-def historic_simulation(reach_id: int, forcing='era_5', endpoint: str = ENDPOINT,
-                        return_format: str = 'csv') -> pd.DataFrame:
+def historic_simulation(reach_id: int, return_format='csv', forcing='era_5',
+                        lat: float = False, lon: float = False,
+                        endpoint=ENDPOINT, s: requests.Session = False):
     """
     Retrieves a historical streamflow simulation derived from a specified forcing for a certain reach_id
 
@@ -169,17 +181,10 @@ def historic_simulation(reach_id: int, forcing='era_5', endpoint: str = ENDPOINT
     """
     method = 'HistoricSimulation/'
 
-    # if you only wanted the url, quit here
-    if return_format == 'url':
-        return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}'
 
-    # return the requested data
-    params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
-    return _make_request(endpoint, method, params, return_format)
-
-
-def daily_averages(reach_id: int, forcing='era_5', endpoint: str = ENDPOINT,
-                   return_format: str = 'csv') -> pd.DataFrame:
+def daily_averages(reach_id: int, return_format='csv', forcing='era_5',
+                   lat: float = False, lon: float = False,
+                   endpoint=ENDPOINT, s: requests.Session = False):
     """
     Retrieves the average flow for every day of the year at a certain reach_id.
 
@@ -212,8 +217,9 @@ def daily_averages(reach_id: int, forcing='era_5', endpoint: str = ENDPOINT,
     return _make_request(endpoint, method, params, return_format)
 
 
-def monthly_averages(reach_id: int, forcing='era_5', endpoint: str = ENDPOINT,
-                     return_format: str = 'csv') -> pd.DataFrame:
+def monthly_averages(reach_id: int, return_format='csv', forcing='era_5',
+                     lat: float = False, lon: float = False,
+                     endpoint=ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
     """
     Retrieves the average flow for each month at a certain reach_id.
 
@@ -246,8 +252,9 @@ def monthly_averages(reach_id: int, forcing='era_5', endpoint: str = ENDPOINT,
     return _make_request(endpoint, method, params, return_format)
 
 
-def return_periods(reach_id: int, forcing='era_5', endpoint: str = ENDPOINT,
-                   return_format: str = 'csv') -> pd.DataFrame:
+def return_periods(reach_id: int, return_format='csv', forcing='era_5',
+                   lat: float = False, lon: float = False,
+                   endpoint=ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
     """
     Retrieves the return period thresholds based on a specified historic simulation forcing on a certain reach_id.
 
@@ -277,7 +284,7 @@ def return_periods(reach_id: int, forcing='era_5', endpoint: str = ENDPOINT,
 
     # return the requested data
     params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
-    return _make_request(endpoint, method, params, return_format)
+    return _make_request(endpoint, method, params, return_format, s)
 
 
 def available_data(endpoint: str = ENDPOINT, return_format='json') -> dict:
@@ -513,13 +520,22 @@ def latlon_to_region(lat: float, lon: float) -> str:
     raise ValueError('This point is not within any of the supported delineation regions.')
 
 
+def init_http_session(a: str = ENDPOINT):
+    s = requests.Session()
+    s.get(a.replace('/api/', ''))
+    return s
+
+
 # API AUXILIARY FUNCTION
-def _make_request(endpoint: str, method: str, params: dict, return_format: str):
+def _make_request(endpoint: str, method: str, params: dict, return_format: str, s: requests.Session = False):
     if return_format == 'request':
         params['return_format'] = 'csv'
 
     # request the data from the API
-    data = requests.get(endpoint + method, params=params)
+    if s:
+        data = s.get(endpoint + method, params=params)
+    else:
+        data = requests.get(endpoint + method, params=params)
     if data.status_code != 200:
         warnings.warn('Recieved an error from the Streamflow REST API: ' + data.text)
         raise RuntimeError('Unable to retrieve information from the Streamflow REST API')
