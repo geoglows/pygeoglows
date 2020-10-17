@@ -15,7 +15,7 @@ copyright = '2020, Riley Hales'
 author = 'Riley Hales'
 
 # The full version, including alpha/beta/rc tags
-release = '0.19'
+release = '0.20'
 master_doc = 'index'
 
 # -- General configuration ---------------------------------------------------
@@ -34,8 +34,6 @@ autodoc_default_options = {
     'member-order': 'bysource',
 }
 autodoc_mock_imports = [
-    'requests',
-    'pandas',
     'plotly',
     'jinja2',
     'shapely',
@@ -57,7 +55,6 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-#
 html_theme = 'sphinx_rtd_theme'
 
 # Add any paths that contain custom static files (such as style sheets) here,
