@@ -9,7 +9,7 @@ with open('requirements.txt', 'r') as req:
 setup(
     name='geoglows',
     packages=['geoglows'],
-    version='0.20',
+    version='0.20.1',
     description='Package for accessing data and APIs developed for the GEOGloWS initiative',
     long_description=long_description,
     long_description_content_type="text/markdown",
