@@ -19,7 +19,7 @@ ENDPOINT = ECMWF
 
 
 # FUNCTIONS THAT CALL THE GLOBAL STREAMFLOW PREDICTION API
-def forecast_stats(reach_id: int, return_format: str = 'csv',
+def forecast_stats(reach_id: int, return_format: str = 'csv', forecast_date: str = None,
                    endpoint: str = ECMWF, s: requests.Session = False) -> pd.DataFrame or str:
     """
     Retrieves statistics that summarize the most recent streamflow forecast for a certain reach_id
@@ -46,12 +46,14 @@ def forecast_stats(reach_id: int, return_format: str = 'csv',
     # if you only wanted the url, quit here
     if return_format == 'url':
         return endpoint + method + f'?reach_id={reach_id}'
-
+    params = {'reach_id': reach_id, 'return_format': return_format}
+    if forecast_date is not None:
+        params["date"] = forecast_date
     # return the requested data
-    return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format, s)
+    return _make_request(endpoint, method, params, return_format, s)
 
 
-def forecast_ensembles(reach_id: int, return_format: str = 'csv',
+def forecast_ensembles(reach_id: int, return_format: str = 'csv', forecast_date: str = None,
                        endpoint: str = ECMWF, s: requests.Session = False) -> pd.DataFrame or str:
     """
     Retrieves each ensemble from the most recent streamflow forecast for a certain reach_id
@@ -79,8 +81,12 @@ def forecast_ensembles(reach_id: int, return_format: str = 'csv',
     if return_format == 'url':
         return endpoint + method + f'?reach_id={reach_id}'
 
+    params = {'reach_id': reach_id, 'return_format': return_format}
+    if forecast_date is not None:
+        params["date"] = forecast_date
+
     # return the requested data
-    return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format, s)
+    return _make_request(endpoint, method, params, return_format, s)
 
 
 def forecast_warnings(region: str = 'all', return_format='csv',
@@ -113,7 +119,7 @@ def forecast_warnings(region: str = 'all', return_format='csv',
     return _make_request(endpoint, method, {'region': region, 'return_format': return_format}, return_format, s)
 
 
-def forecast_records(reach_id: int, return_format='csv',
+def forecast_records(reach_id: int, start_date: str = None, end_date: str = None,  return_format='csv',
                      endpoint=ECMWF, s: requests.Session = False) -> pd.DataFrame or str:
     """
     Retrieves a csv listing streams likely to experience a return period level flow during the forecast period.
@@ -141,8 +147,14 @@ def forecast_records(reach_id: int, return_format='csv',
     if return_format == 'url':
         return f'{endpoint}{method}?reach_id={reach_id}'
 
+    params = {'reach_id': reach_id, 'return_format': return_format}
+    if start_date is not None:
+        params["start_date"] = start_date
+    if end_date is not None:
+        params["end_date"] = end_date
+
     # return the requested data
-    return _make_request(endpoint, method, {'reach_id': reach_id, 'return_format': return_format}, return_format, s)
+    return _make_request(endpoint, method, params, return_format, s)
 
 
 def historic_simulation(reach_id: int, return_format='csv', forcing='era_5',
@@ -278,6 +290,7 @@ def return_periods(reach_id: int, return_format='csv', forcing='era_5',
 
     # return the requested data
     params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
+
     return _make_request(endpoint, method, params, return_format, s)
 
 
