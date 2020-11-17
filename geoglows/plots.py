@@ -82,7 +82,7 @@ def hydroviewer(recs: pd.DataFrame, stats: pd.DataFrame, ensem: pd.DataFrame, rp
     figure.update_layout(
         title=_build_title('Forecasted Streamflow', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
-        xaxis={'title': 'Date', 'range': [startdate, enddate]},
+        xaxis={'title': 'Date (UTC +0:00)', 'range': [startdate, enddate]},
     )
 
     if outformat == 'plotly':
@@ -198,7 +198,8 @@ def forecast_stats(stats: pd.DataFrame, rperiods: pd.DataFrame = None, titles: d
     layout = go.Layout(
         title=_build_title('Forecasted Streamflow', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
-        xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%b %d %Y'},
+        xaxis={'title': 'Date (UTC +0:00)', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y',
+               'tickformat': '%b %d %Y'},
     )
     figure = go.Figure(scatter_plots, layout=layout)
     if outformat == 'plotly':
@@ -282,7 +283,8 @@ def forecast_ensembles(ensem: pd.DataFrame, rperiods: pd.DataFrame = None, title
     layout = go.Layout(
         title=_build_title('Ensemble Predicted Streamflow', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
-        xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%b %d %Y'},
+        xaxis={'title': 'Date (UTC +0:00)', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y',
+               'tickformat': '%b %d %Y'},
     )
     figure = go.Figure(scatter_plots, layout=layout)
     if outformat == 'plotly':
@@ -346,7 +348,7 @@ def forecast_records(recs: pd.DataFrame, rperiods: pd.DataFrame = None, titles: 
     layout = go.Layout(
         title=_build_title('Forecasted Streamflow Record', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
-        xaxis={'title': 'Date', 'range': [startdate, enddate]},
+        xaxis={'title': 'Date (UTC +0:00)', 'range': [startdate, enddate]},
     )
     figure = go.Figure(scatter_plots, layout=layout)
     if outformat == 'plotly':
@@ -410,7 +412,8 @@ def historic_simulation(hist: pd.DataFrame, rperiods: pd.DataFrame = None, title
     layout = go.Layout(
         title=_build_title('Historic Streamflow Simulation', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
-        xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%Y'},
+        xaxis={'title': 'Date (UTC +0:00)', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y',
+               'tickformat': '%Y'},
     )
     figure = go.Figure(scatter_plots, layout=layout)
     if outformat == 'plotly':
@@ -454,7 +457,7 @@ def daily_averages(dayavg: pd.DataFrame, titles: dict = False, outformat: str = 
     layout = go.Layout(
         title=_build_title('Daily Average Streamflow (Simulated)', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
-        xaxis={'title': 'Date', 'hoverformat': '%b %d', 'tickformat': '%b'},
+        xaxis={'title': 'Date (UTC +0:00)', 'hoverformat': '%b %d', 'tickformat': '%b'},
     )
     figure = go.Figure(scatter_plots, layout=layout)
     if outformat == 'plotly':
@@ -753,7 +756,8 @@ def corrected_historical(corrected: pd.DataFrame, simulated: pd.DataFrame, obser
     layout = go.Layout(
         title=_build_title("Historical Simulation Comparison", titles),
         yaxis={'title': 'Discharge (m<sup>3</sup>/s)'},
-        xaxis={'title': 'Date', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y', 'tickformat': '%Y'},
+        xaxis={'title': 'Date (UTC +0:00)', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y',
+               'tickformat': '%Y'},
     )
 
     figure = go.Figure(data=scatters, layout=layout)
