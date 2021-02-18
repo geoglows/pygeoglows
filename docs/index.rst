@@ -23,7 +23,7 @@ GEOGloWS ECMWF Streamflow Project: This project provides access to the results o
 day. The model is based on a group of unique weather forecasts, known as an ensemble, from ECMWF. Each unique
 precipitation forecast, known as an ensemble member, produces a unique streamflow forecast. There are 52 members of the
 ensemble that drives the model each day. The ERA-5 historical precipitation dataset to also used to produce a
-hindcasted streamflow on each river. `Read more here<https://geoglows.ecmwf.int>`_.
+hindcasted streamflow on each river. `Read more here <https://geoglows.ecmwf.int>`_.
 
 .. toctree::
     :caption: Table of Contents
