@@ -15,7 +15,7 @@ Demos
 These links will be maintained to reference the most updated versions of the tutorials.
 The tutorials are GitHub Gists which you can copy and launch in a Google Collaboratory setting directly from the GitHub.
 
-- Retrieving and plotting GEOGloWS model data: `<https://gist.github.com/rileyhales/da11abd91d0e3b7883e1ba8848e8f5ef>`_
+- Retrieving and plotting GEOGloWS model data: `<https://gist.github.com/rileyhales/873896e426a5bd1c4e68120b286bc029>`_
 
 About GEOGloWS ECMWF Streamflow
 ===============================
