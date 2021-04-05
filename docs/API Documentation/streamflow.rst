@@ -22,7 +22,7 @@ Historically Simulated Streamflow
 
 .. automodule:: geoglows.streamflow
     :members:
-        historic_simulation, seasonal_average, return_periods
+        historic_simulation, return_periods, daily_averages, monthly_averages
     :noindex:
 
 GEOGloWS Model Utilities

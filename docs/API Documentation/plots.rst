@@ -7,7 +7,7 @@ Plots for Streamflow Data
 
 .. automodule:: geoglows.plots
     :members:
-        hydroviewer, forecast_stats, forecast_records, forecast_ensembles, historic_simulation, seasonal_average, flow_duration_curve
+        hydroviewer, forecast_stats, forecast_records, forecast_ensembles, historic_simulation, flow_duration_curve
     :noindex:
 
 Tables for Streamflow Data

@@ -35,6 +35,7 @@ autodoc_default_options = {
 }
 autodoc_mock_imports = [
     'plotly',
+    'pandas',
     'jinja2',
     'shapely',
     'scipy',

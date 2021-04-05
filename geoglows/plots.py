@@ -96,7 +96,8 @@ def hydroviewer(recs: pd.DataFrame, stats: pd.DataFrame, ensem: pd.DataFrame, rp
         )
 
 
-def forecast_stats(stats: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False, outformat: str = 'plotly'):
+def forecast_stats(stats: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False,
+                   outformat: str = 'plotly') -> go.Figure:
     """
     Makes the streamflow data and optional metadata into a plotly plot
 
@@ -215,7 +216,7 @@ def forecast_stats(stats: pd.DataFrame, rperiods: pd.DataFrame = None, titles: d
 
 
 def forecast_ensembles(ensem: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False,
-                       outformat: str = 'plotly'):
+                       outformat: str = 'plotly') -> go.Figure:
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
@@ -300,7 +301,7 @@ def forecast_ensembles(ensem: pd.DataFrame, rperiods: pd.DataFrame = None, title
 
 
 def forecast_records(recs: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False,
-                     outformat: str = 'plotly'):
+                     outformat: str = 'plotly') -> go.Figure:
     """
     Makes the streamflow saved forecast data and metadata into a plotly plot
 
@@ -364,7 +365,7 @@ def forecast_records(recs: pd.DataFrame, rperiods: pd.DataFrame = None, titles: 
 
 
 def historic_simulation(hist: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False,
-                        outformat: str = 'plotly'):
+                        outformat: str = 'plotly') -> go.Figure:
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
@@ -428,7 +429,7 @@ def historic_simulation(hist: pd.DataFrame, rperiods: pd.DataFrame = None, title
     raise ValueError('Invalid outformat chosen. Choose json, plotly, plotly_scatters, or plotly_html')
 
 
-def daily_averages(dayavg: pd.DataFrame, titles: dict = False, outformat: str = 'plotly'):
+def daily_averages(dayavg: pd.DataFrame, titles: dict = False, outformat: str = 'plotly') -> go.Figure:
     """
     Makes the daily_averages data and metadata into a plotly plot
 
@@ -472,7 +473,7 @@ def daily_averages(dayavg: pd.DataFrame, titles: dict = False, outformat: str = 
     raise ValueError('Invalid outformat chosen. Choose plotly, plotly_scatters, or plotly_html')
 
 
-def monthly_averages(monavg: pd.DataFrame, titles: dict = False, outformat: str = 'plotly'):
+def monthly_averages(monavg: pd.DataFrame, titles: dict = False, outformat: str = 'plotly') -> go.Figure:
     """
     Makes the daily_averages data and metadata into a plotly plot
 
@@ -516,7 +517,7 @@ def monthly_averages(monavg: pd.DataFrame, titles: dict = False, outformat: str 
     raise ValueError('Invalid outformat chosen. Choose plotly, plotly_scatters, or plotly_html')
 
 
-def flow_duration_curve(hist: pd.DataFrame, titles: dict = False, outformat: str = 'plotly'):
+def flow_duration_curve(hist: pd.DataFrame, titles: dict = False, outformat: str = 'plotly') -> go.Figure:
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
