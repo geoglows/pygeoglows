@@ -9,7 +9,8 @@ import requests
 from shapely.geometry import Point, MultiPoint, shape
 from shapely.ops import nearest_points
 
-from . import ENDPOINT
+ENDPOINT = 'https://geoglows.ecmwf.int/api/'
+
 
 __all__ = ['forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecast_records', 'historic_simulation',
            'daily_averages', 'monthly_averages', 'return_periods', 'available_data', 'available_dates',
