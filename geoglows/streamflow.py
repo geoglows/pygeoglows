@@ -9,18 +9,16 @@ import requests
 from shapely.geometry import Point, MultiPoint, shape
 from shapely.ops import nearest_points
 
+from . import ENDPOINT
+
 __all__ = ['forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecast_records', 'historic_simulation',
            'daily_averages', 'monthly_averages', 'return_periods', 'available_data', 'available_dates',
            'available_regions', 'reach_to_region', 'reach_to_latlon', 'latlon_to_reach', 'latlon_to_region', ]
 
-ECMWF = 'https://geoglows.ecmwf.int/api/'
-AZURE = 'http://40.85.162.42/localsptapi/api/'
-ENDPOINT = ECMWF
-
 
 # FUNCTIONS THAT CALL THE GLOBAL STREAMFLOW PREDICTION API
 def forecast_stats(reach_id: int, return_format: str = 'csv', forecast_date: str = None,
-                   endpoint: str = ECMWF, s: requests.Session = False) -> pd.DataFrame:
+                   endpoint: str = ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
     """
     Retrieves statistics that summarize the most recent streamflow forecast for a certain reach_id
 
@@ -54,7 +52,7 @@ def forecast_stats(reach_id: int, return_format: str = 'csv', forecast_date: str
 
 
 def forecast_ensembles(reach_id: int, return_format: str = 'csv', forecast_date: str = None,
-                       endpoint: str = ECMWF, s: requests.Session = False) -> pd.DataFrame:
+                       endpoint: str = ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
     """
     Retrieves each ensemble from the most recent streamflow forecast for a certain reach_id
 
@@ -90,7 +88,7 @@ def forecast_ensembles(reach_id: int, return_format: str = 'csv', forecast_date:
 
 
 def forecast_warnings(region: str = 'all', return_format='csv',
-                      endpoint=ECMWF, s: requests.Session = False) -> pd.DataFrame:
+                      endpoint=ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
     """
     Retrieves a csv listing streams likely to experience a return period level flow during the forecast period.
 
@@ -120,7 +118,7 @@ def forecast_warnings(region: str = 'all', return_format='csv',
 
 
 def forecast_records(reach_id: int, start_date: str = None, end_date: str = None,  return_format='csv',
-                     endpoint=ECMWF, s: requests.Session = False) -> pd.DataFrame:
+                     endpoint=ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
     """
     Retrieves a csv listing streams likely to experience a return period level flow during the forecast period.
 
@@ -158,7 +156,7 @@ def forecast_records(reach_id: int, start_date: str = None, end_date: str = None
 
 
 def historic_simulation(reach_id: int, return_format='csv', forcing='era_5',
-                        endpoint=ECMWF, s: requests.Session = False) -> pd.DataFrame:
+                        endpoint=ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
     """
     Retrieves a historical streamflow simulation derived from a specified forcing for a certain reach_id
 
@@ -192,7 +190,7 @@ def historic_simulation(reach_id: int, return_format='csv', forcing='era_5',
 
 
 def daily_averages(reach_id: int, return_format='csv', forcing='era_5',
-                   endpoint=ECMWF, s: requests.Session = False) -> pd.DataFrame:
+                   endpoint=ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
     """
     Retrieves the average flow for every day of the year at a certain reach_id.
 
@@ -226,7 +224,7 @@ def daily_averages(reach_id: int, return_format='csv', forcing='era_5',
 
 
 def monthly_averages(reach_id: int, return_format='csv', forcing='era_5',
-                     endpoint=ECMWF, s: requests.Session = False) -> pd.DataFrame:
+                     endpoint=ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
     """
     Retrieves the average flow for each month at a certain reach_id.
 
@@ -260,7 +258,7 @@ def monthly_averages(reach_id: int, return_format='csv', forcing='era_5',
 
 
 def return_periods(reach_id: int, return_format='csv', forcing='era_5',
-                   endpoint=ECMWF, s: requests.Session = False) -> pd.DataFrame:
+                   endpoint=ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
     """
     Retrieves the return period thresholds based on a specified historic simulation forcing on a certain reach_id.
 
@@ -294,7 +292,7 @@ def return_periods(reach_id: int, return_format='csv', forcing='era_5',
     return _make_request(endpoint, method, params, return_format, s)
 
 
-def available_data(endpoint: str = ECMWF, return_format='json', s: requests.Session = False) -> dict or str:
+def available_data(endpoint: str = ENDPOINT, return_format='json', s: requests.Session = False) -> dict or str:
     """
     Returns a dictionary with a key for each available_regions containing the available_dates for that region
 
@@ -322,7 +320,7 @@ def available_data(endpoint: str = ECMWF, return_format='json', s: requests.Sess
     return _make_request(endpoint, method, {}, return_format, s)
 
 
-def available_regions(endpoint: str = ECMWF, return_format='json', s: requests.Session = False) -> dict or str:
+def available_regions(endpoint: str = ENDPOINT, return_format='json', s: requests.Session = False) -> dict or str:
     """
     Retrieves a list of regions available at the endpoint
 
@@ -350,7 +348,7 @@ def available_regions(endpoint: str = ECMWF, return_format='json', s: requests.S
 
 
 def available_dates(reach_id: int = None, region: str = None, return_format: str = 'json',
-                    endpoint: str = ECMWF, s: requests.Session = False) -> dict or str:
+                    endpoint: str = ENDPOINT, s: requests.Session = False) -> dict or str:
     """
     Retrieves the list of dates of stored streamflow forecasts. You need to specify either a reach_id or a region.
 
