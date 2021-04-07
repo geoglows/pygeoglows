@@ -2,3 +2,11 @@ sphinx
 sphinx_rtd_theme
 pandas
 requests
+plotly
+pandas
+jinja2
+shapely
+scipy
+numpy
+hydrostats
+HydroErr

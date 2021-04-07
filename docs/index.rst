@@ -15,7 +15,9 @@ Demos
 These links will be maintained to reference the most updated versions of the tutorials.
 The tutorials are GitHub Gists which you can copy and launch in a Google Collaboratory setting directly from the GitHub.
 
-- Retrieving and plotting GEOGloWS model data: `<https://gist.github.com/rileyhales/873896e426a5bd1c4e68120b286bc029>`_
+- Retrieve & plot GEOGloWS model data: `<https://gist.github.com/rileyhales/873896e426a5bd1c4e68120b286bc029>`_
+- Finding Stream ID #'s programatically: `<https://gist.github.com/rileyhales/873896e426a5bd1c4e68120b286bc029>`_
+- Bias Evaluation and Calibration at a point: `<https://gist.github.com/rileyhales/d5290e12b5858d59960d0898fbd0ed69>`_
 
 About GEOGloWS ECMWF Streamflow
 ===============================
