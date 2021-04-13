@@ -21,11 +21,12 @@ __all__ = ['forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecas
 def forecast_stats(reach_id: int, return_format: str = 'csv', forecast_date: str = None,
                    endpoint: str = ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
     """
-    Retrieves statistics that summarize the most recent streamflow forecast for a certain reach_id
+    Retrieves statistics that summarize the ensemble streamflow forecast for a certain reach_id
 
     Args:
         reach_id: the ID of a stream
         return_format: 'csv', 'json', 'waterml', 'url'
+        forecast_date: a string specifying the date to request in YYYYMMDD format
         endpoint: the endpoint of an api instance
         s: requests.Session instance connected to the api's root url
 
@@ -44,7 +45,7 @@ def forecast_stats(reach_id: int, return_format: str = 'csv', forecast_date: str
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return endpoint + method + f'?reach_id={reach_id}'
+        return f'{endpoint}{method}?reach_id={reach_id}'
     params = {'reach_id': reach_id, 'return_format': return_format}
     if forecast_date is not None:
         params["date"] = forecast_date
@@ -60,6 +61,7 @@ def forecast_ensembles(reach_id: int, return_format: str = 'csv', forecast_date:
     Args:
         reach_id: the ID of a stream
         return_format: 'csv', 'json', 'waterml', 'url'
+        forecast_date: a string specifying the date to request in YYYYMMDD format
         endpoint: the endpoint of an api instance
         s: requests.Session instance connected to the api's root url
 
@@ -78,7 +80,7 @@ def forecast_ensembles(reach_id: int, return_format: str = 'csv', forecast_date:
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return endpoint + method + f'?reach_id={reach_id}'
+        return f'{endpoint}{method}?reach_id={reach_id}'
 
     params = {'reach_id': reach_id, 'return_format': return_format}
     if forecast_date is not None:
@@ -121,11 +123,13 @@ def forecast_warnings(region: str = 'all', return_format='csv',
 def forecast_records(reach_id: int, start_date: str = None, end_date: str = None,  return_format='csv',
                      endpoint=ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
     """
-    Retrieves a csv listing streams likely to experience a return period level flow during the forecast period.
+    Retrieves a csv showing the ensemble average forecasted flow for the year from January 1 to the current date
 
     Args:
         reach_id: the ID of a stream
         return_format: 'csv', 'json', 'waterml', 'url'
+        start_date: a string specifying the earliest date to request in YYYYMMDD format
+        end_date: a string specifying the latest date to request in YYYYMMDD format
         endpoint: the endpoint of an api instance
         s: requests.Session instance connected to the api's root url
 
@@ -560,4 +564,4 @@ def _make_request(endpoint: str, method: str, params: dict, return_format: str, 
     elif return_format == 'waterml':
         return data.text
     else:
-        raise ValueError('Unsupported return format requested: ' + str(return_format))
+        raise ValueError(f'Unsupported return format requested: {return_format}')

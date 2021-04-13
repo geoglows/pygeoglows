@@ -2,8 +2,8 @@
 geoglows.bias
 =============
 
-Bias Correction
-~~~~~~~~~~~~~~~
+Point Bias Correction
+~~~~~~~~~~~~~~~~~~~~~
 
 .. automodule:: geoglows.bias
     :members:

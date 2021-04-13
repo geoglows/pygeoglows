@@ -622,32 +622,18 @@ def probabilities_table(stats: pd.DataFrame, ensem: pd.DataFrame, rperiods: pd.D
         num50 = 0
         num100 = 0
         for column in tmp:
-            if any(i > rp100 for i in tmp[column].to_numpy()):
-                num2 += 1
-                num5 += 1
-                num10 += 1
-                num25 += 1
-                num50 += 1
+            column_max = tmp[column].to_numpy().max()
+            if column_max > rp100:
                 num100 += 1
-            elif any(i > rp50 for i in tmp[column].to_numpy()):
-                num2 += 1
-                num5 += 1
-                num10 += 1
-                num25 += 1
+            if column_max > rp50:
                 num50 += 1
-            elif any(i > rp25 for i in tmp[column].to_numpy()):
-                num2 += 1
-                num5 += 1
-                num10 += 1
+            if column_max > rp25:
                 num25 += 1
-            elif any(i > rp10 for i in tmp[column].to_numpy()):
-                num2 += 1
-                num5 += 1
+            if column_max > rp10:
                 num10 += 1
-            elif any(i > rp5 for i in tmp[column].to_numpy()):
-                num2 += 1
+            if column_max > rp5:
                 num5 += 1
-            elif any(i > rp2 for i in tmp[column].to_numpy()):
+            if column_max > rp2:
                 num2 += 1
         r2.append(round(num2 * 100 / 52))
         r5.append(round(num5 * 100 / 52))
