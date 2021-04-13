@@ -32,6 +32,6 @@ hindcasted streamflow on each river. `Read more here <https://geoglows.ecmwf.int
     :name: mastertoc
     :maxdepth: 1
 
-    API Documentation
-    dev_notes
+    api-documentation
+    dev-notes
     license
