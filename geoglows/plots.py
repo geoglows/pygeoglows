@@ -97,7 +97,7 @@ def hydroviewer(recs: pd.DataFrame, stats: pd.DataFrame, ensem: pd.DataFrame, rp
 
 
 def forecast_stats(stats: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False,
-                   outformat: str = 'plotly') -> go.Figure:
+                   outformat: str = 'plotly', hide_maxmin: bool = False) -> go.Figure:
     """
     Makes the streamflow data and optional metadata into a plotly plot
 
@@ -107,6 +107,7 @@ def forecast_stats(stats: pd.DataFrame, rperiods: pd.DataFrame = None, titles: d
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
         outformat: 'json', 'plotly', 'plotly_scatters', or 'plotly_html' (default plotly)
+        hide_maxmin: Choose to hide the max/min envelope by default
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
@@ -139,6 +140,7 @@ def forecast_stats(stats: pd.DataFrame, rperiods: pd.DataFrame = None, titles: d
     if outformat == 'json':
         return plot_data
 
+    maxmin_visible = 'legendonly' if hide_maxmin else True
     scatter_plots = [
         # Plot together so you can use fill='toself' for the shaded box, also separately so the labels appear
         go.Scatter(name='Maximum & Minimum Flow',
@@ -146,20 +148,20 @@ def forecast_stats(stats: pd.DataFrame, rperiods: pd.DataFrame = None, titles: d
                    y=plot_data['flow_max'] + plot_data['flow_min'][::-1],
                    legendgroup='boundaries',
                    fill='toself',
-                   visible='legendonly',
+                   visible=maxmin_visible,
                    line=dict(color='lightblue', dash='dash')),
         go.Scatter(name='Maximum',
                    x=plot_data['x_stats'],
                    y=plot_data['flow_max'],
                    legendgroup='boundaries',
-                   visible='legendonly',
+                   visible=maxmin_visible,
                    showlegend=False,
                    line=dict(color='darkblue', dash='dash')),
         go.Scatter(name='Minimum',
                    x=plot_data['x_stats'],
                    y=plot_data['flow_min'],
                    legendgroup='boundaries',
-                   visible='legendonly',
+                   visible=maxmin_visible,
                    showlegend=False,
                    line=dict(color='darkblue', dash='dash')),
 
@@ -337,7 +339,7 @@ def forecast_records(recs: pd.DataFrame, rperiods: pd.DataFrame = None, titles: 
         return plot_data
 
     scatter_plots = [go.Scatter(
-        name='1st day forecasts',
+        name='Previous Forecast Average',
         x=plot_data['x_records'],
         y=plot_data['recorded_flows'],
         line=dict(color='gold'),
@@ -401,7 +403,7 @@ def historic_simulation(hist: pd.DataFrame, rperiods: pd.DataFrame = None, title
         return plot_data
 
     scatter_plots = [go.Scatter(
-        name='Historic Simulation',
+        name='Historical Simulation',
         x=plot_data['x_datetime'],
         y=plot_data['y_flow'])
     ]
@@ -411,7 +413,7 @@ def historic_simulation(hist: pd.DataFrame, rperiods: pd.DataFrame = None, title
         return scatter_plots
 
     layout = go.Layout(
-        title=_build_title('Historic Streamflow Simulation', titles),
+        title=_build_title('Historical Streamflow Simulation', titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date (UTC +0:00)', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y',
                'tickformat': '%Y'},
