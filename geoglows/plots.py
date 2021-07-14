@@ -17,7 +17,8 @@ __all__ = ['hydroviewer', 'forecast_stats', 'forecast_records', 'forecast_ensemb
 
 # FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
 def hydroviewer(recs: pd.DataFrame, stats: pd.DataFrame, ensem: pd.DataFrame, rperiods: pd.DataFrame = None,
-                record_days: int = 7, outformat: str = 'plotly', titles: dict = False) -> go.Figure:
+                record_days: int = 7, outformat: str = 'plotly', titles: dict = False, hide_ensem: bool = True,
+                hide_rperiods: bool = True) -> go.Figure:
     """
     Creates the standard plot for a hydroviewer
 
@@ -30,6 +31,8 @@ def hydroviewer(recs: pd.DataFrame, stats: pd.DataFrame, ensem: pd.DataFrame, rp
         record_days: (optional) number of days of forecast records to show before the start of the forecast
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+        hide_ensem: Hide the ensemble members in the layout initially
+        hide_rperiods: Hide the return period labels in the layout initially
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
@@ -60,7 +63,7 @@ def hydroviewer(recs: pd.DataFrame, stats: pd.DataFrame, ensem: pd.DataFrame, rp
     figure.add_trace(go.Scatter(
         x=ensemble_data['x_1-51'],
         y=ensemble_data['ensemble_01_m^3/s'],
-        visible='legendonly',
+        visible='legendonly' if hide_ensem else True,
         legendgroup='ensembles',
         name='Forecast Ensembles',
     ))
@@ -68,7 +71,7 @@ def hydroviewer(recs: pd.DataFrame, stats: pd.DataFrame, ensem: pd.DataFrame, rp
         figure.add_trace(go.Scatter(
             x=ensemble_data['x_1-51'],
             y=ensemble_data[f'ensemble_{i:02}_m^3/s'],
-            visible='legendonly',
+            visible='legendonly' if hide_ensem else True,
             legendgroup='ensembles',
             name=f'Ensemble {i}',
             showlegend=False,
@@ -76,7 +79,8 @@ def hydroviewer(recs: pd.DataFrame, stats: pd.DataFrame, ensem: pd.DataFrame, rp
     if rperiods is not None:
         max_visible = max(stats['flow_75%_m^3/s'].max(), stats['flow_avg_m^3/s'].max(), stats['high_res_m^3/s'].max(),
                           recs['streamflow_m^3/s'].max())
-        for rp in _rperiod_scatters(startdate, enddate, rperiods, max_flow, max_visible):
+        for rp in _rperiod_scatters(startdate, enddate, rperiods, max_flow, max_visible,
+                                    visible='legendonly' if hide_rperiods else True):
             figure.add_trace(rp)
 
     figure.update_layout(
@@ -1081,14 +1085,16 @@ def _plot_colors():
     }
 
 
-def _rperiod_scatters(startdate: str, enddate: str, rperiods: pd.DataFrame, y_max: float, max_visible: float = 0):
+def _rperiod_scatters(startdate: str, enddate: str, rperiods: pd.DataFrame, y_max: float, max_visible: float = 0,
+                      visible: bool = None):
     colors = _plot_colors()
     x_vals = (startdate, enddate, enddate, startdate)
     r2 = int(rperiods['return_period_2'].values[0])
-    if max_visible > r2:
-        visible = True
-    else:
-        visible = 'legendonly'
+    if visible is None:
+        if max_visible > r2:
+            visible = True
+        else:
+            visible = 'legendonly'
 
     def template(name, y, color, fill='toself'):
         return go.Scatter(
