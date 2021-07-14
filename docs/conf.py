@@ -11,11 +11,11 @@ sys.path.insert(0, os.path.abspath('..'))
 # -- Project information -----------------------------------------------------
 
 project = 'geoglows'
-copyright = '2020, Riley Hales'
+copyright = '2021, Riley Hales'
 author = 'Riley Hales'
 
 # The full version, including alpha/beta/rc tags
-release = '0.22.1'
+release = '0.24.1'
 master_doc = 'index'
 
 # -- General configuration ---------------------------------------------------
