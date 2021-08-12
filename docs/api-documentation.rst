@@ -11,6 +11,7 @@ There are 3 modules in the geoglows package.
    api-documentation/bias
    api-documentation/plots
    api-documentation/analysis
+   api-documentation/examples
 
 
 FAQ
