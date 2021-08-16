@@ -19,3 +19,5 @@ pip install geoglows
 Tools to access and process data coming from the GEOGloWS initiative.
 
 https://geoglows.readthedocs.io
+
+The sample data are from ReachID 13073600 which is on the mississippi river
