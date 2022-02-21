@@ -17,7 +17,7 @@ __all__ = ['forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecas
 
 
 def forecast(reach_id: int, return_format: str = 'csv', endpoint: str = ENDPOINT,
-             s: requests.Session = False, **kwargs) -> pd.DataFrame or dict or str:
+             s: requests.Session = False, version: str = CUR_VERSION **kwargs) -> pd.DataFrame or dict or str:
     """
         Retrieves statistics that summarize the ensemble streamflow forecast for a certain reach_id
 
@@ -48,7 +48,7 @@ def forecast(reach_id: int, return_format: str = 'csv', endpoint: str = ENDPOINT
 
 
 def forecast_stats(reach_id: int, return_format: str = 'csv', date: str = None, units: str = 'cms',
-                   endpoint: str = ENDPOINT, version: int = 2, s: requests.Session = False) -> pd.DataFrame:
+                   endpoint: str = ENDPOINT, s: requests.Session = False, version: str = CUR_VERSION) -> pd.DataFrame:
     """
     Retrieves statistics that summarize the ensemble streamflow forecast for a certain reach_id
 
@@ -87,7 +87,7 @@ def forecast_stats(reach_id: int, return_format: str = 'csv', date: str = None, 
 
 
 def forecast_ensembles(reach_id: int, return_format: str = 'csv', forecast_date: str = None,
-                       endpoint: str = ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
+                       endpoint: str = ENDPOINT, s: requests.Session = False, version: str = CUR_VERSION) -> pd.DataFrame:
     """
     Retrieves each ensemble from the most recent streamflow forecast for a certain reach_id
 
@@ -124,7 +124,7 @@ def forecast_ensembles(reach_id: int, return_format: str = 'csv', forecast_date:
 
 
 def forecast_warnings(region: str = 'all', return_format='csv',
-                      endpoint=ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
+                      endpoint=ENDPOINT, s: requests.Session = False, version: str = CUR_VERSION) -> pd.DataFrame:
     """
     Retrieves a csv listing streams likely to experience a return period level flow during the forecast period.
 
@@ -154,7 +154,7 @@ def forecast_warnings(region: str = 'all', return_format='csv',
 
 
 def forecast_records(reach_id: int, start_date: str = None, end_date: str = None,  return_format='csv',
-                     endpoint=ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
+                     endpoint=ENDPOINT, s: requests.Session = False, version: str = CUR_VERSION) -> pd.DataFrame:
     """
     Retrieves a csv showing the ensemble average forecasted flow for the year from January 1 to the current date
 
@@ -194,7 +194,7 @@ def forecast_records(reach_id: int, start_date: str = None, end_date: str = None
 
 
 def historic_simulation(reach_id: int, return_format='csv', forcing='era_5',
-                        endpoint=ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
+                        endpoint=ENDPOINT, s: requests.Session = False, version: str = CUR_VERSION) -> pd.DataFrame:
     """
     Retrieves a historical streamflow simulation derived from a specified forcing for a certain reach_id
 
@@ -228,7 +228,7 @@ def historic_simulation(reach_id: int, return_format='csv', forcing='era_5',
 
 
 def daily_averages(reach_id: int, return_format='csv', forcing='era_5',
-                   endpoint=ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
+                   endpoint=ENDPOINT, s: requests.Session = False, version: str = CUR_VERSION) -> pd.DataFrame:
     """
     Retrieves the average flow for every day of the year at a certain reach_id.
 
@@ -262,7 +262,7 @@ def daily_averages(reach_id: int, return_format='csv', forcing='era_5',
 
 
 def monthly_averages(reach_id: int, return_format='csv', forcing='era_5',
-                     endpoint=ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
+                     endpoint=ENDPOINT, s: requests.Session = False, version: str = CUR_VERSION) -> pd.DataFrame:
     """
     Retrieves the average flow for each month at a certain reach_id.
 
@@ -296,7 +296,7 @@ def monthly_averages(reach_id: int, return_format='csv', forcing='era_5',
 
 
 def return_periods(reach_id: int, return_format='csv', forcing='era_5',
-                   endpoint=ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
+                   endpoint=ENDPOINT, s: requests.Session = False, version: str = CUR_VERSION) -> pd.DataFrame:
     """
     Retrieves the return period thresholds based on a specified historic simulation forcing on a certain reach_id.
 
@@ -330,7 +330,7 @@ def return_periods(reach_id: int, return_format='csv', forcing='era_5',
     return _request_v1(endpoint, method, params, return_format, s)
 
 
-def available_data(endpoint: str = ENDPOINT, return_format='json', s: requests.Session = False) -> dict or str:
+def available_data(endpoint: str = ENDPOINT, return_format='json', s: requests.Session = False, version: str = CUR_VERSION) -> dict or str:
     """
     Returns a dictionary with a key for each available_regions containing the available_dates for that region
 
@@ -358,7 +358,7 @@ def available_data(endpoint: str = ENDPOINT, return_format='json', s: requests.S
     return _request_v1(endpoint, method, {}, return_format, s)
 
 
-def available_regions(endpoint: str = ENDPOINT, return_format='json', s: requests.Session = False) -> dict or str:
+def available_regions(endpoint: str = ENDPOINT, return_format='json', s: requests.Session = False, version: str = CUR_VERSION) -> dict or str:
     """
     Retrieves a list of regions available at the endpoint
 
@@ -386,7 +386,7 @@ def available_regions(endpoint: str = ENDPOINT, return_format='json', s: request
 
 
 def available_dates(reach_id: int = None, region: str = None, return_format: str = 'json',
-                    endpoint: str = ENDPOINT, s: requests.Session = False) -> dict or str:
+                    endpoint: str = ENDPOINT, s: requests.Session = False, version: str = CUR_VERSION) -> dict or str:
     """
     Retrieves the list of dates of stored streamflow forecasts. You need to specify either a reach_id or a region.
 
@@ -568,7 +568,7 @@ def latlon_to_region(lat: float, lon: float) -> str:
 
 
 # API AUXILIARY FUNCTION
-def _request_v1(url: str, method: str, params: dict, return_format: str, s: requests.Session = False):
+def _request_v1(url: str, method: str, params: dict, return_format: str, s: requests.Session = False, version: str = CUR_VERSION):
     # if you only wanted the url, quit here
     if return_format == 'url':
         return url
