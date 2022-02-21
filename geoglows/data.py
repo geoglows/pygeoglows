@@ -10,6 +10,7 @@ from shapely.geometry import Point, MultiPoint, shape
 from shapely.ops import nearest_points
 
 ENDPOINT = 'https://geoglows.ecmwf.int/api'
+CUR_VERSION = 'v2'
 
 __all__ = ['forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecast_records', 'historical',
            'daily_averages', 'monthly_averages', 'return_periods', 'available_data', 'available_dates',
@@ -17,7 +18,7 @@ __all__ = ['forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecas
 
 
 def forecast(reach_id: int, return_format: str = 'csv', endpoint: str = ENDPOINT,
-                   s: requests.Session = False, **kwargs) -> pd.DataFrame or dict or str:
+                   s: requests.Session = False, version: str = CUR_VERSION, **kwargs) -> pd.DataFrame or dict or str:
     """
         Retrieves statistics that summarize the ensemble streamflow forecast for a certain reach_id
 
@@ -43,12 +44,12 @@ def forecast(reach_id: int, return_format: str = 'csv', endpoint: str = ENDPOINT
     """
 
     product = 'Forecast'
-    url = f'{endpoint}/v2/{product}/{reach_id}'
+    url = f'{endpoint}/{version}/{product}/{reach_id}'
     return _request(url, return_format, product, s, kwargs)
 
 
 def forecast_stats(reach_id: int, return_format: str = 'csv', endpoint: str = ENDPOINT,
-                   s: requests.Session = False, **kwargs) -> pd.DataFrame or dict or str:
+                   s: requests.Session = False, version: str = CUR_VERSION, **kwargs) -> pd.DataFrame or dict or str:
     """
         Retrieves statistics that summarize the ensemble streamflow forecast for a certain reach_id
 
@@ -57,6 +58,7 @@ def forecast_stats(reach_id: int, return_format: str = 'csv', endpoint: str = EN
             return_format (str): 'csv', 'json', 'url'
             endpoint: the endpoint of an api instance
             s: requests.Session instance connected to the api's root url
+            version: api semantics version
 
         Keyword Args:
             date (str): a string specifying the date to request in YYYYMMDD format
@@ -72,14 +74,15 @@ def forecast_stats(reach_id: int, return_format: str = 'csv', endpoint: str = EN
 
             geoglows.data.forecast_stats(12341234)
     """
-
+    #todo: best way to have default current version?
     product = 'ForecastStats'
-    url = f'{endpoint}/v2/{product}/{reach_id}'
+
+    url = f'{endpoint}/{version}/{product}/{reach_id}'
     return _request(url, return_format, product, s, kwargs)
 
 
 def forecast_ensembles(reach_id: int, return_format: str = 'csv', endpoint: str = ENDPOINT,
-                       s: requests.Session = False, **kwargs) -> pd.DataFrame or dict or str:
+                       s: requests.Session = False, version: str = CUR_VERSION, **kwargs) -> pd.DataFrame or dict or str:
     """
     Retrieves each ensemble from the most recent streamflow forecast for a certain reach_id
 
@@ -101,12 +104,12 @@ def forecast_ensembles(reach_id: int, return_format: str = 'csv', endpoint: str 
             data = geoglows.streamflow.forecast_ensembles(12341234)
     """
     product = 'ForecastEnsembles'
-    url = f'{endpoint}/v2/{product}/{reach_id}'
+    url = f'{endpoint}/{version}/{product}/{reach_id}'
     return _request(url, return_format, product, s, kwargs)
 
 
 def forecast_warnings(region: str, return_format: str = 'csv', endpoint: str = ENDPOINT,
-                      s: requests.Session = False) -> pd.DataFrame or dict or str:
+                      s: requests.Session = False, version: str = CUR_VERSION) -> pd.DataFrame or dict or str:
     """
     Retrieves a csv listing streams likely to experience a return period level flow during the forecast period.
 
@@ -125,12 +128,12 @@ def forecast_warnings(region: str, return_format: str = 'csv', endpoint: str = E
             data = geoglows.streamflow.forecast_warnings('australia-geoglows')
     """
     product = 'ForecastWarnings'
-    url = f'{endpoint}/v2/{product}/'
+    url = f'{endpoint}/{version}/{product}/'
     return _request(url, return_format, product, s, {'region': region})
 
 
 def forecast_records(reach_id: int, return_format: str = 'csv', endpoint: str = ENDPOINT,
-                     s: requests.Session = False, **kwargs) -> pd.DataFrame or dict or str:
+                     s: requests.Session = False, version: str = CUR_VERSION, **kwargs) -> pd.DataFrame or dict or str:
     """
     Retrieves a csv showing the ensemble average forecasted flow for the year from January 1 to the current date
 
@@ -155,12 +158,12 @@ def forecast_records(reach_id: int, return_format: str = 'csv', endpoint: str = 
             data = geoglows.streamflow.forecast_warnings('australia-geoglows')
     """
     product = 'ForecastRecords'
-    url = f'{endpoint}/v2/{product}/{reach_id}'
+    url = f'{endpoint}/{version}/{product}/{reach_id}'
     return _request(url, return_format, product, s, kwargs)
 
 
 def available_dates(reach_id: int = None, region: str = None, return_format: str = 'json',
-                    endpoint: str = ENDPOINT, s: requests.Session = False) -> dict or str:
+                    endpoint: str = ENDPOINT, s: requests.Session = False, version: str = CUR_VERSION) -> dict or str:
     """
     Retrieves the list of dates of stored streamflow forecasts. You need to specify either a reach_id or a region.
 
@@ -181,12 +184,12 @@ def available_dates(reach_id: int = None, region: str = None, return_format: str
             data = geoglows.streamflow.available_dates(12341234)
     """
     product = 'AvailableDates'
-    url = f'{endpoint}/v2/{product}/{reach_id}'
+    url = f'{endpoint}/{version}/{product}/{reach_id}'
     return _request(url, return_format, product, s, kwargs)
 
 
 def historical(reach_id: int, return_format: str = 'csv', endpoint: str = ENDPOINT,
-               s: requests.Session = False, **kwargs) -> pd.DataFrame or dict or str:
+               s: requests.Session = False, version: str = CUR_VERSION, **kwargs) -> pd.DataFrame or dict or str:
     """
     Retrieves a historical streamflow simulation derived from a specified forcing for a certain reach_id
 
@@ -207,12 +210,12 @@ def historical(reach_id: int, return_format: str = 'csv', endpoint: str = ENDPOI
             data = geoglows.streamflow.historic_simulation(12341234)
     """
     product = 'Historical'
-    url = f'{endpoint}/v2/{product}/{reach_id}'
+    url = f'{endpoint}/{version}/{product}/{reach_id}'
     return _request(url, return_format, product, s, kwargs)
 
 
 def daily_averages(reach_id: int, return_format: str = 'csv', endpoint: str = ENDPOINT,
-                   s: requests.Session = False, **kwargs) -> pd.DataFrame or dict or str:
+                   s: requests.Session = False, version: str = CUR_VERSION, **kwargs) -> pd.DataFrame or dict or str:
     """
     Retrieves the average flow for every day of the year at a certain reach_id.
 
@@ -233,12 +236,12 @@ def daily_averages(reach_id: int, return_format: str = 'csv', endpoint: str = EN
             data = geoglows.streamflow.seasonal_average(12341234)
     """
     product = 'DailyAverages'
-    url = f'{endpoint}/v2/{product}/{reach_id}'
+    url = f'{endpoint}/{version}/{product}/{reach_id}'
     return _request(url, return_format, product, s, kwargs)
 
 
 def monthly_averages(reach_id: int, return_format: str = 'csv', endpoint: str = ENDPOINT,
-                     s: requests.Session = False, **kwargs) -> pd.DataFrame or dict or str:
+                     s: requests.Session = False, version: str = CUR_VERSION, **kwargs) -> pd.DataFrame or dict or str:
     """
     Retrieves the average flow for each month at a certain reach_id.
 
@@ -259,12 +262,12 @@ def monthly_averages(reach_id: int, return_format: str = 'csv', endpoint: str = 
             data = geoglows.streamflow.seasonal_average(12341234)
     """
     product = 'MonthlyAverages'
-    url = f'{endpoint}/v2/{product}/{reach_id}'
+    url = f'{endpoint}/{version}/{product}/{reach_id}'
     return _request(url, return_format, product, s, kwargs)
 
 
 def return_periods(reach_id: int, return_format='csv', forcing='era_5',
-                   endpoint=ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
+                   endpoint=ENDPOINT, s: requests.Session = False, version: str = CUR_VERSION) -> pd.DataFrame:
     """
     Retrieves the return period thresholds based on a specified historic simulation forcing on a certain reach_id.
 
@@ -286,11 +289,11 @@ def return_periods(reach_id: int, return_format='csv', forcing='era_5',
             data = geoglows.streamflow.return_periods(12341234)
     """
     product = 'ReturnPeriods/'
-    url = f'{endpoint}/v2/{product}/{reach_id}'
+    url = f'{endpoint}/{version}/{product}/{reach_id}'
     return _request(url, return_format, product, s, kwargs)
 
 
-def available_data(endpoint: str = ENDPOINT, return_format='json', s: requests.Session = False) -> dict or str:
+def available_data(endpoint: str = ENDPOINT, return_format='json', s: requests.Session = False, version: str = CUR_VERSION) -> dict or str:
     """
     Returns a dictionary with a key for each available_regions containing the available_dates for that region
 
@@ -309,11 +312,11 @@ def available_data(endpoint: str = ENDPOINT, return_format='json', s: requests.S
 
     """
     product = 'AvailableData'
-    url = f'{endpoint}/v2/{product}/'
+    url = f'{endpoint}/{version}/{product}/'
     return _request(url, return_format, product, s, {})
 
 
-def available_regions(endpoint: str = ENDPOINT, return_format='json', s: requests.Session = False) -> dict or str:
+def available_regions(endpoint: str = ENDPOINT, return_format='json', s: requests.Session = False, version: str = CUR_VERSION) -> dict or str:
     """
     Retrieves a list of regions available at the endpoint
 
@@ -332,7 +335,7 @@ def available_regions(endpoint: str = ENDPOINT, return_format='json', s: request
             data = geoglows.streamflow.available_regions(12341234)
     """
     product = 'AvailableRegions'
-    url = f'{endpoint}/v2/{product}/'
+    url = f'{endpoint}/{version}/{product}/'
     return _request(url, return_format, product, s, {})
 
 
