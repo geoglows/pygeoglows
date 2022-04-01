@@ -47,7 +47,6 @@ def forecast(reach_id: int, return_format: str = 'csv', endpoint: str = ENDPOINT
     url = f'{endpoint}/{version}/{product}/{reach_id}'
     return _request(url, return_format, product, s, kwargs)
 
-
 def forecast_stats(reach_id: int, return_format: str = 'csv', date: str = None, units: str = 'cms',
                    endpoint: str = ENDPOINT, s: requests.Session = False, version: str = CUR_VERSION, **kwargs) -> pd.DataFrame:
     """

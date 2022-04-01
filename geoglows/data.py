@@ -108,7 +108,7 @@ def forecast_ensembles(reach_id: int, return_format: str = 'csv', endpoint: str 
     return _request(url, return_format, product, s, kwargs)
 
 
-def forecast_warnings(region: str, return_format: str = 'csv', endpoint: str = ENDPOINT,
+def forecast_warnings(region: str = 'all', return_format: str = 'csv', endpoint: str = ENDPOINT,
                       s: requests.Session = False, version: str = CUR_VERSION) -> pd.DataFrame or dict or str:
     """
     Retrieves a csv listing streams likely to experience a return period level flow during the forecast period.
@@ -163,7 +163,7 @@ def forecast_records(reach_id: int, return_format: str = 'csv', endpoint: str = 
 
 
 def available_dates(reach_id: int = None, region: str = None, return_format: str = 'json',
-                    endpoint: str = ENDPOINT, s: requests.Session = False, version: str = CUR_VERSION) -> dict or str:
+                    endpoint: str = ENDPOINT, s: requests.Session = False, version: str = CUR_VERSION, **kwargs) -> dict or str:
     """
     Retrieves the list of dates of stored streamflow forecasts. You need to specify either a reach_id or a region.
 
@@ -493,6 +493,7 @@ def _request(endpoint: str, return_format: str, product: str, s: requests.Sessio
     else:
         data = requests.get(endpoint, params=passed_kwargs)
     if data.status_code != 200:
+        print(endpoint, passed_kwargs)
         raise RuntimeError('Received an error from the Streamflow REST API: ' + data.text)
 
     # process the response from the API as appropriate to make the corresponding python object
