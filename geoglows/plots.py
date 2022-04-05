@@ -9,6 +9,8 @@ import plotly.graph_objs as go
 import scipy.stats
 from plotly.offline import plot as offline_plot
 
+from analysis import compute_daily_average
+
 __all__ = ['hydroviewer', 'forecast_stats', 'forecast_records', 'forecast_ensembles', 'historic_simulation',
            'daily_averages', 'monthly_averages', 'flow_duration_curve', 'probabilities_table', 'return_periods_table',
            'corrected_historical', 'corrected_scatterplots', 'corrected_day_average', 'corrected_month_average',
@@ -1132,3 +1134,65 @@ def _rperiod_scatters(startdate: str, enddate: str, rperiods: pd.DataFrame, y_ma
             template(f'50 Year: {r50}', (r50, r50, r100, r100), colors['50 Year']),
             template(f'100 Year: {r100}', (r100, r100, rmax, rmax), colors['100 Year']),
         ]
+def plot_standard_deviation (data: pd.DataFrame):
+  """
+  Plots the graph for the average standard deviation of the values in a calendar year according to the historical data.
+
+  Args:
+    data: dataframe of values to plot
+
+  returns:
+    plot of standard devoiation and plot of the graph of the low flows
+  """
+  data['datetime'] = pd.to_datetime(data['datetime'])
+  streamflow_data = pd.DataFrame()
+  streamflow_data['streamflow'] = data['streamflow_m^3/s']
+  streamflow_data['day'] = data['datetime'].dt.strftime('%m-%d')
+  stand_dev = streamflow_data.groupby('day').std();
+  standard_deviation = [
+                        go.Scatter(
+                            x=stand_dev.index,
+                            y=stand_dev['streamflow'],
+                            name = "Standard deviation"
+                        )
+  ]
+  stlayout = go.Layout(xaxis={'type':'category'}, title = "Standard Deviation by day of Year")
+  stdplot=go.Figure(data=standard_deviation, layout=stlayout)
+  return stdplot
+
+def plot_low_flows(data: pd.DataFrame, rps: tuple = (2, 5, 10, 25, 50)):
+  """
+  Plots the graph for the standard deviation over a year and the graph of low flows by day of the year
+
+  Args:
+    data: dataframe of values to plot
+    rps: tuple for the return periods - default is (2, 5, 10, 25, 50)
+
+  returns:
+    plot of the graph of the low flows
+  """
+  #daily_averages = compute_daily_average(data)
+  data['datetime'] = pd.to_datetime(data['datetime'])
+  streamflow_data = pd.DataFrame()
+  streamflow_data['streamflow'] = data['streamflow_m^3/s']
+  streamflow_data['day'] = data['datetime'].dt.strftime('%m-%d')
+  daily_averages = streamflow_data.groupby('day').mean()
+  averages = [
+              go.Scatter(
+                  x=daily_averages.index,
+                  y=daily_averages['streamflow'],
+                  name = "daily-averages"
+              )
+  ]
+  layout = go.Layout(xaxis={'type':'category'}, title = "Low flows by day of year")
+  plot = go.Figure(data = averages, layout = layout)
+  for rp in rps:
+    quantile= streamflow_data.groupby('day').quantile(1/rp)
+    plot.add_trace(
+        go.Scatter(
+        x=daily_averages.index,
+        y=quantile['streamflow'],
+        name = f'{rp}_year'
+        )
+    )
+  return plot
