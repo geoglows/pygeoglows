@@ -3,12 +3,13 @@ import hydrostats.data
 import math
 import statistics
 
-__all__ = ['compute_daily_average', 'compute_monthly_average', 'compute_return_periods', 'compute_anomaly']
+__all__ = ['compute_daily_average', 'compute_daily_variance', 'compute_monthly_average', 'compute_return_periods',
+           'compute_anomaly']
 
 
 def compute_daily_average(hist: pd.DataFrame) -> pd.DataFrame:
     """
-    Processes the historic simulation data into daily averages, the same as from the DailyAverages data service.
+    Processes the historical simulation data into daily averages, the same as from the DailyAverages data service.
 
     Args:
         hist: the csv response from the HistoricSimulation streamflow data service
@@ -17,6 +18,23 @@ def compute_daily_average(hist: pd.DataFrame) -> pd.DataFrame:
         pandas DataFrame with an index of "%m/%d" dates for each day of the year and a column labeled 'streamflow_m^3/s'
     """
     return hydrostats.data.daily_average(hist, rolling=True)
+
+
+def compute_daily_variance(hist: pd.DataFrame) -> pd.DataFrame:
+    """
+    Processes the historical simulation data into daily variance -> the standard deviation for each day of the year
+
+    Args:
+        hist: the csv response from the HistoricSimulation streamflow data service (datetime index, 1 column of values)
+
+    Returns:
+        pandas DataFrame with an index of "%m/%d" dates for each day of the year and a column labeled 'std_dv'
+    """
+    daily_variance = hist.copy()
+    daily_variance.columns = ['flow_std', ]
+    daily_variance['day_of_year'] = daily_variance.index.strftime('%j')
+    daily_variance['date'] = daily_variance.index.strftime('%m/%d')
+    return daily_variance.groupby('day_of_year').std().join(daily_variance.groupby('day_of_year').first()[['date',]])
 
 
 def compute_monthly_average(hist: pd.DataFrame) -> pd.DataFrame:
