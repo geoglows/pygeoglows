@@ -9,12 +9,10 @@ import plotly.graph_objs as go
 import scipy.stats
 from plotly.offline import plot as offline_plot
 
-from analysis import compute_daily_average
-
-__all__ = ['hydroviewer', 'forecast_stats', 'forecast_records', 'forecast_ensembles', 'historic_simulation',
-           'daily_averages', 'monthly_averages', 'flow_duration_curve', 'probabilities_table', 'return_periods_table',
-           'corrected_historical', 'corrected_scatterplots', 'corrected_day_average', 'corrected_month_average',
-           'corrected_volume_compare']
+__all__ = ['hydroviewer', 'forecast_stats', 'forecast_records', 'forecast_ensembles', 'plot_daily_variance',
+           'historic_simulation', 'daily_averages', 'monthly_averages', 'flow_duration_curve', 'probabilities_table',
+           'return_periods_table', 'corrected_historical', 'corrected_scatterplots', 'corrected_day_average',
+           'corrected_month_average', 'corrected_volume_compare']
 
 
 # FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
@@ -481,6 +479,41 @@ def daily_averages(dayavg: pd.DataFrame, titles: dict = False, outformat: str = 
     raise ValueError('Invalid outformat chosen. Choose plotly, plotly_scatters, or plotly_html')
 
 
+def plot_daily_variance(daily_variance: pd.DataFrame, titles: dict = None, outformat: str = 'plotly') -> go.Figure:
+    """
+    A dataframe of daily variances computed by the geoglows.analysis.compute_daily_variance function
+
+    Args:
+      daily_variance: dataframe of values to plot
+      titles: (dict) Extra info to show on the title of the plot. For example:
+        {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+      outformat: either 'plotly' (python object, default), 'plotly_scatters', or 'plotly_html'
+
+    returns:
+      plot of standard deviation and plot of the graph of the low flows
+    """
+    data = [
+        go.Scatter(
+            x=daily_variance['date'],
+            y=daily_variance['flow_std'],
+            name="Daily Standard Deviation"
+        )
+    ]
+    if outformat == 'plotly_scatters':
+        return data
+    figure = go.Figure(data=data, layout=go.Layout(_build_title('Daily Flow Standard Deviation', titles)))
+    if outformat == 'plotly':
+        return figure
+    elif outformat == 'plotly_html':
+        return offline_plot(
+            figure,
+            config={'autosizable': True, 'responsive': True},
+            output_type='div',
+            include_plotlyjs=False
+        )
+    raise ValueError('Invalid outformat chosen. Choose plotly or plotly_html')
+
+
 def monthly_averages(monavg: pd.DataFrame, titles: dict = False, outformat: str = 'plotly') -> go.Figure:
     """
     Makes the daily_averages data and metadata into a plotly plot
@@ -699,7 +732,7 @@ def corrected_historical(corrected: pd.DataFrame, simulated: pd.DataFrame, obser
         simulated: the csv response from historic_simulation
         observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
         rperiods: the csv response from return_periods
-        outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
+        outformat: either 'plotly', or 'plotly_html' (default plotly)
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
 
@@ -1136,43 +1169,16 @@ def _rperiod_scatters(startdate: str, enddate: str, rperiods: pd.DataFrame, y_ma
         ]
 
 
-def plot_standard_deviation(data: pd.DataFrame):
-    """
-    Plots standard deviation of the historical values for each day of the year
-
-    Args:
-      data: dataframe of values to plot
-
-    returns:
-      plot of standard deviation and plot of the graph of the low flows
-    """
-    data['datetime'] = pd.to_datetime(data['datetime'])
-    streamflow_data = pd.DataFrame()
-    streamflow_data['streamflow'] = data['streamflow_m^3/s']
-    streamflow_data['day'] = data['datetime'].dt.strftime('%m-%d')
-    stand_dev = streamflow_data.groupby('day').std()
-    standard_deviation = [
-        go.Scatter(
-            x=stand_dev.index,
-            y=stand_dev['streamflow'],
-            name="Standard deviation"
-        )
-    ]
-    stlayout = go.Layout(xaxis={'type': 'category'}, title="Standard Deviation by day of Year")
-    stdplot = go.Figure(data=standard_deviation, layout=stlayout)
-    return stdplot
-
-
 def plot_low_flows(data: pd.DataFrame, rps: tuple = (2, 5, 10, 25, 50)):
     """
     Plots the graph for the standard deviation over a year and the graph of low flows by day of the year
 
     Args:
-      data: dataframe of values to plot
-      rps: tuple for the return periods - default is (2, 5, 10, 25, 50)
+        data: dataframe of values to plot
+        rps: tuple for the return periods - default is (2, 5, 10, 25, 50)
 
     returns:
-      plot of the graph of the low flows
+        plot of the graph of the low flows
     """
     # daily_averages = compute_daily_average(data)
     data['datetime'] = pd.to_datetime(data['datetime'])
