@@ -479,7 +479,7 @@ def daily_averages(dayavg: pd.DataFrame, titles: dict = False, outformat: str = 
     raise ValueError('Invalid outformat chosen. Choose plotly, plotly_scatters, or plotly_html')
 
 
-def plot_daily_variance(daily_variance: pd.DataFrame, titles: dict = None, outformat: str = 'plotly') -> go.Figure:
+def daily_variance(daily_variance: pd.DataFrame, titles: dict = None, outformat: str = 'plotly') -> go.Figure:
     """
     A dataframe of daily variances computed by the geoglows.analysis.compute_daily_variance function
 
