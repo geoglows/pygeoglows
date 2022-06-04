@@ -37,6 +37,30 @@ def compute_daily_variance(hist: pd.DataFrame) -> pd.DataFrame:
     return daily_variance.groupby('day_of_year').std().join(daily_variance.groupby('day_of_year').first()[['date',]])
 
 
+def compute_daily_statistics(hist: pd.DataFrame) -> pd.DataFrame:
+  """
+  Calculates the statistics for a datafame given the day of year
+
+  Args:
+    hist: historical data to compute daily statistics from
+
+  Return:
+    pd.DataFrame: dataframe with average, minimum, 25% values, median, 75% value and maximum value for each day of year
+  """
+  streamflow_data= hist.copy()
+  streamflow_data.index = streamflow_data.index.strftime('%m-%d')
+  streamflow_data.index.name = 'day'
+  daily_grouped = streamflow_data.groupby('day')
+  return (
+      daily_grouped.mean()
+      .merge(daily_grouped.min(), left_index=True, right_index=True, suffixes=('_average', '_min'))
+      .merge(daily_grouped.quantile(.25), left_index=True, right_index=True)
+      .merge(daily_grouped.median(), left_index=True, right_index=True, suffixes=('_25%','_median'))
+      .merge(daily_grouped.quantile(.75), left_index=True, right_index=True)
+      .merge(daily_grouped.max(), left_index=True, right_index=True,suffixes=('_75%', '_max'))
+    )
+
+
 def compute_monthly_average(hist: pd.DataFrame) -> pd.DataFrame:
     """
     Processes the historic simulation data into monthly averages, the same as from the MonthlyAverages data service
@@ -77,6 +101,38 @@ def compute_return_periods(hist: pd.DataFrame, rps: tuple = (2, 5, 10, 25, 50, 1
         return_periods[f'{rp}_year'] = -math.log(-math.log(1 - (1 / rp))) * std * .7797 + xbar - (.45 * std)
 
     return return_periods
+
+def compute_low_flow_returns (hist: pd.DataFrame, rps: tuple = (2, 5, 10, 25, 50, 100)) -> dict:
+  """
+  Solves the Gumbel Type-I distribution using the annual minimum flow from the historic simulation
+
+  Args:
+      hist: the csv response from the HistoricSimulation streamflow data service
+      rps: a tuple of integer return period numbers to compute
+
+  Returns:
+      dictionary with keys labeled f'{return_period}_year' and float values
+  """
+  annual_min_flow_list = []
+  low_flows = {}
+  
+  year_min = hist.index.min().year
+  year_max = hist.index.max().year
+  
+  for y in range(year_min, year_max + 1):
+      annual_min_flow_list.append(hist[hist.index.year == int(y)].min())
+      
+  xbar = statistics.mean(annual_min_flow_list)
+  std = statistics.stdev(annual_min_flow_list)
+
+  for rp in rps:
+    value = 0.7799 * std * -math.log(-math.log((1/rp)))+ xbar - (0.45 * std)
+    if value < 0:
+      low_flows[f'{rp}_year'] = 0
+    else:
+      low_flows[f'{rp}_year'] = value
+
+  return low_flows
 
 
 def compute_anomaly(stats: pd.DataFrame, day_avgs: pd.DataFrame, daily: bool = True) -> pd.DataFrame:
