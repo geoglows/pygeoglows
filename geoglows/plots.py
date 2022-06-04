@@ -9,10 +9,12 @@ import plotly.graph_objs as go
 import scipy.stats
 from plotly.offline import plot as offline_plot
 
-__all__ = ['hydroviewer', 'forecast_stats', 'forecast_records', 'forecast_ensembles', 'plot_daily_variance',
+from .analysis import compute_daily_statistics
+
+__all__ = ['hydroviewer', 'forecast_stats', 'forecast_records', 'forecast_ensembles', 'daily_variance',
            'historic_simulation', 'daily_averages', 'monthly_averages', 'flow_duration_curve', 'probabilities_table',
            'return_periods_table', 'corrected_historical', 'corrected_scatterplots', 'corrected_day_average',
-           'corrected_month_average', 'corrected_volume_compare']
+           'corrected_month_average', 'corrected_volume_compare', 'daily_stats']
 
 
 # FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
@@ -484,7 +486,7 @@ def daily_variance(daily_variance: pd.DataFrame, titles: dict = None, outformat:
     A dataframe of daily variances computed by the geoglows.analysis.compute_daily_variance function
 
     Args:
-      daily_variance: dataframe of values to plot
+      daily_variance: dataframe of values to plot coming from geoglows.analysis.compute_daily_variance
       titles: (dict) Extra info to show on the title of the plot. For example:
         {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
       outformat: either 'plotly' (python object, default), 'plotly_scatters', or 'plotly_html'
@@ -513,7 +515,8 @@ def daily_variance(daily_variance: pd.DataFrame, titles: dict = None, outformat:
         )
     raise ValueError('Invalid outformat chosen. Choose plotly or plotly_html')
 
-def plot_daily_stats(hist: pd.DataFrame, titles: dict = None, outformat: str = 'plotly') -> go.Figure:
+
+def daily_stats(hist: pd.DataFrame, titles: dict = None, outformat: str = 'plotly') -> go.Figure:
     """
     Plots a graph with statistics for each day of year
 
@@ -527,29 +530,24 @@ def plot_daily_stats(hist: pd.DataFrame, titles: dict = None, outformat: str = '
         plot of the graph of the low flows
     """
 
-    daily_stats = compute_daily_statistics(hist)
-    averages = [
+    stats_df = compute_daily_statistics(hist)
+
+    data = [
         go.Scatter(
-            x=daily_stats.index,
-            y=daily_stats['streamflow_m^3/s_average'],
-            name = "daily-averages"
-            )
+            x=stats_df.index.tolist(),
+            y=stats_df[column].tolist(),
+            name=column
+        ) for column in stats_df.columns
     ]
-    layout = go.Layout(xaxis={'type':'category'}, title = "Statistics by day of year")
-    plot = go.Figure(data = averages, layout = layout)
-    labels = ['streamflow_m^3/s_min', 'streamflow_m^3/s_25%', 'streamflow_m^3/s_median', 'streamflow_m^3/s_75%', 'streamflow_m^3/s_max']
-    
-    for label in labels:
-        plot.add_trace(
-            go.Scatter(
-                x=daily_stats.index,
-                y=daily_stats[label],
-                name = label
-                )
-        )
+
     if outformat == 'plotly_scatters':
-        return plot
-    figure = go.Figure(data=plot, layout=go.Layout(_build_title('Daily Flow Standard Deviation', titles)))
+        return data
+    layout = go.Layout(
+        title=_build_title('Daily Average Streamflow (Simulated)', titles),
+        yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
+        xaxis={'title': 'Date (UTC +0:00)', 'hoverformat': '%b %d', 'tickformat': '%b'},
+    )
+    figure = go.Figure(data=data, layout=layout)
     if outformat == 'plotly':
         return figure
     elif outformat == 'plotly_html':
@@ -1228,7 +1226,6 @@ def plot_low_flows(data: pd.DataFrame, rps: tuple = (2, 5, 10, 25, 50)):
     returns:
         plot of the graph of the low flows
     """
-    # daily_averages = compute_daily_average(data)
     data['datetime'] = pd.to_datetime(data['datetime'])
     streamflow_data = pd.DataFrame()
     streamflow_data['streamflow'] = data['streamflow_m^3/s']
