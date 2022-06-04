@@ -513,6 +513,54 @@ def daily_variance(daily_variance: pd.DataFrame, titles: dict = None, outformat:
         )
     raise ValueError('Invalid outformat chosen. Choose plotly or plotly_html')
 
+def plot_daily_stats(hist: pd.DataFrame, titles: dict = None, outformat: str = 'plotly') -> go.Figure:
+    """
+    Plots a graph with statistics for each day of year
+
+    Args:
+        hist: dataframe of values to plot
+        titles: (dict) Extra info to show on the title of the plot. For example:
+            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+        outformat: either 'plotly' (python object, default), 'plotly_scatters', or 'plotly_html'
+
+    returns:
+        plot of the graph of the low flows
+    """
+
+    daily_stats = compute_daily_statistics(hist)
+    averages = [
+        go.Scatter(
+            x=daily_stats.index,
+            y=daily_stats['streamflow_m^3/s_average'],
+            name = "daily-averages"
+            )
+    ]
+    layout = go.Layout(xaxis={'type':'category'}, title = "Statistics by day of year")
+    plot = go.Figure(data = averages, layout = layout)
+    labels = ['streamflow_m^3/s_min', 'streamflow_m^3/s_25%', 'streamflow_m^3/s_median', 'streamflow_m^3/s_75%', 'streamflow_m^3/s_max']
+    
+    for label in labels:
+        plot.add_trace(
+            go.Scatter(
+                x=daily_stats.index,
+                y=daily_stats[label],
+                name = label
+                )
+        )
+    if outformat == 'plotly_scatters':
+        return plot
+    figure = go.Figure(data=plot, layout=go.Layout(_build_title('Daily Flow Standard Deviation', titles)))
+    if outformat == 'plotly':
+        return figure
+    elif outformat == 'plotly_html':
+        return offline_plot(
+            figure,
+            config={'autosizable': True, 'responsive': True},
+            output_type='div',
+            include_plotlyjs=False
+        )
+    raise ValueError('Invalid outformat chosen. Choose plotly or plotly_html')
+
 
 def monthly_averages(monavg: pd.DataFrame, titles: dict = False, outformat: str = 'plotly') -> go.Figure:
     """
