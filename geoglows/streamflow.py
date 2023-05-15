@@ -81,7 +81,7 @@ def forecast_ensembles(reach_id: int, return_format: str = 'csv', forecast_date:
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return f'{endpoint}{method}?reach_id={reach_id}'
+        return f'{endpoint}{method}v2/{reach_id}/'
 
     params = {'reach_id': reach_id, 'return_format': return_format}
     if forecast_date is not None:
@@ -115,7 +115,7 @@ def forecast_warnings(region: str = 'all', return_format='csv',
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return endpoint + method + f'?region={region}'
+        return f'{endpoint}{method}v2/{region}/'
 
     # return the requested data
     return _make_request(endpoint, method, {'region': region, 'return_format': return_format}, return_format, s)
@@ -149,7 +149,7 @@ def forecast_records(reach_id: int, start_date: str = None, end_date: str = None
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return f'{endpoint}{method}?reach_id={reach_id}'
+        return f'{endpoint}{method}v2/{reach_id}/'
 
     params = {'reach_id': reach_id, 'return_format': return_format}
     if start_date is not None:
@@ -188,7 +188,7 @@ def historic_simulation(reach_id: int, return_format='csv', forcing='era_5',
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}'
+        return f'{endpoint}{method}v2/{reach_id}/{forcing}/'
 
     # return the requested data
     params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
@@ -222,7 +222,7 @@ def daily_averages(reach_id: int, return_format='csv', forcing='era_5',
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}'
+        return f'{endpoint}{method}v2/{reach_id}/{forcing}/'
 
     # return the requested data
     params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
@@ -256,7 +256,7 @@ def monthly_averages(reach_id: int, return_format='csv', forcing='era_5',
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}'
+        return f'{endpoint}{method}v2/{reach_id}/{forcing}/'
 
     # return the requested data
     params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
@@ -290,7 +290,7 @@ def return_periods(reach_id: int, return_format='csv', forcing='era_5',
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return f'{endpoint}{method}?reach_id={reach_id}&forcing={forcing}'
+        return f'{endpoint}{method}v2/{reach_id}/{forcing}'
 
     # return the requested data
     params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
@@ -320,7 +320,7 @@ def available_data(endpoint: str = ENDPOINT, return_format='json', s: requests.S
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return endpoint + method
+        return endpoint + 'v2' + method
 
     # return the requested data
     return _make_request(endpoint, method, {}, return_format, s)
@@ -347,7 +347,7 @@ def available_regions(endpoint: str = ENDPOINT, return_format='json', s: request
     method = 'AvailableRegions/'
 
     if return_format == 'url':
-        return endpoint + method
+        return endpoint + 'v2' + method
 
     # return the requested data
     return _make_request(endpoint, method, {}, return_format, s)
@@ -386,7 +386,7 @@ def available_dates(reach_id: int = None, region: str = None, return_format: str
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return endpoint + method
+        return endpoint + 'v2' + method
 
     # return the requested data
     return _make_request(endpoint, method, params, return_format, s)
