@@ -45,7 +45,8 @@ def forecast_stats(reach_id: int, return_format: str = 'csv', forecast_date: str
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return f'{endpoint}{method}?reach_id={reach_id}'
+        return f'{endpoint}{method}v2/{reach_id}/'
+        # return f'{endpoint}{method}?reach_id={reach_id}'
     params = {'reach_id': reach_id, 'return_format': return_format}
     if forecast_date is not None:
         params["date"] = forecast_date
@@ -540,10 +541,13 @@ def _make_request(endpoint: str, method: str, params: dict, return_format: str, 
         params['return_format'] = 'csv'
 
     # request the data from the API
+    url = f'{endpoint}v2/{method}{params["reach_id"]}/{params["return_format"]}'
     if s:
-        data = s.get(endpoint + method, params=params)
+        data = s.get(url)
+        # data = s.get(url, params=params)
     else:
-        data = requests.get(endpoint + method, params=params)
+        data = requests.get(url)
+        # data = requests.get(endpoint + method, params=params)
     if data.status_code != 200:
         raise RuntimeError('Recieved an error from the Streamflow REST API: ' + data.text)
 
