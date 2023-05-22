@@ -12,7 +12,7 @@ from shapely.ops import nearest_points
 ENDPOINT = 'https://geoglows.ecmwf.int/api/'
 
 
-__all__ = ['forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecast_records', 'historic_simulation',
+__all__ = ['forecast_stats', 'forecast_ensembles', 'forecast_warnings', 'forecast_records', 'hindcast',
            'daily_averages', 'monthly_averages', 'return_periods', 'available_data', 'available_dates',
            'available_regions', 'reach_to_region', 'reach_to_latlon', 'latlon_to_reach', 'latlon_to_region', ]
 
@@ -45,7 +45,7 @@ def forecast_stats(reach_id: int, return_format: str = 'csv', forecast_date: str
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return f'{endpoint}{method}v2/{reach_id}/'
+        return f'{endpoint}v2/{method}{reach_id}/'
         # return f'{endpoint}{method}?reach_id={reach_id}'
     params = {'reach_id': reach_id, 'return_format': return_format}
     if forecast_date is not None:
@@ -81,7 +81,7 @@ def forecast_ensembles(reach_id: int, return_format: str = 'csv', forecast_date:
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return f'{endpoint}{method}v2/{reach_id}/'
+        return f'{endpoint}v2/{method}{reach_id}/'
 
     params = {'reach_id': reach_id, 'return_format': return_format}
     if forecast_date is not None:
@@ -149,7 +149,7 @@ def forecast_records(reach_id: int, start_date: str = None, end_date: str = None
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return f'{endpoint}{method}v2/{reach_id}/'
+        return f'{endpoint}v2/{method}{reach_id}/'
 
     params = {'reach_id': reach_id, 'return_format': return_format}
     if start_date is not None:
@@ -161,7 +161,7 @@ def forecast_records(reach_id: int, start_date: str = None, end_date: str = None
     return _make_request(endpoint, method, params, return_format, s)
 
 
-def historic_simulation(reach_id: int, return_format='csv', forcing='era_5',
+def hindcast(reach_id: int, return_format='csv', forcing='era_5',
                         endpoint=ENDPOINT, s: requests.Session = False) -> pd.DataFrame:
     """
     Retrieves a historical streamflow simulation derived from a specified forcing for a certain reach_id
@@ -184,11 +184,12 @@ def historic_simulation(reach_id: int, return_format='csv', forcing='era_5',
 
             data = geoglows.streamflow.historic_simulation(12341234)
     """
-    method = 'HistoricSimulation/'
+    method = 'hindcast/'
+    # method = 'HistoricSimulation/'
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return f'{endpoint}{method}v2/{reach_id}/{forcing}/'
+        return f'{endpoint}v2/{method}{reach_id}/'
 
     # return the requested data
     params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
@@ -222,7 +223,7 @@ def daily_averages(reach_id: int, return_format='csv', forcing='era_5',
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return f'{endpoint}{method}v2/{reach_id}/{forcing}/'
+        return f'{endpoint}v2/{method}{reach_id}/'
 
     # return the requested data
     params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
@@ -256,7 +257,7 @@ def monthly_averages(reach_id: int, return_format='csv', forcing='era_5',
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return f'{endpoint}{method}v2/{reach_id}/{forcing}/'
+        return f'{endpoint}v2/{method}{reach_id}/'
 
     # return the requested data
     params = {'reach_id': reach_id, 'forcing': forcing, 'return_format': return_format}
@@ -320,7 +321,7 @@ def available_data(endpoint: str = ENDPOINT, return_format='json', s: requests.S
 
     # if you only wanted the url, quit here
     if return_format == 'url':
-        return endpoint + 'v2' + method
+        return f'{endpoint}v2/{method}/'
 
     # return the requested data
     return _make_request(endpoint, method, {}, return_format, s)
@@ -541,13 +542,12 @@ def _make_request(endpoint: str, method: str, params: dict, return_format: str, 
         params['return_format'] = 'csv'
 
     # request the data from the API
-    url = f'{endpoint}v2/{method}{params["reach_id"]}/{params["return_format"]}'
+    url = f'{endpoint}v2/{method}{params.pop("reach_id")}' if 'reach_id' in params else f'{endpoint}v2/{method}'
+    print(url)
     if s:
-        data = s.get(url)
-        # data = s.get(url, params=params)
+        data = s.get(url, params=params)
     else:
-        data = requests.get(url)
-        # data = requests.get(endpoint + method, params=params)
+        data = requests.get(url, params=params)
     if data.status_code != 200:
         raise RuntimeError('Recieved an error from the Streamflow REST API: ' + data.text)
 
