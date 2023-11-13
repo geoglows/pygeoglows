@@ -1,9 +1,14 @@
+dask
+fastparquet
 requests
 pandas
 plotly>=4.6
 jinja2
 shapely
 scipy
+s3fs
 numpy
 hydrostats
 HydroErr
+xarray
+zarr

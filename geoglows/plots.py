@@ -12,14 +12,14 @@ from plotly.offline import plot as offline_plot
 from .analysis import compute_daily_statistics
 
 __all__ = ['hydroviewer', 'forecast_stats', 'forecast_records', 'forecast_ensembles', 'daily_variance',
-           'historic_simulation', 'daily_averages', 'monthly_averages', 'flow_duration_curve', 'probabilities_table',
+           'retrospective', 'daily_averages', 'monthly_averages', 'flow_duration_curve', 'probabilities_table',
            'return_periods_table', 'corrected_historical', 'corrected_scatterplots', 'corrected_day_average',
            'corrected_month_average', 'corrected_volume_compare', 'daily_stats']
 
 
 # FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
 def hydroviewer(recs: pd.DataFrame, stats: pd.DataFrame, ensem: pd.DataFrame, rperiods: pd.DataFrame = None,
-                record_days: int = 7, outformat: str = 'plotly', titles: dict = False, hide_ensem: bool = True,
+                record_days: int = 7, plot_type: str = 'plotly', titles: dict = False, hide_ensem: bool = True,
                 hide_rperiods: bool = True) -> go.Figure:
     """
     Creates the standard plot for a hydroviewer
@@ -29,7 +29,7 @@ def hydroviewer(recs: pd.DataFrame, stats: pd.DataFrame, ensem: pd.DataFrame, rp
         stats: the response from forecast_stats
         ensem: the response from forecast_ensembles
         rperiods: (optional) the response from return_periods
-        outformat: (optional) either 'plotly' or 'plotly_html' (default plotly)
+        plot_type: (optional) either 'plotly' or 'plotly_html' (default plotly)
         record_days: (optional) number of days of forecast records to show before the start of the forecast
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
@@ -39,8 +39,8 @@ def hydroviewer(recs: pd.DataFrame, stats: pd.DataFrame, ensem: pd.DataFrame, rp
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    if outformat not in ['plotly', 'plotly_html']:
-        raise ValueError('invalid outformat specified. pick plotly or plotly_html')
+    if plot_type not in ['plotly', 'plotly_html']:
+        raise ValueError('invalid plot_type specified. pick plotly or plotly_html')
 
     # determine the bounds of the plot on the x and y axis
     stats_dates = stats.index.tolist()
@@ -56,12 +56,12 @@ def hydroviewer(recs: pd.DataFrame, stats: pd.DataFrame, ensem: pd.DataFrame, rp
     max_flow = max(recs['streamflow_m^3/s'].max(), stats['flow_max_m^3/s'].max())
 
     # start building the plotly graph object
-    figure = forecast_records(recs, outformat='plotly')
-    for new_scatter in forecast_stats(stats, outformat='plotly_scatters'):
+    figure = forecast_records(recs, plot_type='plotly')
+    for new_scatter in forecast_stats(stats, plot_type='plotly_scatters'):
         figure.add_trace(new_scatter)
 
     # do the ensembles separately so we can group then and make only 1 legend entry
-    ensemble_data = forecast_ensembles(ensem, outformat='json')
+    ensemble_data = forecast_ensembles(ensem, plot_type='json')
     figure.add_trace(go.Scatter(
         x=ensemble_data['x_1-51'],
         y=ensemble_data['ensemble_01_m^3/s'],
@@ -91,9 +91,9 @@ def hydroviewer(recs: pd.DataFrame, stats: pd.DataFrame, ensem: pd.DataFrame, rp
         xaxis={'title': 'Date (UTC +0:00)', 'range': [startdate, enddate]},
     )
 
-    if outformat == 'plotly':
+    if plot_type == 'plotly':
         return figure
-    else:  # outformat == 'plotly_html':
+    else:  # plot_type == 'plotly_html':
         return offline_plot(
             figure,
             config={'autosizable': True, 'responsive': True},
@@ -103,7 +103,7 @@ def hydroviewer(recs: pd.DataFrame, stats: pd.DataFrame, ensem: pd.DataFrame, rp
 
 
 def forecast_stats(stats: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False,
-                   outformat: str = 'plotly', hide_maxmin: bool = False) -> go.Figure:
+                   plot_type: str = 'plotly', hide_maxmin: bool = False) -> go.Figure:
     """
     Makes the streamflow data and optional metadata into a plotly plot
 
@@ -112,14 +112,14 @@ def forecast_stats(stats: pd.DataFrame, rperiods: pd.DataFrame = None, titles: d
         rperiods: the csv response from return_periods
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
-        outformat: 'json', 'plotly', 'plotly_scatters', or 'plotly_html' (default plotly)
+        plot_type: 'json', 'plotly', 'plotly_scatters', or 'plotly_html' (default plotly)
         hide_maxmin: Choose to hide the max/min envelope by default
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    if outformat not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
-        raise ValueError('invalid outformat specified. pick json, plotly, plotly_scatters, or plotly_html')
+    if plot_type not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
+        raise ValueError('invalid plot_type specified. pick json, plotly, plotly_scatters, or plotly_html')
 
     # Start processing the inputs
     dates = stats.index.tolist()
@@ -143,7 +143,7 @@ def forecast_stats(stats: pd.DataFrame, rperiods: pd.DataFrame = None, titles: d
         rperiod_scatters = _rperiod_scatters(startdate, enddate, rperiods, plot_data['y_max'], max_visible)
     else:
         rperiod_scatters = []
-    if outformat == 'json':
+    if plot_type == 'json':
         return plot_data
 
     maxmin_visible = 'legendonly' if hide_maxmin else True
@@ -201,7 +201,7 @@ def forecast_stats(stats: pd.DataFrame, rperiods: pd.DataFrame = None, titles: d
     ]
     scatter_plots += rperiod_scatters
 
-    if outformat == 'plotly_scatters':
+    if plot_type == 'plotly_scatters':
         return scatter_plots
 
     layout = go.Layout(
@@ -211,9 +211,9 @@ def forecast_stats(stats: pd.DataFrame, rperiods: pd.DataFrame = None, titles: d
                'tickformat': '%b %d %Y'},
     )
     figure = go.Figure(scatter_plots, layout=layout)
-    if outformat == 'plotly':
+    if plot_type == 'plotly':
         return figure
-    if outformat == 'plotly_html':
+    if plot_type == 'plotly_html':
         return offline_plot(
             figure,
             config={'autosizable': True, 'responsive': True},
@@ -224,21 +224,21 @@ def forecast_stats(stats: pd.DataFrame, rperiods: pd.DataFrame = None, titles: d
 
 
 def forecast_ensembles(ensem: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False,
-                       outformat: str = 'plotly') -> go.Figure:
+                       plot_type: str = 'plotly') -> go.Figure:
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
         ensem: the csv response from forecast_ensembles
         rperiods: the csv response from return_periods
-        outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
+        plot_type: either 'json', 'plotly', or 'plotly_html' (default plotly)
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    if outformat not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
-        raise ValueError('invalid outformat specified. pick json, plotly, plotly_scatters, or plotly_html')
+    if plot_type not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
+        raise ValueError('invalid plot_type specified. pick json, plotly, plotly_scatters, or plotly_html')
 
     # variables to determine the maximum flow and hold all the scatter plot lines
     max_flows = []
@@ -266,7 +266,7 @@ def forecast_ensembles(ensem: pd.DataFrame, rperiods: pd.DataFrame = None, title
         rperiod_scatters = _rperiod_scatters(startdate, enddate, rperiods, plot_data['y_max'])
     else:
         rperiod_scatters = []
-    if outformat == 'json':
+    if plot_type == 'json':
         return plot_data
 
     # create the high resolution line (ensemble 52)
@@ -285,7 +285,7 @@ def forecast_ensembles(ensem: pd.DataFrame, rperiods: pd.DataFrame = None, title
         ))
     scatter_plots += rperiod_scatters
 
-    if outformat == 'plotly_scatters':
+    if plot_type == 'plotly_scatters':
         return scatter_plots
 
     # define a layout for the plot
@@ -296,9 +296,9 @@ def forecast_ensembles(ensem: pd.DataFrame, rperiods: pd.DataFrame = None, title
                'tickformat': '%b %d %Y'},
     )
     figure = go.Figure(scatter_plots, layout=layout)
-    if outformat == 'plotly':
+    if plot_type == 'plotly':
         return figure
-    if outformat == 'plotly_html':
+    if plot_type == 'plotly_html':
         return offline_plot(
             figure,
             config={'autosizable': True, 'responsive': True},
@@ -309,22 +309,22 @@ def forecast_ensembles(ensem: pd.DataFrame, rperiods: pd.DataFrame = None, title
 
 
 def forecast_records(recs: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False,
-                     outformat: str = 'plotly') -> go.Figure:
+                     plot_type: str = 'plotly') -> go.Figure:
     """
     Makes the streamflow saved forecast data and metadata into a plotly plot
 
     Args:
         recs: the csv response from forecast_records
         rperiods: the csv response from return_periods
-        outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
+        plot_type: either 'json', 'plotly', or 'plotly_html' (default plotly)
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    if outformat not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
-        raise ValueError('invalid outformat specified. pick json, plotly, plotly_scatters, or plotly_html')
+    if plot_type not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
+        raise ValueError('invalid plot_type specified. pick json, plotly, plotly_scatters, or plotly_html')
 
     # Start processing the inputs
     dates = recs.index.tolist()
@@ -341,7 +341,7 @@ def forecast_records(recs: pd.DataFrame, rperiods: pd.DataFrame = None, titles: 
         rperiod_scatters = _rperiod_scatters(startdate, enddate, rperiods, plot_data['y_max'], plot_data['y_max'])
     else:
         rperiod_scatters = []
-    if outformat == 'json':
+    if plot_type == 'json':
         return plot_data
 
     scatter_plots = [go.Scatter(
@@ -351,7 +351,7 @@ def forecast_records(recs: pd.DataFrame, rperiods: pd.DataFrame = None, titles: 
         line=dict(color='gold'),
     )] + rperiod_scatters
 
-    if outformat == 'plotly_scatters':
+    if plot_type == 'plotly_scatters':
         return scatter_plots
 
     layout = go.Layout(
@@ -360,9 +360,9 @@ def forecast_records(recs: pd.DataFrame, rperiods: pd.DataFrame = None, titles: 
         xaxis={'title': 'Date (UTC +0:00)', 'range': [startdate, enddate]},
     )
     figure = go.Figure(scatter_plots, layout=layout)
-    if outformat == 'plotly':
+    if plot_type == 'plotly':
         return figure
-    if outformat == 'plotly_html':
+    if plot_type == 'plotly_html':
         return offline_plot(
             figure,
             config={'autosizable': True, 'responsive': True},
@@ -372,32 +372,32 @@ def forecast_records(recs: pd.DataFrame, rperiods: pd.DataFrame = None, titles: 
     return
 
 
-def historic_simulation(hist: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False,
-                        outformat: str = 'plotly') -> go.Figure:
+def retrospective(retro: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False,
+                  plot_type: str = 'plotly') -> go.Figure:
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
-        hist: the csv response from historic_simulation
+        retro: the csv response from historic_simulation
         rperiods: the csv response from return_periods
-        outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
+        plot_type: either 'json', 'plotly', or 'plotly_html' (default plotly)
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    if outformat not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
-        raise ValueError('invalid outformat specified. pick json, plotly, plotly_scatters, or plotly_html')
+    if plot_type not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
+        raise ValueError('invalid plot_type specified. pick json, plotly, plotly_scatters, or plotly_html')
 
-    dates = hist.index.tolist()
+    dates = retro.index.tolist()
     startdate = dates[0]
     enddate = dates[-1]
 
     plot_data = {
         'x_datetime': dates,
-        'y_flow': hist.values.flatten(),
-        'y_max': max(hist.values),
+        'y_flow': retro.values.flatten(),
+        'y_max': max(retro.values),
     }
     if rperiods is not None:
         plot_data.update(rperiods.to_dict(orient='index').items())
@@ -405,17 +405,17 @@ def historic_simulation(hist: pd.DataFrame, rperiods: pd.DataFrame = None, title
     else:
         rperiod_scatters = []
 
-    if outformat == 'json':
+    if plot_type == 'json':
         return plot_data
 
     scatter_plots = [go.Scatter(
-        name='Historical Simulation',
+        name='Retrospective Simulation',
         x=plot_data['x_datetime'],
         y=plot_data['y_flow'])
     ]
     scatter_plots += rperiod_scatters
 
-    if outformat == 'plotly_scatters':
+    if plot_type == 'plotly_scatters':
         return scatter_plots
 
     layout = go.Layout(
@@ -425,19 +425,19 @@ def historic_simulation(hist: pd.DataFrame, rperiods: pd.DataFrame = None, title
                'tickformat': '%Y'},
     )
     figure = go.Figure(scatter_plots, layout=layout)
-    if outformat == 'plotly':
+    if plot_type == 'plotly':
         return figure
-    if outformat == 'plotly_html':
+    if plot_type == 'plotly_html':
         return offline_plot(
             figure,
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
-    raise ValueError('Invalid outformat chosen. Choose json, plotly, plotly_scatters, or plotly_html')
+    raise ValueError('Invalid plot_type chosen. Choose json, plotly, plotly_scatters, or plotly_html')
 
 
-def daily_averages(dayavg: pd.DataFrame, titles: dict = False, outformat: str = 'plotly') -> go.Figure:
+def daily_averages(dayavg: pd.DataFrame, titles: dict = False, plot_type: str = 'plotly') -> go.Figure:
     """
     Makes the daily_averages data and metadata into a plotly plot
 
@@ -445,13 +445,13 @@ def daily_averages(dayavg: pd.DataFrame, titles: dict = False, outformat: str = 
         dayavg: the csv response from daily_averages
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
-        outformat: either 'plotly', or 'plotly_html' (default plotly)
+        plot_type: either 'plotly', or 'plotly_html' (default plotly)
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    if outformat not in ['plotly_scatters', 'plotly', 'plotly_html']:
-        raise ValueError('invalid outformat specified. pick plotly, plotly_scatters, or plotly_html')
+    if plot_type not in ['plotly_scatters', 'plotly', 'plotly_html']:
+        raise ValueError('invalid plot_type specified. pick plotly, plotly_scatters, or plotly_html')
 
     scatter_plots = [
         go.Scatter(
@@ -461,7 +461,7 @@ def daily_averages(dayavg: pd.DataFrame, titles: dict = False, outformat: str = 
             line=dict(color='blue')
         ),
     ]
-    if outformat == 'plotly_scatters':
+    if plot_type == 'plotly_scatters':
         return scatter_plots
     layout = go.Layout(
         title=_build_title('Daily Average Streamflow (Simulated)', titles),
@@ -469,19 +469,19 @@ def daily_averages(dayavg: pd.DataFrame, titles: dict = False, outformat: str = 
         xaxis={'title': 'Date (UTC +0:00)', 'hoverformat': '%b %d', 'tickformat': '%b'},
     )
     figure = go.Figure(scatter_plots, layout=layout)
-    if outformat == 'plotly':
+    if plot_type == 'plotly':
         return figure
-    if outformat == 'plotly_html':
+    if plot_type == 'plotly_html':
         return offline_plot(
             figure,
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
-    raise ValueError('Invalid outformat chosen. Choose plotly, plotly_scatters, or plotly_html')
+    raise ValueError('Invalid plot_type chosen. Choose plotly, plotly_scatters, or plotly_html')
 
 
-def daily_variance(daily_variance: pd.DataFrame, titles: dict = None, outformat: str = 'plotly') -> go.Figure:
+def daily_variance(daily_variance: pd.DataFrame, titles: dict = None, plot_type: str = 'plotly') -> go.Figure:
     """
     A dataframe of daily variances computed by the geoglows.analysis.compute_daily_variance function
 
@@ -489,7 +489,7 @@ def daily_variance(daily_variance: pd.DataFrame, titles: dict = None, outformat:
       daily_variance: dataframe of values to plot coming from geoglows.analysis.compute_daily_variance
       titles: (dict) Extra info to show on the title of the plot. For example:
         {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
-      outformat: either 'plotly' (python object, default), 'plotly_scatters', or 'plotly_html'
+      plot_type: either 'plotly' (python object, default), 'plotly_scatters', or 'plotly_html'
 
     returns:
       plot of standard deviation and plot of the graph of the low flows
@@ -501,22 +501,22 @@ def daily_variance(daily_variance: pd.DataFrame, titles: dict = None, outformat:
             name="Daily Standard Deviation"
         )
     ]
-    if outformat == 'plotly_scatters':
+    if plot_type == 'plotly_scatters':
         return data
     figure = go.Figure(data=data, layout=go.Layout(_build_title('Daily Flow Standard Deviation', titles)))
-    if outformat == 'plotly':
+    if plot_type == 'plotly':
         return figure
-    elif outformat == 'plotly_html':
+    elif plot_type == 'plotly_html':
         return offline_plot(
             figure,
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
-    raise ValueError('Invalid outformat chosen. Choose plotly or plotly_html')
+    raise ValueError('Invalid plot_type chosen. Choose plotly or plotly_html')
 
 
-def daily_stats(hist: pd.DataFrame, titles: dict = None, outformat: str = 'plotly') -> go.Figure:
+def daily_stats(hist: pd.DataFrame, titles: dict = None, plot_type: str = 'plotly') -> go.Figure:
     """
     Plots a graph with statistics for each day of year
 
@@ -524,7 +524,7 @@ def daily_stats(hist: pd.DataFrame, titles: dict = None, outformat: str = 'plotl
         hist: dataframe of values to plot
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
-        outformat: either 'plotly' (python object, default), 'plotly_scatters', or 'plotly_html'
+        plot_type: either 'plotly' (python object, default), 'plotly_scatters', or 'plotly_html'
 
     returns:
         plot of the graph of the low flows
@@ -540,7 +540,7 @@ def daily_stats(hist: pd.DataFrame, titles: dict = None, outformat: str = 'plotl
         ) for column in stats_df.columns
     ]
 
-    if outformat == 'plotly_scatters':
+    if plot_type == 'plotly_scatters':
         return data
     layout = go.Layout(
         title=_build_title('Daily Average Streamflow (Simulated)', titles),
@@ -548,19 +548,19 @@ def daily_stats(hist: pd.DataFrame, titles: dict = None, outformat: str = 'plotl
         xaxis={'title': 'Date (UTC +0:00)', 'hoverformat': '%b %d', 'tickformat': '%b'},
     )
     figure = go.Figure(data=data, layout=layout)
-    if outformat == 'plotly':
+    if plot_type == 'plotly':
         return figure
-    elif outformat == 'plotly_html':
+    elif plot_type == 'plotly_html':
         return offline_plot(
             figure,
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
-    raise ValueError('Invalid outformat chosen. Choose plotly or plotly_html')
+    raise ValueError('Invalid plot_type chosen. Choose plotly or plotly_html')
 
 
-def monthly_averages(monavg: pd.DataFrame, titles: dict = False, outformat: str = 'plotly') -> go.Figure:
+def monthly_averages(monavg: pd.DataFrame, titles: dict = False, plot_type: str = 'plotly') -> go.Figure:
     """
     Makes the daily_averages data and metadata into a plotly plot
 
@@ -568,13 +568,13 @@ def monthly_averages(monavg: pd.DataFrame, titles: dict = False, outformat: str 
         monavg: the csv response from monthly_averages
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
-        outformat: either 'plotly', or 'plotly_html' (default plotly)
+        plot_type: either 'plotly', or 'plotly_html' (default plotly)
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    if outformat not in ['plotly_scatters', 'plotly', 'plotly_html']:
-        raise ValueError('invalid outformat specified. pick plotly, plotly_scatters, or plotly_html')
+    if plot_type not in ['plotly_scatters', 'plotly', 'plotly_html']:
+        raise ValueError('invalid plot_type specified. pick plotly, plotly_scatters, or plotly_html')
 
     scatter_plots = [
         go.Scatter(
@@ -584,7 +584,7 @@ def monthly_averages(monavg: pd.DataFrame, titles: dict = False, outformat: str 
             line=dict(color='blue')
         ),
     ]
-    if outformat == 'plotly_scatters':
+    if plot_type == 'plotly_scatters':
         return scatter_plots
     layout = go.Layout(
         title=_build_title('Monthly Average Streamflow (Simulated)', titles),
@@ -592,19 +592,19 @@ def monthly_averages(monavg: pd.DataFrame, titles: dict = False, outformat: str 
         xaxis={'title': 'Month'},
     )
     figure = go.Figure(scatter_plots, layout=layout)
-    if outformat == 'plotly':
+    if plot_type == 'plotly':
         return figure
-    if outformat == 'plotly_html':
+    if plot_type == 'plotly_html':
         return offline_plot(
             figure,
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
-    raise ValueError('Invalid outformat chosen. Choose plotly, plotly_scatters, or plotly_html')
+    raise ValueError('Invalid plot_type chosen. Choose plotly, plotly_scatters, or plotly_html')
 
 
-def flow_duration_curve(hist: pd.DataFrame, titles: dict = False, outformat: str = 'plotly') -> go.Figure:
+def flow_duration_curve(hist: pd.DataFrame, titles: dict = False, plot_type: str = 'plotly') -> go.Figure:
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
@@ -612,13 +612,13 @@ def flow_duration_curve(hist: pd.DataFrame, titles: dict = False, outformat: str
         hist: the csv response from historic_simulation
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
-        outformat: either 'json', 'plotly', or 'plotly_html' (default plotly)
+        plot_type: either 'json', 'plotly', or 'plotly_html' (default plotly)
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    if outformat not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
-        raise ValueError('invalid outformat specified. pick json, plotly, plotly_scatters, or plotly_html')
+    if plot_type not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
+        raise ValueError('invalid plot_type specified. pick json, plotly, plotly_scatters, or plotly_html')
 
     # process the hist dataframe to create the flow duration curve
     sorted_hist = hist.values.flatten()
@@ -636,7 +636,7 @@ def flow_duration_curve(hist: pd.DataFrame, titles: dict = False, outformat: str
         'y_max': sorted_hist[0],
     }
 
-    if outformat == 'json':
+    if plot_type == 'json':
         return plot_data
 
     scatter_plots = [
@@ -645,7 +645,7 @@ def flow_duration_curve(hist: pd.DataFrame, titles: dict = False, outformat: str
             x=plot_data['x_probability'],
             y=plot_data['y_flow'])
     ]
-    if outformat == 'plotly_scatters':
+    if plot_type == 'plotly_scatters':
         return scatter_plots
     layout = go.Layout(
         title=_build_title('Flow Duration Curve', titles),
@@ -653,16 +653,16 @@ def flow_duration_curve(hist: pd.DataFrame, titles: dict = False, outformat: str
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
     )
     figure = go.Figure(scatter_plots, layout=layout)
-    if outformat == 'plotly':
+    if plot_type == 'plotly':
         return figure
-    if outformat == 'plotly_html':
+    if plot_type == 'plotly_html':
         return offline_plot(
             figure,
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
-    raise ValueError('Invalid outformat chosen. Choose json, plotly, plotly_scatters, or plotly_html')
+    raise ValueError('Invalid plot_type chosen. Choose json, plotly, plotly_scatters, or plotly_html')
 
 
 # STREAMFLOW HTML TABLES
@@ -769,7 +769,7 @@ def return_periods_table(rperiods: pd.DataFrame) -> str:
 # BIAS CORRECTION PLOTS
 def corrected_historical(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
                          rperiods: pd.DataFrame = None, titles: dict = None,
-                         outformat: str = 'plotly') -> go.Figure or str:
+                         plot_type: str = 'plotly') -> go.Figure or str:
     """
     Creates a plot of corrected discharge, observered discharge, and simulated discharge
 
@@ -778,7 +778,7 @@ def corrected_historical(corrected: pd.DataFrame, simulated: pd.DataFrame, obser
         simulated: the csv response from historic_simulation
         observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
         rperiods: the csv response from return_periods
-        outformat: either 'plotly', or 'plotly_html' (default plotly)
+        plot_type: either 'plotly', or 'plotly_html' (default plotly)
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
 
@@ -802,7 +802,7 @@ def corrected_historical(corrected: pd.DataFrame, simulated: pd.DataFrame, obser
     else:
         rperiod_scatters = []
 
-    if outformat == 'json':
+    if plot_type == 'json':
         return plot_data
 
     scatters = [
@@ -835,21 +835,21 @@ def corrected_historical(corrected: pd.DataFrame, simulated: pd.DataFrame, obser
     )
 
     figure = go.Figure(data=scatters, layout=layout)
-    if outformat == 'plotly':
+    if plot_type == 'plotly':
         return figure
-    if outformat == 'plotly_html':
+    if plot_type == 'plotly_html':
         return offline_plot(
             figure,
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
-    raise ValueError('Invalid outformat chosen. Choose json, plotly, plotly_scatters, or plotly_html')
+    raise ValueError('Invalid plot_type chosen. Choose json, plotly, plotly_scatters, or plotly_html')
 
 
 def corrected_scatterplots(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
                            merged_sim_obs: pd.DataFrame = False, merged_cor_obs: pd.DataFrame = False,
-                           titles: dict = None, outformat: str = 'plotly') -> go.Figure or str:
+                           titles: dict = None, plot_type: str = 'plotly') -> go.Figure or str:
     """
     Creates a plot of corrected discharge, observered discharge, and simulated discharge. This function uses
     hydrostats.data.merge_data on the 3 inputs. If you have already computed these because you are doing a full
@@ -861,7 +861,7 @@ def corrected_scatterplots(corrected: pd.DataFrame, simulated: pd.DataFrame, obs
         observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
         merged_sim_obs: (optional) if you have already computed it, hydrostats.data.merge_data(simulated, observed)
         merged_cor_obs: (optional) if you have already computed it, hydrostats.data.merge_data(corrected, observed)
-        outformat: either 'plotly' or 'plotly_html' (default plotly)
+        plot_type: either 'plotly' or 'plotly_html' (default plotly)
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
 
@@ -944,21 +944,21 @@ def corrected_scatterplots(corrected: pd.DataFrame, simulated: pd.DataFrame, obs
                        xaxis=dict(title='Simulated', ),
                        yaxis=dict(title='Observed', autorange=True),
                        showlegend=True, updatemenus=updatemenus)
-    if outformat == 'plotly':
+    if plot_type == 'plotly':
         return go.Figure(data=scatter_sets, layout=layout)
-    elif outformat == 'plotly_html':
+    elif plot_type == 'plotly_html':
         return offline_plot(
             go.Figure(data=scatter_sets, layout=layout),
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
-    raise ValueError('Invalid outformat chosen. Choose plotly or plotly_html')
+    raise ValueError('Invalid plot_type chosen. Choose plotly or plotly_html')
 
 
 def corrected_month_average(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
                             merged_sim_obs: pd.DataFrame = False, merged_cor_obs: pd.DataFrame = False,
-                            titles: dict = None, outformat: str = 'plotly') -> go.Figure or str:
+                            titles: dict = None, plot_type: str = 'plotly') -> go.Figure or str:
     """
     Calculates and plots the monthly average streamflow. This function uses
     hydrostats.data.merge_data on the 3 inputs. If you have already computed these because you are doing a full
@@ -970,7 +970,7 @@ def corrected_month_average(corrected: pd.DataFrame, simulated: pd.DataFrame, ob
         observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
         merged_sim_obs: (optional) if you have already computed it, hydrostats.data.merge_data(simulated, observed)
         merged_cor_obs: (optional) if you have already computed it, hydrostats.data.merge_data(corrected, observed)
-        outformat: either 'plotly' or 'plotly_html' (default plotly)
+        plot_type: either 'plotly' or 'plotly_html' (default plotly)
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
 
@@ -998,21 +998,21 @@ def corrected_month_average(corrected: pd.DataFrame, simulated: pd.DataFrame, ob
         xaxis=dict(title='Month'), yaxis=dict(title='Discharge (m<sup>3</sup>/s)', autorange=True),
         showlegend=True)
 
-    if outformat == 'plotly':
+    if plot_type == 'plotly':
         return go.Figure(data=scatters, layout=layout)
-    elif outformat == 'plotly_html':
+    elif plot_type == 'plotly_html':
         return offline_plot(
             go.Figure(data=scatters, layout=layout),
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
-    raise ValueError('Invalid outformat chosen. Choose plotly or plotly_html')
+    raise ValueError('Invalid plot_type chosen. Choose plotly or plotly_html')
 
 
 def corrected_day_average(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
                           merged_sim_obs: pd.DataFrame = False, merged_cor_obs: pd.DataFrame = False,
-                          titles: dict = None, outformat: str = 'plotly') -> go.Figure or str:
+                          titles: dict = None, plot_type: str = 'plotly') -> go.Figure or str:
     """
     Calculates and plots the daily average streamflow. This function uses
     hydrostats.data.merge_data on the 3 inputs. If you have already computed these because you are doing a full
@@ -1024,7 +1024,7 @@ def corrected_day_average(corrected: pd.DataFrame, simulated: pd.DataFrame, obse
         merged_sim_obs: (optional) if you have already computed it, hydrostats.data.merge_data(simulated, observed)
         merged_cor_obs: (optional) if you have already computed it, hydrostats.data.merge_data(corrected, observed)
         observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
-        outformat: either 'plotly' or 'plotly_html' (default plotly)
+        plot_type: either 'plotly' or 'plotly_html' (default plotly)
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
 
@@ -1052,21 +1052,21 @@ def corrected_day_average(corrected: pd.DataFrame, simulated: pd.DataFrame, obse
         xaxis=dict(title='Days'), yaxis=dict(title='Discharge (m<sup>3</sup>/s)', autorange=True),
         showlegend=True)
 
-    if outformat == 'plotly':
+    if plot_type == 'plotly':
         return go.Figure(data=scatters, layout=layout)
-    elif outformat == 'plotly_html':
+    elif plot_type == 'plotly_html':
         return offline_plot(
             go.Figure(data=scatters, layout=layout),
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
-    raise ValueError('Invalid outformat chosen. Choose plotly or plotly_html')
+    raise ValueError('Invalid plot_type chosen. Choose plotly or plotly_html')
 
 
 def corrected_volume_compare(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
                              merged_sim_obs: pd.DataFrame = False, merged_cor_obs: pd.DataFrame = False,
-                             titles: dict = None, outformat: str = 'plotly') -> go.Figure or str:
+                             titles: dict = None, plot_type: str = 'plotly') -> go.Figure or str:
     """
     Calculates and plots the cumulative volume output on each of the 3 datasets provided. This function uses
     hydrostats.data.merge_data on the 3 inputs. If you have already computed these because you are doing a full
@@ -1078,7 +1078,7 @@ def corrected_volume_compare(corrected: pd.DataFrame, simulated: pd.DataFrame, o
         observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
         merged_sim_obs: (optional) if you have already computed it, hydrostats.data.merge_data(simulated, observed)
         merged_cor_obs: (optional) if you have already computed it, hydrostats.data.merge_data(corrected, observed)
-        outformat: either 'plotly' or 'plotly_html' (default plotly)
+        plot_type: either 'plotly' or 'plotly_html' (default plotly)
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
 
@@ -1129,16 +1129,16 @@ def corrected_volume_compare(corrected: pd.DataFrame, simulated: pd.DataFrame, o
         xaxis=dict(title='Datetime', ), yaxis=dict(title='Volume (m<sup>3</sup>)', autorange=True),
         showlegend=True)
 
-    if outformat == 'plotly':
+    if plot_type == 'plotly':
         return go.Figure(data=[observed_volume, simulated_volume, corrected_volume], layout=layout)
-    elif outformat == 'plotly_html':
+    elif plot_type == 'plotly_html':
         return offline_plot(
             go.Figure(data=[observed_volume, simulated_volume, corrected_volume], layout=layout),
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
-    raise ValueError('Invalid outformat chosen. Choose plotly or plotly_html')
+    raise ValueError('Invalid plot_type chosen. Choose plotly or plotly_html')
 
 
 # PLOTTING AUXILIARY FUNCTIONS

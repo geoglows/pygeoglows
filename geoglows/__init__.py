@@ -1,10 +1,11 @@
 import geoglows.bias
 import geoglows.plots
-import geoglows.streamflow
+import geoglows.data
 import geoglows.analysis
 import geoglows.examples
+import geoglows.streams
 
-__all__ = ['bias', 'plots', 'streamflow', 'analysis']
-__version__ = '0.27.0'
+__all__ = ['bias', 'plots', 'data', 'analysis', 'examples', 'streams']
+__version__ = '1.0.0'
 __author__ = 'Riley Hales'
 __license__ = 'BSD 3-Clause Clear License'
