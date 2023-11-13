@@ -251,12 +251,11 @@ def return_periods(reach_id: int) -> pd.DataFrame:
 
 
 # model config and supplementary data
-def master_table(columns: list = None, cache_stream_lookup: bool = False) -> pd.DataFrame or None:
+def master_table(columns: list = None) -> pd.DataFrame or None:
     """
     Retrieves the master table of stream reaches with all metadata and properties as a pandas DataFrame
     Args:
         columns: optional subset of columns names to read from the parquet
-        cache_stream_lookup: cache the TDXHydroLinkNo, lat, lon columns for stream querying functions
 
     Returns:
         pd.DataFrame
