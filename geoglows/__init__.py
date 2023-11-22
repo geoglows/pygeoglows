@@ -1,5 +1,5 @@
 import geoglows.bias
-import geoglows.plots
+import geoglows._plots as plots
 import geoglows.data
 import geoglows.analyze
 import geoglows.streams
