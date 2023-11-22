@@ -21,7 +21,7 @@ __all__ = [
     'retrospective',
     'daily_averages',
     'monthly_averages',
-    # todo 'annual_averages',
+    'annual_averages',
 
     'daily_variance',
     'flow_duration_curve',
@@ -53,7 +53,7 @@ def forecast(df: pd.DataFrame, *,
     scatter_traces = [
         go.Scatter(
             x=df.index,
-            y=df['flow_median_cms'],
+            y=df['flow_med_cms'],
             name='Streamflow (Median)',
             line=dict(color='black'),
         ),
@@ -99,7 +99,7 @@ def forecast(df: pd.DataFrame, *,
 
 def forecast_stats(df: pd.DataFrame, *,
                    rp_df: pd.DataFrame = None,
-                   plot_titles: list = False,
+                   plot_titles: list = None,
                    hide_maxmin: bool = False, ) -> go.Figure:
     """
     Makes the streamflow data and optional metadata into a plotly plot
@@ -216,7 +216,7 @@ def forecast_stats(df: pd.DataFrame, *,
 
 def forecast_ensembles(df: pd.DataFrame, *,
                        rp_df: pd.DataFrame = None,
-                       plot_titles: dict = False, ) -> go.Figure:
+                       plot_titles: list = None, ) -> go.Figure:
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
@@ -239,8 +239,8 @@ def forecast_ensembles(df: pd.DataFrame, *,
 
     # process the series' components and store them in a dictionary
     plot_data = {
-        'x_1-51': df['ensemble_01_m^3/s'].dropna(axis=0).index.tolist(),
-        'x_52': df['ensemble_52_m^3/s'].dropna(axis=0).index.tolist(),
+        'x_1-51': df['ensemble_01_cms'].dropna(axis=0).index.tolist(),
+        'x_52': df['ensemble_52_cms'].dropna(axis=0).index.tolist(),
     }
 
     # add a dictionary entry for each of the ensemble members. the key for each series is the integer ensemble number
@@ -259,7 +259,7 @@ def forecast_ensembles(df: pd.DataFrame, *,
     scatter_plots.append(go.Scatter(
         name='High Resolution Forecast',
         x=plot_data['x_52'],
-        y=plot_data['ensemble_52_m^3/s'],
+        y=plot_data['ensemble_52_cms'],
         line=dict(color='black')
     ))
     # create a line for the rest of the ensembles (1-51)
@@ -267,7 +267,7 @@ def forecast_ensembles(df: pd.DataFrame, *,
         scatter_plots.append(go.Scatter(
             name='Ensemble ' + str(i),
             x=plot_data['x_1-51'],
-            y=plot_data[f'ensemble_{i:02}_m^3/s'],
+            y=plot_data[f'ensemble_{i:02}_cms'],
         ))
     scatter_plots += rperiod_scatters
 
@@ -275,8 +275,12 @@ def forecast_ensembles(df: pd.DataFrame, *,
     layout = go.Layout(
         title=_build_title('Ensemble Predicted Streamflow', plot_titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
-        xaxis={'title': 'Date (UTC +0:00)', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y',
-               'tickformat': '%b %d %Y'},
+        xaxis={
+            'title': 'Date (UTC +0:00)',
+            'range': [startdate, enddate],
+            'hoverformat': '%b %d %Y',
+            'tickformat': '%b %d %Y'
+        },
     )
     return go.Figure(scatter_plots, layout=layout)
 
@@ -345,24 +349,21 @@ def forecast_records(recs: pd.DataFrame, rperiods: pd.DataFrame = None, titles: 
     return
 
 
-def retrospective(retro: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False,
-                  plot_type: str = 'plotly') -> go.Figure:
+def retrospective(retro: pd.DataFrame, *,
+                  rp_df: pd.DataFrame = None, plot_titles: list = None, ) -> go.Figure:
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
         retro: the csv response from historic_simulation
-        rperiods: the csv response from return_periods
+        rp_df: the csv response from return_periods
         plot_type: either 'json', 'plotly', or 'plotly_html' (default plotly)
-        titles: (dict) Extra info to show on the title of the plot. For example:
+        plot_titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    if plot_type not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
-        raise ValueError('invalid plot_type specified. pick json, plotly, plotly_scatters, or plotly_html')
-
     dates = retro.index.tolist()
     startdate = dates[0]
     enddate = dates[-1]
@@ -370,16 +371,13 @@ def retrospective(retro: pd.DataFrame, rperiods: pd.DataFrame = None, titles: di
     plot_data = {
         'x_datetime': dates,
         'y_flow': retro.values.flatten(),
-        'y_max': max(retro.values),
+        'y_max': retro.values.max(),
     }
-    if rperiods is not None:
-        plot_data.update(rperiods.to_dict(orient='index').items())
-        rperiod_scatters = _rperiod_scatters(startdate, enddate, rperiods, plot_data['y_max'], plot_data['y_max'])
+    if rp_df is not None:
+        plot_data.update(rp_df.to_dict(orient='index').items())
+        rperiod_scatters = _rperiod_scatters(startdate, enddate, rp_df, plot_data['y_max'], plot_data['y_max'])
     else:
         rperiod_scatters = []
-
-    if plot_type == 'json':
-        return plot_data
 
     scatter_plots = [go.Scatter(
         name='Retrospective Simulation',
@@ -388,35 +386,26 @@ def retrospective(retro: pd.DataFrame, rperiods: pd.DataFrame = None, titles: di
     ]
     scatter_plots += rperiod_scatters
 
-    if plot_type == 'plotly_scatters':
-        return scatter_plots
-
     layout = go.Layout(
-        title=_build_title('Historical Streamflow Simulation', titles),
+        title=_build_title('Retrospective Streamflow Simulation', plot_titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
-        xaxis={'title': 'Date (UTC +0:00)', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y',
-               'tickformat': '%Y'},
+        xaxis={
+            'title': 'Date (UTC +0:00)',
+            'range': [startdate, enddate],
+            'hoverformat': '%b %d %Y',
+            'tickformat': '%Y'
+        },
     )
-    figure = go.Figure(scatter_plots, layout=layout)
-    if plot_type == 'plotly':
-        return figure
-    if plot_type == 'plotly_html':
-        return offline_plot(
-            figure,
-            config={'autosizable': True, 'responsive': True},
-            output_type='div',
-            include_plotlyjs=False
-        )
-    raise ValueError('Invalid plot_type chosen. Choose json, plotly, plotly_scatters, or plotly_html')
+    return go.Figure(scatter_plots, layout=layout)
 
 
-def daily_averages(dayavg: pd.DataFrame, titles: dict = False, plot_type: str = 'plotly') -> go.Figure:
+def daily_averages(dayavg: pd.DataFrame, plot_titles: list = None, plot_type: str = 'plotly') -> go.Figure:
     """
     Makes the daily_averages data and metadata into a plotly plot
 
     Args:
         dayavg: the csv response from daily_averages
-        titles: (dict) Extra info to show on the title of the plot. For example:
+        plot_titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
         plot_type: either 'plotly', or 'plotly_html' (default plotly)
 
@@ -437,7 +426,7 @@ def daily_averages(dayavg: pd.DataFrame, titles: dict = False, plot_type: str = 
     if plot_type == 'plotly_scatters':
         return scatter_plots
     layout = go.Layout(
-        title=_build_title('Daily Average Streamflow (Simulated)', titles),
+        title=_build_title('Daily Average Streamflow (Simulated)', plot_titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date (UTC +0:00)', 'hoverformat': '%b %d', 'tickformat': '%b'},
     )
@@ -454,13 +443,13 @@ def daily_averages(dayavg: pd.DataFrame, titles: dict = False, plot_type: str = 
     raise ValueError('Invalid plot_type chosen. Choose plotly, plotly_scatters, or plotly_html')
 
 
-def daily_variance(daily_variance: pd.DataFrame, titles: dict = None, plot_type: str = 'plotly') -> go.Figure:
+def daily_variance(daily_variance: pd.DataFrame, plot_titles: list = None, plot_type: str = 'plotly') -> go.Figure:
     """
     A dataframe of daily variances computed by the geoglows.analysis.compute_daily_variance function
 
     Args:
       daily_variance: dataframe of values to plot coming from geoglows.analysis.compute_daily_variance
-      titles: (dict) Extra info to show on the title of the plot. For example:
+      plot_titles: (dict) Extra info to show on the title of the plot. For example:
         {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
       plot_type: either 'plotly' (python object, default), 'plotly_scatters', or 'plotly_html'
 
@@ -476,7 +465,7 @@ def daily_variance(daily_variance: pd.DataFrame, titles: dict = None, plot_type:
     ]
     if plot_type == 'plotly_scatters':
         return data
-    figure = go.Figure(data=data, layout=go.Layout(_build_title('Daily Flow Standard Deviation', titles)))
+    figure = go.Figure(data=data, layout=go.Layout(_build_title('Daily Flow Standard Deviation', plot_titles)))
     if plot_type == 'plotly':
         return figure
     elif plot_type == 'plotly_html':
@@ -533,7 +522,7 @@ def daily_stats(hist: pd.DataFrame, titles: dict = None, plot_type: str = 'plotl
     raise ValueError('Invalid plot_type chosen. Choose plotly or plotly_html')
 
 
-def monthly_averages(monavg: pd.DataFrame, titles: dict = False, plot_type: str = 'plotly') -> go.Figure:
+def monthly_averages(monavg: pd.DataFrame, titles: dict = None, plot_type: str = 'plotly') -> go.Figure:
     """
     Makes the daily_averages data and metadata into a plotly plot
 
@@ -577,7 +566,35 @@ def monthly_averages(monavg: pd.DataFrame, titles: dict = False, plot_type: str 
     raise ValueError('Invalid plot_type chosen. Choose plotly, plotly_scatters, or plotly_html')
 
 
-def flow_duration_curve(hist: pd.DataFrame, titles: dict = False, plot_type: str = 'plotly') -> go.Figure:
+def annual_averages(df: pd.DataFrame, *, plot_titles: list = None, ) -> go.Figure:
+    """
+    Makes the annual_averages data and metadata into a plotly plot
+
+    Args:
+        df: the csv response from annual_averages
+        plot_titles: (dict) Extra info to show on the title of the plot. For example:
+            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+
+    Return:
+         plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
+    """
+    scatter_plots = [
+        go.Scatter(
+            name='Average Annual Flow',
+            x=df.index.tolist(),
+            y=df.values.flatten(),
+            line=dict(color='blue')
+        ),
+    ]
+    layout = go.Layout(
+        title=_build_title('Annual Average Streamflow (Simulated)', plot_titles),
+        yaxis={'title': 'Streamflow (m<sup>3</sup>/s)'},
+        xaxis={'title': 'Year'},
+    )
+    return go.Figure(scatter_plots, layout=layout)
+
+
+def flow_duration_curve(hist: pd.DataFrame, titles: dict = None, plot_type: str = 'plotly') -> go.Figure:
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
@@ -1116,14 +1133,8 @@ def corrected_volume_compare(corrected: pd.DataFrame, simulated: pd.DataFrame, o
 
 # PLOTTING AUXILIARY FUNCTIONS
 def _build_title(main_title, plot_titles: list):
-    if not title_headers:
-        return main_title
-    if 'bias_corrected' in title_headers.keys():
-        main_title = 'Bias Corrected ' + main_title
-    for header_item in title_headers:
-        if head == 'bias_corrected':
-            continue
-        main_title += f'<br>{head}: {title_headers[head]}'
+    if plot_titles is not None:
+        main_title += '<br>'.join(plot_titles)
     return main_title
 
 

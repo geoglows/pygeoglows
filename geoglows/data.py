@@ -76,7 +76,7 @@ def _forecast_endpoint_decorator(function):
         response = requests.get(request_url)
 
         if response.status_code != 200:
-            raise RuntimeError('Received an error from the Streamflow REST API: ' + response.text)
+            raise RuntimeError('Received an error from the REST API: ' + response.text)
 
         if return_format == 'csv':
             df = pd.read_csv(StringIO(response.text))
@@ -205,7 +205,7 @@ def historical(*args, **kwargs):
     return retrospective(*args, **kwargs)
 
 
-def daily_averages(reach_id: int) -> pd.DataFrame:
+def daily_averages(reach_id: int or list) -> pd.DataFrame:
     """
     Retrieves daily average streamflow for a given reach_id
 
@@ -216,10 +216,10 @@ def daily_averages(reach_id: int) -> pd.DataFrame:
         pd.DataFrame
     """
     df = retrospective(reach_id)
-    return df.groupby(df.index.strftime('%m%d')).rolling(5).mean()
+    return df.groupby(df.index.strftime('%m%d')).mean()
 
 
-def monthly_averages(reach_id: int) -> pd.DataFrame:
+def monthly_averages(reach_id: int or list) -> pd.DataFrame:
     """
     Retrieves monthly average streamflow for a given reach_id
 
@@ -233,7 +233,7 @@ def monthly_averages(reach_id: int) -> pd.DataFrame:
     return df.groupby(df.index.strftime('%m')).mean()
 
 
-def annual_averages(reach_id: int) -> pd.DataFrame:
+def annual_averages(reach_id: int or list) -> pd.DataFrame:
     """
     Retrieves annual average streamflow for a given reach_id
 
@@ -247,7 +247,7 @@ def annual_averages(reach_id: int) -> pd.DataFrame:
     return df.groupby(df.index.strftime('%Y')).mean()
 
 
-def return_periods(reach_id: int) -> pd.DataFrame:
+def return_periods(reach_id: int or list) -> pd.DataFrame:
     """
     Retrieves the return period thresholds based on a specified historic simulation forcing on a certain reach_id.
 
