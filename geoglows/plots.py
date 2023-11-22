@@ -10,7 +10,7 @@ import plotly.graph_objs as go
 import scipy.stats
 from plotly.offline import plot as offline_plot
 
-from .analysis import compute_daily_statistics
+from .analyze import daily_stats
 
 __all__ = [
     'forecast',
@@ -492,7 +492,7 @@ def daily_stats(hist: pd.DataFrame, titles: dict = None, plot_type: str = 'plotl
         plot of the graph of the low flows
     """
 
-    stats_df = compute_daily_statistics(hist)
+    stats_df = daily_stats(hist)
 
     data = [
         go.Scatter(

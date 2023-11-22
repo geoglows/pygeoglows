@@ -1,11 +1,11 @@
 import math
+import warnings
 
 import hydrostats as hs
 import hydrostats.data as hd
 import numpy as np
 import pandas as pd
 from scipy import interpolate
-import warnings
 
 __all__ = [
     'correct_historical',

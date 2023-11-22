@@ -1,9 +1,9 @@
+from io import StringIO
+
 import pandas as pd
 import requests
 import s3fs
 import xarray as xr
-
-from io import StringIO
 
 __all__ = [
     'dates',
