@@ -136,24 +136,24 @@ def return_periods(df: pd.DataFrame, rps: int or tuple = (2, 5, 10, 25, 50, 100)
     Solves the Gumbel Type-I distribution using the annual maximum flow from the historic simulation
 
     Args:
-        df: the csv response from the HistoricSimulation streamflow data service
-        rps: a tuple of integer return period numbers to compute
+        df: a dataframe of retrospective simulation data
+        rps: an integer or iterable of integer return period numbers to compute
 
     Returns:
-        dictionary with keys labeled f'{return_period}_year' and float values
+        dict with keys 'max_simulated' and 'return_period_{year}' for each year with float values to 2 decimals
     """
     annual_max_flow_list = df.groupby(df.index.strftime('%Y')).max().values
     xbar = np.mean(annual_max_flow_list)
     std = np.std(annual_max_flow_list)
 
-    return_periods = {
-        'max_simulated': np.max(annual_max_flow_list),
+    if type(rps) is int:
+        rps = (rps,)
+
+    ret_pers = {
+        'max_simulated': round(np.max(annual_max_flow_list), 2)
     }
-
-    for rp in rps:
-        return_periods[f'return_period_{rp}'] = gumbel1(rp, xbar, std)
-
-    return return_periods
+    ret_pers.update({f'return_period_{rp}': round(gumbel1(rp, xbar, std), 2) for rp in rps})
+    return ret_pers
 
 
 def low_return_periods(hist: pd.DataFrame, rps: tuple = (2, 5, 10, 25, 50, 100)) -> dict:

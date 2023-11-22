@@ -37,7 +37,7 @@ def reach_to_vpu(reach_id: int) -> str or int:
 
 def latlon_to_reach(lat: float, lon: float) -> int:
     df = _read_master_table()
-    df['dist'] = (((df['lat'] - lat) ** 2 + (df['lon'] - lon) ** 2) ** 0.5).abs()
+    df['dist'] = ((df['lat'] - lat) ** 2 + (df['lon'] - lon) ** 2) ** 0.5
     return df.loc[lambda x: x['dist'] == df['dist'].min(), 'TDXHydroLinkNo'].values[0]
 
 
