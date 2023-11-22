@@ -4,6 +4,7 @@ import os
 
 import hydrostats.data as hd
 import jinja2
+import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
 import scipy.stats
@@ -11,140 +12,125 @@ from plotly.offline import plot as offline_plot
 
 from .analysis import compute_daily_statistics
 
-__all__ = ['hydroviewer', 'forecast_stats', 'forecast_records', 'forecast_ensembles', 'daily_variance',
-           'retrospective', 'daily_averages', 'monthly_averages', 'flow_duration_curve', 'probabilities_table',
-           'return_periods_table', 'corrected_historical', 'corrected_scatterplots', 'corrected_day_average',
-           'corrected_month_average', 'corrected_volume_compare', 'daily_stats']
+__all__ = [
+    'forecast',
+    'forecast_stats',
+    'forecast_records',
+    'forecast_ensembles',
+
+    'retrospective',
+    'daily_averages',
+    'monthly_averages',
+    # todo 'annual_averages',
+
+    'daily_variance',
+    'flow_duration_curve',
+    'probabilities_table',
+    'return_periods_table',
+
+    'corrected_historical',
+    'corrected_scatterplots',
+    'corrected_day_average',
+    'corrected_month_average',
+    'corrected_volume_compare',
+    'daily_stats'
+]
 
 
-# FUNCTIONS THAT PROCESS THE RESULTS OF THE API INTO A PLOTLY PLOT OR DICTIONARY
-def hydroviewer(recs: pd.DataFrame, stats: pd.DataFrame, ensem: pd.DataFrame, rperiods: pd.DataFrame = None,
-                record_days: int = 7, plot_type: str = 'plotly', titles: dict = False, hide_ensem: bool = True,
-                hide_rperiods: bool = True) -> go.Figure:
+def forecast(df: pd.DataFrame, *,
+             rp_df: pd.DataFrame = None,
+             plot_titles: list = None, ) -> go.Figure:
     """
-    Creates the standard plot for a hydroviewer
-
+    Plots forecasted streamflow and optional return periods
     Args:
-        recs: the response from forecast_records
-        stats: the response from forecast_stats
-        ensem: the response from forecast_ensembles
-        rperiods: (optional) the response from return_periods
-        plot_type: (optional) either 'plotly' or 'plotly_html' (default plotly)
-        record_days: (optional) number of days of forecast records to show before the start of the forecast
-        titles: (dict) Extra info to show on the title of the plot. For example:
-            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
-        hide_ensem: Hide the ensemble members in the layout initially
-        hide_rperiods: Hide the return period labels in the layout initially
+        df: the dataframe response from geoglows.data.forecast
+        rp_df: optional dataframe of return period data
+        plot_titles: optional list of strings to include in the figure title. each list item will be on a new line.
 
-    Return:
-         plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
+    Returns:
+        go.Figure
     """
-    if plot_type not in ['plotly', 'plotly_html']:
-        raise ValueError('invalid plot_type specified. pick plotly or plotly_html')
-
-    # determine the bounds of the plot on the x and y axis
-    stats_dates = stats.index.tolist()
-    # limit the forecast records to 7 days before the start of the forecast
-    recs = recs[recs.index >= pd.to_datetime(stats_dates[0] - datetime.timedelta(days=record_days))]
-    records_dates = recs.index.tolist()
-    if len(records_dates) == 0:
-        startdate = stats_dates[0]
-        enddate = stats_dates[-1]
-    else:
-        startdate = min(records_dates[0], stats_dates[0])
-        enddate = max(records_dates[-1], stats_dates[-1])
-    max_flow = max(recs['streamflow_m^3/s'].max(), stats['flow_max_m^3/s'].max())
-
-    # start building the plotly graph object
-    figure = forecast_records(recs, plot_type='plotly')
-    for new_scatter in forecast_stats(stats, plot_type='plotly_scatters'):
-        figure.add_trace(new_scatter)
-
-    # do the ensembles separately so we can group then and make only 1 legend entry
-    ensemble_data = forecast_ensembles(ensem, plot_type='json')
-    figure.add_trace(go.Scatter(
-        x=ensemble_data['x_1-51'],
-        y=ensemble_data['ensemble_01_m^3/s'],
-        visible='legendonly' if hide_ensem else True,
-        legendgroup='ensembles',
-        name='Forecast Ensembles',
-    ))
-    for i in range(2, 52):
-        figure.add_trace(go.Scatter(
-            x=ensemble_data['x_1-51'],
-            y=ensemble_data[f'ensemble_{i:02}_m^3/s'],
-            visible='legendonly' if hide_ensem else True,
-            legendgroup='ensembles',
-            name=f'Ensemble {i}',
+    scatter_traces = [
+        go.Scatter(
+            x=df.index,
+            y=df['flow_median_cms'],
+            name='Streamflow (Median)',
+            line=dict(color='black'),
+        ),
+        go.Scatter(
+            name='Uncertainty Bounds',
+            x=np.concatenate([df.index.values, df.index.values[::-1]]),
+            y=np.concatenate([df['flow_uncertainty_upper_cms'], df['flow_uncertainty_lower_cms'][::-1]]),
+            legendgroup='uncertainty',
+            showlegend=True,
+            fill='toself',
+            line=dict(color='lightblue', dash=None)
+        ),
+        go.Scatter(
+            name='Uncertainty Upper Bounds (80%)',
+            x=df.index,
+            y=df['flow_uncertainty_upper_cms'],
+            legendgroup='uncertainty',
             showlegend=False,
-        ))
-    if rperiods is not None:
-        max_visible = max(stats['flow_75%_m^3/s'].max(), stats['flow_avg_m^3/s'].max(), stats['high_res_m^3/s'].max(),
-                          recs['streamflow_m^3/s'].max())
-        for rp in _rperiod_scatters(startdate, enddate, rperiods, max_flow, max_visible,
-                                    visible='legendonly' if hide_rperiods else True):
-            figure.add_trace(rp)
+            line=dict(color='lightblue', dash='dash')
+        ),
+        go.Scatter(
+            name='Uncertainty Lower Bounds (20%)',
+            x=df.index,
+            y=df['flow_uncertainty_lower_cms'],
+            legendgroup='uncertainty',
+            showlegend=False,
+            line=dict(color='lightblue', dash='dash')
+        ),
+    ]
 
-    figure.update_layout(
-        title=_build_title('Forecasted Streamflow', titles),
+    if rp_df is not None:
+        # todo
+        ...
+
+    layout = go.Layout(
+        title=_build_title('Forecasted Streamflow', plot_titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
-        xaxis={'title': 'Date (UTC +0:00)', 'range': [startdate, enddate]},
+        xaxis={'title': 'Date (UTC +0:00)', 'range': [df.index[0], df.index[-1]]},
     )
 
-    if plot_type == 'plotly':
-        return figure
-    else:  # plot_type == 'plotly_html':
-        return offline_plot(
-            figure,
-            config={'autosizable': True, 'responsive': True},
-            output_type='div',
-            include_plotlyjs=False
-        )
+    return go.Figure(scatter_traces, layout=layout)
 
 
-def forecast_stats(stats: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False,
-                   plot_type: str = 'plotly', hide_maxmin: bool = False) -> go.Figure:
+def forecast_stats(df: pd.DataFrame, *,
+                   rp_df: pd.DataFrame = None,
+                   plot_titles: list = False,
+                   hide_maxmin: bool = False, ) -> go.Figure:
     """
     Makes the streamflow data and optional metadata into a plotly plot
 
     Args:
-        stats: the csv response from forecast_stats
-        rperiods: the csv response from return_periods
-        titles: (dict) Extra info to show on the title of the plot. For example:
-            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
-        plot_type: 'json', 'plotly', 'plotly_scatters', or 'plotly_html' (default plotly)
+        *:
+        df: the csv response from forecast_stats
+        rp_df: the csv response from return_periods
+        plot_titles: a list of strings to place in the figure title. each list item will be on a new line.
         hide_maxmin: Choose to hide the max/min envelope by default
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    if plot_type not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
-        raise ValueError('invalid plot_type specified. pick json, plotly, plotly_scatters, or plotly_html')
-
     # Start processing the inputs
-    dates = stats.index.tolist()
+    dates = df.index.tolist()
     startdate = dates[0]
     enddate = dates[-1]
 
     plot_data = {
-        'x_stats': stats['flow_avg_m^3/s'].dropna(axis=0).index.tolist(),
-        'x_hires': stats['high_res_m^3/s'].dropna(axis=0).index.tolist(),
-        'y_max': max(stats['flow_max_m^3/s']),
-        'flow_max': list(stats['flow_max_m^3/s'].dropna(axis=0)),
-        'flow_75%': list(stats['flow_75%_m^3/s'].dropna(axis=0)),
-        'flow_avg': list(stats['flow_avg_m^3/s'].dropna(axis=0)),
-        'flow_25%': list(stats['flow_25%_m^3/s'].dropna(axis=0)),
-        'flow_min': list(stats['flow_min_m^3/s'].dropna(axis=0)),
-        'high_res': list(stats['high_res_m^3/s'].dropna(axis=0)),
+        'x_stats': df['flow_avg_cms'].dropna(axis=0).index.tolist(),
+        'x_hires': df['high_res_cms'].dropna(axis=0).index.tolist(),
+        'y_max': max(df['flow_max_cms']),
+        'flow_max': list(df['flow_max_cms'].dropna(axis=0)),
+        'flow_75%': list(df['flow_75p_cms'].dropna(axis=0)),
+        'flow_avg': list(df['flow_avg_cms'].dropna(axis=0)),
+        'flow_med': list(df['flow_med_cms'].dropna(axis=0)),
+        'flow_25%': list(df['flow_25p_cms'].dropna(axis=0)),
+        'flow_min': list(df['flow_min_cms'].dropna(axis=0)),
+        'high_res': list(df['high_res_cms'].dropna(axis=0)),
     }
-    if rperiods is not None:
-        plot_data.update(rperiods.to_dict(orient='index').items())
-        max_visible = max(max(plot_data['flow_75%']), max(plot_data['flow_avg']), max(plot_data['high_res']))
-        rperiod_scatters = _rperiod_scatters(startdate, enddate, rperiods, plot_data['y_max'], max_visible)
-    else:
-        rperiod_scatters = []
-    if plot_type == 'json':
-        return plot_data
 
     maxmin_visible = 'legendonly' if hide_maxmin else True
     scatter_plots = [
@@ -190,84 +176,84 @@ def forecast_stats(stats: pd.DataFrame, rperiods: pd.DataFrame = None, titles: d
                    legendgroup='percentile_flow',
                    line=dict(color='green'), ),
 
-        go.Scatter(name='High Resolution Forecast',
+        go.Scatter(name='Higher Time Step Forecast',
                    x=plot_data['x_hires'],
                    y=plot_data['high_res'],
+                   visible=True,
                    line={'color': 'black'}, ),
-        go.Scatter(name='Ensemble Average Flow',
+
+        go.Scatter(name='Average Flow',
                    x=plot_data['x_stats'],
                    y=plot_data['flow_avg'],
                    line=dict(color='blue'), ),
+        go.Scatter(name='Median Flow',
+                   x=plot_data['x_stats'],
+                   y=plot_data['flow_med'],
+                   line=dict(color='red'), ),
     ]
-    scatter_plots += rperiod_scatters
-
-    if plot_type == 'plotly_scatters':
-        return scatter_plots
+    if rp_df is not None:
+        plot_data.update(rp_df.to_dict(orient='index').items())
+        max_visible = max(max(plot_data['flow_75%']), max(plot_data['flow_avg']), max(plot_data['high_res']))
+        rperiod_scatters = _rperiod_scatters(startdate, enddate, rp_df, plot_data['y_max'], max_visible)
+        scatter_plots += rperiod_scatters
 
     layout = go.Layout(
-        title=_build_title('Forecasted Streamflow', titles),
-        yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
-        xaxis={'title': 'Date (UTC +0:00)', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y',
-               'tickformat': '%b %d %Y'},
+        title=_build_title('Forecasted Streamflow', plot_titles),
+        yaxis={
+            'title': 'Streamflow (m<sup>3</sup>/s)',
+            'range': [0, 'auto']
+        },
+        xaxis={
+            'title': 'Date (UTC +0:00)',
+            'range': [startdate, enddate],
+            'hoverformat': '%b %d %Y',
+            'tickformat': '%b %d %Y'
+        },
     )
-    figure = go.Figure(scatter_plots, layout=layout)
-    if plot_type == 'plotly':
-        return figure
-    if plot_type == 'plotly_html':
-        return offline_plot(
-            figure,
-            config={'autosizable': True, 'responsive': True},
-            output_type='div',
-            include_plotlyjs=False
-        )
-    return
+
+    return go.Figure(scatter_plots, layout=layout)
 
 
-def forecast_ensembles(ensem: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False,
-                       plot_type: str = 'plotly') -> go.Figure:
+def forecast_ensembles(df: pd.DataFrame, *,
+                       rp_df: pd.DataFrame = None,
+                       plot_titles: dict = False, ) -> go.Figure:
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
-        ensem: the csv response from forecast_ensembles
-        rperiods: the csv response from return_periods
-        plot_type: either 'json', 'plotly', or 'plotly_html' (default plotly)
-        titles: (dict) Extra info to show on the title of the plot. For example:
-            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+        *:
+        df: the dataframe response from geoglows.data.forecast_ensembles
+        rp_df: the csv response from return_periods
+        plot_titles: a list of strings to place in the figure title. each list item will be on a new line.
     Return:
-         plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
+         go.Figure
     """
-    if plot_type not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
-        raise ValueError('invalid plot_type specified. pick json, plotly, plotly_scatters, or plotly_html')
-
     # variables to determine the maximum flow and hold all the scatter plot lines
     max_flows = []
     scatter_plots = []
 
     # determine the threshold values for return periods and the start/end dates so we can plot them
-    dates = ensem.index.tolist()
+    dates = df.index.tolist()
     startdate = dates[0]
     enddate = dates[-1]
 
     # process the series' components and store them in a dictionary
     plot_data = {
-        'x_1-51': ensem['ensemble_01_m^3/s'].dropna(axis=0).index.tolist(),
-        'x_52': ensem['ensemble_52_m^3/s'].dropna(axis=0).index.tolist(),
+        'x_1-51': df['ensemble_01_m^3/s'].dropna(axis=0).index.tolist(),
+        'x_52': df['ensemble_52_m^3/s'].dropna(axis=0).index.tolist(),
     }
 
     # add a dictionary entry for each of the ensemble members. the key for each series is the integer ensemble number
-    for ensemble in ensem.columns:
-        plot_data[ensemble] = ensem[ensemble].dropna(axis=0).tolist()
+    for ensemble in df.columns:
+        plot_data[ensemble] = df[ensemble].dropna(axis=0).tolist()
         max_flows.append(max(plot_data[ensemble]))
     plot_data['y_max'] = max(max_flows)
 
-    if rperiods is not None:
-        plot_data.update(rperiods.to_dict(orient='index').items())
-        rperiod_scatters = _rperiod_scatters(startdate, enddate, rperiods, plot_data['y_max'])
+    if rp_df is not None:
+        plot_data.update(rp_df.to_dict(orient='index').items())
+        rperiod_scatters = _rperiod_scatters(startdate, enddate, rp_df, plot_data['y_max'])
     else:
         rperiod_scatters = []
-    if plot_type == 'json':
-        return plot_data
 
     # create the high resolution line (ensemble 52)
     scatter_plots.append(go.Scatter(
@@ -285,27 +271,14 @@ def forecast_ensembles(ensem: pd.DataFrame, rperiods: pd.DataFrame = None, title
         ))
     scatter_plots += rperiod_scatters
 
-    if plot_type == 'plotly_scatters':
-        return scatter_plots
-
     # define a layout for the plot
     layout = go.Layout(
-        title=_build_title('Ensemble Predicted Streamflow', titles),
+        title=_build_title('Ensemble Predicted Streamflow', plot_titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date (UTC +0:00)', 'range': [startdate, enddate], 'hoverformat': '%b %d %Y',
                'tickformat': '%b %d %Y'},
     )
-    figure = go.Figure(scatter_plots, layout=layout)
-    if plot_type == 'plotly':
-        return figure
-    if plot_type == 'plotly_html':
-        return offline_plot(
-            figure,
-            config={'autosizable': True, 'responsive': True},
-            output_type='div',
-            include_plotlyjs=False
-        )
-    return
+    return go.Figure(scatter_plots, layout=layout)
 
 
 def forecast_records(recs: pd.DataFrame, rperiods: pd.DataFrame = None, titles: dict = False,
@@ -1142,16 +1115,16 @@ def corrected_volume_compare(corrected: pd.DataFrame, simulated: pd.DataFrame, o
 
 
 # PLOTTING AUXILIARY FUNCTIONS
-def _build_title(base, title_headers):
+def _build_title(main_title, plot_titles: list):
     if not title_headers:
-        return base
+        return main_title
     if 'bias_corrected' in title_headers.keys():
-        base = 'Bias Corrected ' + base
-    for head in title_headers:
+        main_title = 'Bias Corrected ' + main_title
+    for header_item in title_headers:
         if head == 'bias_corrected':
             continue
-        base += f'<br>{head}: {title_headers[head]}'
-    return base
+        main_title += f'<br>{head}: {title_headers[head]}'
+    return main_title
 
 
 def _plot_colors():

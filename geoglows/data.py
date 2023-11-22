@@ -11,15 +11,18 @@ __all__ = [
     'forecast_stats',
     'forecast_ensembles',
     'forecast_records',
+
     'retrospective',
     'daily_averages',
     'monthly_averages',
     'annual_averages',
     'return_periods',
+
+    'master_table',
 ]
 
 DEFAULT_REST_ENDPOINT = 'https://geoglows.ecmwf.int/api/'
-DEFAULT_REST_ENPOINT_VERSION = 'v2'  # 'v1, v2, latest'
+DEFAULT_REST_ENDPOINT_VERSION = 'v2'  # 'v1, v2, latest'
 ODP_S3_BUCKET_URI = 's3://geoglows-v2'
 ODP_S3_BUCKET_REGION = 'us-west-2'
 
@@ -39,7 +42,7 @@ def _forecast_endpoint_decorator(function):
         endpoint = endpoint + '/api' if not endpoint.endswith('/api') else endpoint
         endpoint = f'https://{endpoint}' if not endpoint.startswith(('https://', 'http://')) else endpoint
 
-        version = kwargs.get('version', DEFAULT_REST_ENPOINT_VERSION)
+        version = kwargs.get('version', DEFAULT_REST_ENDPOINT_VERSION)
 
         product_name = function.__name__.replace("_", "").lower()
 

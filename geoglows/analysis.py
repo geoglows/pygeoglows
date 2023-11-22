@@ -1,11 +1,17 @@
 import math
 
-import hydrostats.data
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-__all__ = ['compute_daily_average', 'compute_daily_variance', 'compute_monthly_average', 'compute_return_periods',
-           'compute_anomaly', 'compute_daily_statistics', 'compute_low_return_periods']
+__all__ = [
+    'compute_daily_average',
+    'compute_daily_variance',
+    'compute_monthly_average',
+    'compute_return_periods',
+    'compute_anomaly',
+    'compute_daily_statistics',
+    'compute_low_return_periods'
+]
 
 
 def gumbel1(rp: int, xbar: float, std: float) -> float:
@@ -32,7 +38,7 @@ def compute_daily_average(hist: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pandas DataFrame with an index of "%m/%d" dates for each day of the year and a column labeled 'streamflow_m^3/s'
     """
-    return hydrostats.data.daily_average(hist, rolling=True)
+    return hist.groupby(hist.index.strftime('%m/%d')).rolling(5).mean()
 
 
 def compute_daily_variance(hist: pd.DataFrame) -> pd.DataFrame:
@@ -68,25 +74,25 @@ def compute_daily_statistics(hist: pd.DataFrame) -> pd.DataFrame:
     daily_grouped = streamflow_data.groupby('day')
     return (
         daily_grouped.mean()
-            .merge(daily_grouped.min(), left_index=True, right_index=True, suffixes=('_avg', '_min'))
-            .merge(daily_grouped.quantile(.25), left_index=True, right_index=True)
-            .merge(daily_grouped.median(), left_index=True, right_index=True, suffixes=('_25%', '_med'))
-            .merge(daily_grouped.quantile(.75), left_index=True, right_index=True)
-            .merge(daily_grouped.max(), left_index=True, right_index=True, suffixes=('_75%', '_max'))
+        .merge(daily_grouped.min(), left_index=True, right_index=True, suffixes=('_avg', '_min'))
+        .merge(daily_grouped.quantile(.25), left_index=True, right_index=True)
+        .merge(daily_grouped.median(), left_index=True, right_index=True, suffixes=('_25%', '_med'))
+        .merge(daily_grouped.quantile(.75), left_index=True, right_index=True)
+        .merge(daily_grouped.max(), left_index=True, right_index=True, suffixes=('_75%', '_max'))
     )
 
 
-def compute_monthly_average(hist: pd.DataFrame) -> pd.DataFrame:
+def compute_monthly_average(df: pd.DataFrame) -> pd.DataFrame:
     """
     Processes the historic simulation data into monthly averages, the same as from the MonthlyAverages data service
 
     Args:
-        hist: the csv response from the HistoricSimulation streamflow data service
+        df: the csv response from the retrospective streamflow data service
 
     Returns:
         pandas DataFrame with an index of "%m" values for each month and a column labeled 'streamflow_m^3/s'
     """
-    return hydrostats.data.monthly_average(hist)
+    return df.groupby(df.index.strftime('%m')).mean()
 
 
 def compute_return_periods(hist: pd.DataFrame, rps: tuple = (2, 5, 10, 25, 50, 100)) -> dict:

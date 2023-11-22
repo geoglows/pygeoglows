@@ -7,7 +7,11 @@ import pandas as pd
 from scipy import interpolate
 import warnings
 
-__all__ = ['correct_historical', 'correct_forecast', 'statistics_tables']
+__all__ = [
+    'correct_historical',
+    'correct_forecast',
+    'statistics_tables',
+]
 
 
 def correct_historical(simulated_data: pd.DataFrame, observed_data: pd.DataFrame) -> pd.DataFrame:
