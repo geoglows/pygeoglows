@@ -273,4 +273,4 @@ def master_table(columns: list = None) -> pd.DataFrame or None:
         pd.DataFrame
     """
     s3_table_path = 's3://geoglows-v2/geoglows-v2-master-table.parquet'
-    return pd.read_parquet(s3_table_path, columns=columns)
+    return pd.read_parquet(s3_table_path, columns=columns, storage_options=dict(anon=True))

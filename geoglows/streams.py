@@ -22,6 +22,8 @@ def _read_master_table() -> pd.DataFrame:
     if not os.path.exists(GEOGLOWS_MASTER_TABLE_LOCAL_PATH):
         warnings.warn(warn)
         df = master_table(columns=['TDXHydroLinkNo', 'VPUCode', 'lat', 'lon'])
+        if not os.path.exists(os.path.dirname(GEOGLOWS_MASTER_TABLE_LOCAL_PATH)):
+            os.makedirs(os.path.dirname(GEOGLOWS_MASTER_TABLE_LOCAL_PATH))
         df.to_parquet(GEOGLOWS_MASTER_TABLE_LOCAL_PATH)
         return df
     return pd.read_parquet(GEOGLOWS_MASTER_TABLE_LOCAL_PATH)
