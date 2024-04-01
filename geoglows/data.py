@@ -23,7 +23,8 @@ __all__ = [
 
 DEFAULT_REST_ENDPOINT = 'https://geoglows.ecmwf.int/api/'
 DEFAULT_REST_ENDPOINT_VERSION = 'v2'  # 'v1, v2, latest'
-ODP_S3_BUCKET_URI = 's3://geoglows-v2'
+ODP_CORE_S3_BUCKET_URI = 's3://geoglows-v2'
+ODP_RETROSPECTIVE_S3_BUCKET_URI = 's3://geoglows-v2-retrospective'
 ODP_S3_BUCKET_REGION = 'us-west-2'
 
 
@@ -46,8 +47,8 @@ def _forecast_endpoint_decorator(function):
 
         product_name = function.__name__.replace("_", "").lower()
 
-        reach_id = kwargs.get('reach_id', '')
-        reach_id = f'/{reach_id}' if reach_id else reach_id
+        reach_id = args[0] if len(args) > 0 else None
+        reach_id = kwargs.get('reach_id', '') if not reach_id else reach_id
 
         return_format = kwargs.get('return_format', 'csv')
         assert return_format in ('csv', 'json', 'url'), f'Unsupported return format requested: {return_format}'
@@ -68,7 +69,9 @@ def _forecast_endpoint_decorator(function):
         params = '&'.join([f'{key}={value}' for key, value in kwargs.items()])
 
         # piece together the request url
-        request_url = f'{endpoint}/{version}/{product_name}{reach_id}?{params}'
+        request_url = f'{endpoint}/{version}/{product_name}'  # build the base url
+        request_url = f'{request_url}/{reach_id}' if reach_id else request_url  # add the reach_id if it exists
+        request_url = f'{request_url}?{params}'  # add the query parameters
 
         if return_url:
             return request_url.replace(f'source={kwargs["source"]}', '')
@@ -183,7 +186,7 @@ def forecast_records(*, reach_id: int, **kwargs) -> pd.DataFrame or dict or str:
 
 
 # Retrospective simulation and derived products
-def retrospective(reach_id: int) -> pd.DataFrame:
+def retrospective(reach_id: int or list) -> pd.DataFrame:
     """
     Retrieves the retrospective simulation of streamflow for a given reach_id from the
     AWS Open Data Program GEOGloWS V2 S3 bucket
@@ -195,7 +198,7 @@ def retrospective(reach_id: int) -> pd.DataFrame:
         pd.DataFrame
     """
     s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
-    s3store = s3fs.S3Map(root=f'{ODP_S3_BUCKET_URI}/retro.zarr', s3=s3, check=False)
+    s3store = s3fs.S3Map(root=f'{ODP_RETROSPECTIVE_S3_BUCKET_URI}/retrospective.zarr', s3=s3, check=False)
     return xr.open_zarr(s3store).sel(rivid=reach_id).to_dataframe().reset_index().set_index('time').pivot(
         columns='rivid', values='Qout')
 
@@ -258,7 +261,7 @@ def return_periods(reach_id: int or list) -> pd.DataFrame:
         pd.DataFrame
     """
     s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
-    s3store = s3fs.S3Map(root=f'{ODP_S3_BUCKET_URI}/return-periods.zarr', s3=s3, check=False)
+    s3store = s3fs.S3Map(root=f'{ODP_RETROSPECTIVE_S3_BUCKET_URI}/return-periods.zarr', s3=s3, check=False)
     return xr.open_zarr(s3store).sel(rivid=reach_id).to_dataframe()
 
 
@@ -272,5 +275,5 @@ def master_table(columns: list = None) -> pd.DataFrame or None:
     Returns:
         pd.DataFrame
     """
-    s3_table_path = 's3://geoglows-v2/geoglows-v2-master-table.parquet'
+    s3_table_path = 's3://geoglows-v2/tables/v2-.parquet'
     return pd.read_parquet(s3_table_path, columns=columns, storage_options=dict(anon=True))
