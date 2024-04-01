@@ -7,3 +7,4 @@ dev.ipynb
 geoglows.egg-info
 dist
 .pypirc
+*.parquet
