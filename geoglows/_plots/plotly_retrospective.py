@@ -24,7 +24,7 @@ def retrospective(retro: pd.DataFrame, *,
     Args:
         retro: the csv response from historic_simulation
         rp_df: the csv response from return_periods
-        plot_type: either 'json', 'plotly', or 'plotly_html' (default plotly)
+        plot_type: either 'json', 'plotly', or 'html' (default plotly)
         plot_titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
 
@@ -74,13 +74,13 @@ def daily_averages(dayavg: pd.DataFrame, plot_titles: list = None, plot_type: st
         dayavg: the csv response from daily_averages
         plot_titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
-        plot_type: either 'plotly', or 'plotly_html' (default plotly)
+        plot_type: either 'plotly', or 'html' (default plotly)
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    if plot_type not in ['plotly_scatters', 'plotly', 'plotly_html']:
-        raise ValueError('invalid plot_type specified. pick plotly, plotly_scatters, or plotly_html')
+    if plot_type not in ['plotly_scatters', 'plotly', 'html']:
+        raise ValueError('invalid plot_type specified. pick plotly, plotly_scatters, or html')
 
     scatter_plots = [
         go.Scatter(
@@ -100,14 +100,14 @@ def daily_averages(dayavg: pd.DataFrame, plot_titles: list = None, plot_type: st
     figure = go.Figure(scatter_plots, layout=layout)
     if plot_type == 'plotly':
         return figure
-    if plot_type == 'plotly_html':
+    if plot_type == 'html':
         return offline_plot(
             figure,
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
-    raise ValueError('Invalid plot_type chosen. Choose plotly, plotly_scatters, or plotly_html')
+    raise ValueError('Invalid plot_type chosen. Choose plotly, plotly_scatters, or html')
 
 
 def monthly_averages(monavg: pd.DataFrame, titles: dict = None, plot_titles: list = None, plot_type: str = 'plotly') -> go.Figure:
@@ -118,13 +118,13 @@ def monthly_averages(monavg: pd.DataFrame, titles: dict = None, plot_titles: lis
         monavg: the csv response from monthly_averages
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
-        plot_type: either 'plotly', or 'plotly_html' (default plotly)
+        plot_type: either 'plotly', or 'html' (default plotly)
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    if plot_type not in ['plotly_scatters', 'plotly', 'plotly_html']:
-        raise ValueError('invalid plot_type specified. pick plotly, plotly_scatters, or plotly_html')
+    if plot_type not in ['plotly_scatters', 'plotly', 'html']:
+        raise ValueError('invalid plot_type specified. pick plotly, plotly_scatters, or html')
 
     scatter_plots = [
         go.Scatter(
@@ -144,14 +144,14 @@ def monthly_averages(monavg: pd.DataFrame, titles: dict = None, plot_titles: lis
     figure = go.Figure(scatter_plots, layout=layout)
     if plot_type == 'plotly':
         return figure
-    if plot_type == 'plotly_html':
+    if plot_type == 'html':
         return offline_plot(
             figure,
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
-    raise ValueError('Invalid plot_type chosen. Choose plotly, plotly_scatters, or plotly_html')
+    raise ValueError('Invalid plot_type chosen. Choose plotly, plotly_scatters, or html')
 
 
 def annual_averages(df: pd.DataFrame, *, plot_titles: list = None, ) -> go.Figure:
@@ -190,13 +190,13 @@ def flow_duration_curve(hist: pd.DataFrame, titles: dict = None, plot_type: str 
         hist: the csv response from historic_simulation
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
-        plot_type: either 'json', 'plotly', or 'plotly_html' (default plotly)
+        plot_type: either 'json', 'plotly', or 'html' (default plotly)
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    if plot_type not in ['json', 'plotly_scatters', 'plotly', 'plotly_html']:
-        raise ValueError('invalid plot_type specified. pick json, plotly, plotly_scatters, or plotly_html')
+    if plot_type not in ['json', 'plotly_scatters', 'plotly', 'html']:
+        raise ValueError('invalid plot_type specified. pick json, plotly, plotly_scatters, or html')
 
     # process the hist dataframe to create the flow duration curve
     sorted_hist = hist.values.flatten()
@@ -233,14 +233,14 @@ def flow_duration_curve(hist: pd.DataFrame, titles: dict = None, plot_type: str 
     figure = go.Figure(scatter_plots, layout=layout)
     if plot_type == 'plotly':
         return figure
-    if plot_type == 'plotly_html':
+    if plot_type == 'html':
         return offline_plot(
             figure,
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
-    raise ValueError('Invalid plot_type chosen. Choose json, plotly, plotly_scatters, or plotly_html')
+    raise ValueError('Invalid plot_type chosen. Choose json, plotly, plotly_scatters, or html')
 
 
 def daily_stats(hist: pd.DataFrame, titles: dict = None, plot_type: str = 'plotly') -> go.Figure:
@@ -251,7 +251,7 @@ def daily_stats(hist: pd.DataFrame, titles: dict = None, plot_type: str = 'plotl
         hist: dataframe of values to plot
         titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
-        plot_type: either 'plotly' (python object, default), 'plotly_scatters', or 'plotly_html'
+        plot_type: either 'plotly' (python object, default), 'plotly_scatters', or 'html'
 
     returns:
         plot of the graph of the low flows
@@ -277,14 +277,14 @@ def daily_stats(hist: pd.DataFrame, titles: dict = None, plot_type: str = 'plotl
     figure = go.Figure(data=data, layout=layout)
     if plot_type == 'plotly':
         return figure
-    elif plot_type == 'plotly_html':
+    elif plot_type == 'html':
         return offline_plot(
             figure,
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
-    raise ValueError('Invalid plot_type chosen. Choose plotly or plotly_html')
+    raise ValueError('Invalid plot_type chosen. Choose plotly or html')
 
 
 def daily_variance(daily_variance: pd.DataFrame, plot_titles: list = None, plot_type: str = 'plotly') -> go.Figure:
@@ -295,7 +295,7 @@ def daily_variance(daily_variance: pd.DataFrame, plot_titles: list = None, plot_
       daily_variance: dataframe of values to plot coming from geoglows.analysis.compute_daily_variance
       plot_titles: (dict) Extra info to show on the title of the plot. For example:
         {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
-      plot_type: either 'plotly' (python object, default), 'plotly_scatters', or 'plotly_html'
+      plot_type: either 'plotly' (python object, default), 'plotly_scatters', or 'html'
 
     returns:
       plot of standard deviation and plot of the graph of the low flows
@@ -312,11 +312,11 @@ def daily_variance(daily_variance: pd.DataFrame, plot_titles: list = None, plot_
     figure = go.Figure(data=data, layout=go.Layout(build_title('Daily Flow Standard Deviation', plot_titles)))
     if plot_type == 'plotly':
         return figure
-    elif plot_type == 'plotly_html':
+    elif plot_type == 'html':
         return offline_plot(
             figure,
             config={'autosizable': True, 'responsive': True},
             output_type='div',
             include_plotlyjs=False
         )
-    raise ValueError('Invalid plot_type chosen. Choose plotly or plotly_html')
+    raise ValueError('Invalid plot_type chosen. Choose plotly or html')

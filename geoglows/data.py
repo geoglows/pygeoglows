@@ -1,9 +1,12 @@
+import os
 from io import StringIO
 
 import pandas as pd
 import requests
 import s3fs
 import xarray as xr
+
+from ._constants import METADATA_TABLE_LOCAL_PATH, s3_metadata_tables
 
 __all__ = [
     'dates',
@@ -18,7 +21,7 @@ __all__ = [
     'annual_averages',
     'return_periods',
 
-    'master_table',
+    'metadata_tables',
 ]
 
 DEFAULT_REST_ENDPOINT = 'https://geoglows.ecmwf.int/api/'
@@ -266,14 +269,22 @@ def return_periods(reach_id: int or list) -> pd.DataFrame:
 
 
 # model config and supplementary data
-def master_table(columns: list = None) -> pd.DataFrame or None:
+def metadata_tables(columns: list = None, cache: bool = False) -> pd.DataFrame or None:
     """
     Retrieves the master table of stream reaches with all metadata and properties as a pandas DataFrame
     Args:
         columns: optional subset of columns names to read from the parquet
+        cache: if True, saves the master table to the local data directory
 
     Returns:
         pd.DataFrame
     """
-    s3_table_path = 's3://geoglows-v2/tables/v2-.parquet'
-    return pd.read_parquet(s3_table_path, columns=columns, storage_options=dict(anon=True))
+    if os.path.exists(METADATA_TABLE_LOCAL_PATH):
+        return pd.read_parquet(METADATA_TABLE_LOCAL_PATH, columns=columns)
+    df = pd.read_parquet(s3_metadata_tables[0], columns=columns)
+    for table in s3_metadata_tables[1:]:
+        df = df.merge(pd.read_parquet(table, columns=columns), left_on='LINKNO', right_on='LINKNO', how='inner')
+    if cache:
+        os.makedirs('data', exist_ok=True)
+        df.to_parquet(METADATA_TABLE_LOCAL_PATH)
+    return df
