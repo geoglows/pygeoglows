@@ -19,7 +19,6 @@ with open(f'./{NAME}/__init__.py') as f:
 with open('./requirements.txt') as f:
     INSTALL_REQUIRES = f.read().splitlines()
 
-
 setup(
     name=NAME,
     packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
@@ -29,8 +28,11 @@ setup(
     long_description_content_type="text/markdown",
     author=AUTHOR,
     url=URL,
-    project_urls=dict(Documentation='https://geoglows.readthedocs.io',
-                      Source='https://github.com/geoglows/pygeoglows'),
+    project_urls=dict(
+        Homepage='https://data.geoglows.org',
+        Documentation='https://geoglows.readthedocs.io',
+        Source='https://github.com/geoglows/pygeoglows',
+    ),
     license=LICENSE,
     license_family='BSD',
     package_data={'': ['*.ipynb', '*.html']},

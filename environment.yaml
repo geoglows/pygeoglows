@@ -1,0 +1,19 @@
+name: pygeoglows
+channels:
+  - conda-forge
+dependencies:
+  - python>=3
+  - dask
+  - fastparquet
+  - requests
+  - pandas
+  - plotly>=5
+  - jinja2
+  - shapely>=2
+  - scipy>=1
+  - s3fs
+  - numpy>=1
+  - hydrostats
+  - HydroErr
+  - xarray
+  - zarr

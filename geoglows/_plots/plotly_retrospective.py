@@ -305,7 +305,7 @@ def daily_variance(daily_variance: pd.DataFrame, plot_titles: list = None, plot_
             x=daily_variance['date'],
             y=daily_variance['flow_std'],
             name="Daily Standard Deviation"
-        )
+        ),
     ]
     if plot_type == 'plotly_scatters':
         return data
