@@ -284,7 +284,7 @@ def metadata_tables(columns: list = None, cache: bool = False) -> pd.DataFrame o
     df = pd.read_parquet(s3_metadata_tables[0], columns=columns)
     for table in s3_metadata_tables[1:]:
         df = df.merge(pd.read_parquet(table, columns=columns), left_on='LINKNO', right_on='LINKNO', how='inner')
-    if cache:
-        os.makedirs('data', exist_ok=True)
+    if cache and columns is None:
+        os.makedirs(os.path.dirname(METADATA_TABLE_LOCAL_PATH), exist_ok=True)
         df.to_parquet(METADATA_TABLE_LOCAL_PATH)
     return df

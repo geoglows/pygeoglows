@@ -1,10 +1,11 @@
 import os
 import warnings
 
+import numpy as np
 import pandas as pd
 
-from .data import metadata_tables
 from ._constants import METADATA_TABLE_LOCAL_PATH
+from .data import metadata_tables
 
 __all__ = ['reach_to_vpu', 'latlon_to_reach', 'reach_to_latlon', ]
 
@@ -15,13 +16,12 @@ def _read_metadata_tables(columns: list = None) -> pd.DataFrame:
     """
     warn = """
     Local copy of geoglows v2 metadata table not found. This can be queried online on demand but you should download a 
-    copy to optimal performance and make the data available when you are offline. Please download the table using the 
-    function `geoglows.data.metadata_tables(cache=True)`.
+    copy for optimal performance and to make the data available when you are offline. Please download the table using 
+    the function `geoglows.data.metadata_tables(cache=True)`. It requires about 400MB of disk space.
     """
-    if not os.path.exists(METADATA_TABLE_LOCAL_PATH):
-        warnings.warn(warn)
+    if os.path.exists(METADATA_TABLE_LOCAL_PATH):
         return pd.read_parquet(METADATA_TABLE_LOCAL_PATH, columns=columns)
-    os.makedirs(os.path.dirname(METADATA_TABLE_LOCAL_PATH))
+    warnings.warn(warn)
     return metadata_tables(columns=columns)
 
 
@@ -39,7 +39,7 @@ def latlon_to_reach(lat: float, lon: float) -> int:
     return df.loc[lambda x: x['dist'] == df['dist'].min(), 'LINKNO'].values[0]
 
 
-def reach_to_latlon(reach_id: int) -> tuple:
+def reach_to_latlon(reach_id: int) -> np.ndarray:
     return (
         _read_metadata_tables(columns=['LINKNO', 'lat', 'lon'])
         .loc[lambda x: x['LINKNO'] == reach_id, ['lat', 'lon']]
