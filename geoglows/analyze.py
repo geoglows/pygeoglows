@@ -30,6 +30,29 @@ def gumbel1(rp: int, xbar: float, std: float) -> float:
     return round(-math.log(-math.log(1 - (1 / rp))) * std * .7797 + xbar - (.45 * std), 2)
 
 
+def simple_forecast(ens: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculates the simple forecast from a dataframe of forecast ensembles
+
+    Args:
+        ens: a dataframe of forecast ensembles
+
+    Returns:
+        pandas DataFrame with an index of datetime and columns labeled 'min', 'max', 'mean', 'median'
+    """
+    df = (
+        ens
+        .drop(columns=['ensemble_52_cms'])
+        .dropna()
+    )
+    df = pd.DataFrame({
+        f'flow_uncertainty_upper_cms': np.nanpercentile(df.values, 80, axis=1),
+        f'flow_median_cms': np.median(df.values, axis=1),
+        f'flow_uncertainty_lower_cms': np.nanpercentile(df.values, 20, axis=1),
+    }, index=df.index)
+    return df
+
+
 def daily_averages(df: pd.DataFrame) -> pd.DataFrame:
     """
     Calculates the daily average of a dataframe with a datetime index

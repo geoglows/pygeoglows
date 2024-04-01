@@ -29,7 +29,7 @@ def forecast(df: pd.DataFrame, *,
     scatter_traces = [
         go.Scatter(
             x=df.index,
-            y=df['flow_med_cms'],
+            y=df['flow_median_cms'],
             name='Streamflow (Median)',
             line=dict(color='black'),
         ),

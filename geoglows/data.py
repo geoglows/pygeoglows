@@ -65,7 +65,7 @@ def _forecast_endpoint_decorator(function):
                 del kwargs[key]
         for date in ('date', 'start_date', 'end_date'):
             if date in kwargs:
-                assert pd.to_datetime(kwargs[date], format='%Y%m%d'), f'{date} must be a string in YYYYMMDD format'
+                assert len(str(kwargs[date])) == 8 or len(str(kwargs[date])) == 10, f'Invalid date format: {kwargs[date]}'
         if 'format' in kwargs and kwargs['format'] != 'json':
             del kwargs['format']
         kwargs['source'] = kwargs.get('source', 'pygeoglows')  # allow using default for specific apps which override
