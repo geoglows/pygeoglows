@@ -279,8 +279,14 @@ def metadata_tables(columns: list = None, cache: bool = False) -> pd.DataFrame o
     Returns:
         pd.DataFrame
     """
+    warn = """
+    Local copy of geoglows v2 metadata table not found. This can be queried online on demand but you should download a 
+    copy for optimal performance and to make the data available when you are offline. Please download the table using 
+    the function `geoglows.data.metadata_tables(cache=True)`. It requires about 400MB of disk space.
+    """
     if os.path.exists(METADATA_TABLE_LOCAL_PATH):
         return pd.read_parquet(METADATA_TABLE_LOCAL_PATH, columns=columns)
+    warnings.warn(warn)
     df = pd.read_parquet(s3_metadata_tables[0], columns=columns)
     for table in s3_metadata_tables[1:]:
         df = df.merge(pd.read_parquet(table, columns=columns), left_on='LINKNO', right_on='LINKNO', how='inner')
