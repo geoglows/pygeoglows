@@ -1,4 +1,5 @@
 import os
+import warnings
 from io import StringIO
 
 import pandas as pd
@@ -65,7 +66,8 @@ def _forecast_endpoint_decorator(function):
                 del kwargs[key]
         for date in ('date', 'start_date', 'end_date'):
             if date in kwargs:
-                assert len(str(kwargs[date])) == 8 or len(str(kwargs[date])) == 10, f'Invalid date format: {kwargs[date]}'
+                assert len(str(kwargs[date])) == 8 or len(
+                    str(kwargs[date])) == 10, f'Invalid date format: {kwargs[date]}'
         if 'format' in kwargs and kwargs['format'] != 'json':
             del kwargs['format']
         kwargs['source'] = kwargs.get('source', 'pygeoglows')  # allow using default for specific apps which override
