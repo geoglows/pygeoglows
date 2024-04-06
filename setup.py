@@ -3,7 +3,7 @@ import re
 from setuptools import setup, find_packages
 
 NAME = 'geoglows'
-DESCRIPTION = 'Package for accessing data from the GEOGloWS V2 Hydrological Model'
+DESCRIPTION = 'Package for accessing data from the GEOGLOWS Hydrological Model'
 URL = 'https://data.geoglows.org'
 AUTHOR = 'Riley Hales PhD'
 REQUIRES_PYTHON = '>=3.10.0'
