@@ -13,7 +13,7 @@ with open("README.md", "r") as readme:
     LONG_DESCRIPTION = readme.read()
 
 with open(f'./{NAME}/__init__.py') as f:
-    version_pattern = r'__version__ = [\'"](\d+\.\d+\.\d+)[\'"]'
+    version_pattern = r'__version__ = [\'"](.+)[\'"]'
     VERSION = re.search(version_pattern, f.read()).group(1)
 
 with open('./requirements.txt') as f:
