@@ -8,7 +8,13 @@ import s3fs
 import xarray as xr
 
 from ._constants import METADATA_TABLE_LOCAL_PATH
-from .analyze import forecast_stats as calc_forecast_stats, simple_forecast as calc_simple_forecast
+from .analyze import (
+    simple_forecast as calc_simple_forecast,
+    forecast_stats as calc_forecast_stats,
+    daily_averages as calc_daily_averages,
+    monthly_averages as calc_monthly_averages,
+    annual_averages as calc_annual_averages,
+)
 
 __all__ = [
     'dates',
@@ -41,9 +47,12 @@ def _forecast_endpoint_decorator(function):
             warnings.warn('forecast_records are not available from the AWS Open Data Program.')
             return from_rest(*args, **kwargs)
 
+        reach_id = args[0] if len(args) > 0 else None
+        reach_id = kwargs.get('reach_id', '') if not reach_id else reach_id
+
         s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
-        date = kwargs.get('date', '')
-        if date is not None and not product_name == 'dates':
+        if kwargs.get('date', '') and not product_name == 'dates':
+            date = kwargs['date']
             if len(date) == 8:
                 date = f'{date}00.zarr'
             elif len(date) == 10:
@@ -56,9 +65,6 @@ def _forecast_endpoint_decorator(function):
                 return dates
             date = dates[-1]
         s3store = s3fs.S3Map(root=f'{ODP_FORECAST_S3_BUCKET_URI}/{date}', s3=s3, check=False)
-
-        reach_id = args[0] if len(args) > 0 else None
-        reach_id = kwargs.get('reach_id', '') if not reach_id else reach_id
 
         df = xr.open_zarr(s3store).sel(rivid=reach_id).to_dataframe().round(2).reset_index()
 
@@ -145,7 +151,10 @@ def _forecast_endpoint_decorator(function):
     def main(*args, **kwargs):
         source = kwargs.get('data_source', 'rest')
         assert source in ('rest', 'aws'), ValueError(f'Unrecognized data source requested: {source}')
-        return from_rest(*args, **kwargs) if source == 'rest' else from_aws(*args, **kwargs)
+        if source == 'rest':
+            return from_rest(*args, **kwargs)
+        else:
+            return from_aws(*args, **kwargs)
 
     return main
 
@@ -272,7 +281,7 @@ def daily_averages(reach_id: int or list) -> pd.DataFrame:
         pd.DataFrame
     """
     df = retrospective(reach_id)
-    return df.groupby(df.index.strftime('%m%d')).mean()
+    return calc_daily_averages(df)
 
 
 def monthly_averages(reach_id: int or list) -> pd.DataFrame:
@@ -286,7 +295,7 @@ def monthly_averages(reach_id: int or list) -> pd.DataFrame:
         pd.DataFrame
     """
     df = retrospective(reach_id)
-    return df.groupby(df.index.strftime('%m')).mean()
+    return calc_monthly_averages(df)
 
 
 def annual_averages(reach_id: int or list) -> pd.DataFrame:
@@ -300,7 +309,7 @@ def annual_averages(reach_id: int or list) -> pd.DataFrame:
         pd.DataFrame
     """
     df = retrospective(reach_id)
-    return df.groupby(df.index.strftime('%Y')).mean()
+    return calc_annual_averages(df)
 
 
 def return_periods(reach_id: int or list) -> pd.DataFrame:
