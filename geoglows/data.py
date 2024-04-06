@@ -8,6 +8,7 @@ import s3fs
 import xarray as xr
 
 from ._constants import METADATA_TABLE_LOCAL_PATH
+from .analyze import forecast_stats as calc_forecast_stats, simple_forecast as calc_simple_forecast
 
 __all__ = [
     'dates',
@@ -28,12 +29,56 @@ __all__ = [
 DEFAULT_REST_ENDPOINT = 'https://geoglows.ecmwf.int/api/'
 DEFAULT_REST_ENDPOINT_VERSION = 'v2'  # 'v1, v2, latest'
 ODP_CORE_S3_BUCKET_URI = 's3://geoglows-v2'
+ODP_FORECAST_S3_BUCKET_URI = 's3://geoglows-v2-forecasts'
 ODP_RETROSPECTIVE_S3_BUCKET_URI = 's3://geoglows-v2-retrospective'
 ODP_S3_BUCKET_REGION = 'us-west-2'
 
 
 def _forecast_endpoint_decorator(function):
-    def wrapper(*args, **kwargs):
+    def from_aws(*args, **kwargs):
+        product_name = function.__name__.replace("_", "").lower()
+        if product_name == 'forecastrecords':
+            warnings.warn('forecast_records are not available from the AWS Open Data Program.')
+            return from_rest(*args, **kwargs)
+
+        s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
+        date = kwargs.get('date', '')
+        if date is not None and not product_name == 'dates':
+            if len(date) == 8:
+                date = f'{date}00.zarr'
+            elif len(date) == 10:
+                date = f'{date}.zarr'
+            else:
+                raise ValueError('Date must be YYYYMMDD or YYYYMMDDHH format. Use dates() to view available data.')
+        else:
+            dates = sorted([x.split('/')[-1] for x in s3.ls(ODP_FORECAST_S3_BUCKET_URI)])
+            if product_name == 'dates':
+                return dates
+            date = dates[-1]
+        s3store = s3fs.S3Map(root=f'{ODP_FORECAST_S3_BUCKET_URI}/{date}', s3=s3, check=False)
+
+        reach_id = args[0] if len(args) > 0 else None
+        reach_id = kwargs.get('reach_id', '') if not reach_id else reach_id
+
+        df = xr.open_zarr(s3store).sel(rivid=reach_id).to_dataframe().round(2).reset_index()
+
+        # rename columns to match the REST API
+        if type(reach_id) is list:
+            df = df.pivot(columns='ensemble', index=['time', 'rivid'], values='Qout')
+        else:
+            df = df.pivot(index='time', columns='ensemble', values='Qout')
+        df = df[sorted(df.columns)]
+        df.columns = [f'ensemble_{str(x).zfill(2)}_cms' for x in df.columns]
+
+        if product_name == 'forecastensembles':
+            return df
+        elif product_name == 'forecaststats':
+            return calc_forecast_stats(df)
+        elif product_name == 'forecast':
+            return calc_simple_forecast(df)
+        return
+
+    def from_rest(*args, **kwargs):
         # update the default values set by the function unless the user has already specified them
         for key, value in function.__kwdefaults__.items() if function.__kwdefaults__ else []:
             if key not in kwargs:
@@ -97,7 +142,12 @@ def _forecast_endpoint_decorator(function):
         else:
             raise ValueError(f'Unsupported return format requested: {return_format}')
 
-    return wrapper
+    def main(*args, **kwargs):
+        source = kwargs.get('data_source', 'rest')
+        assert source in ('rest', 'aws'), ValueError(f'Unrecognized data source requested: {source}')
+        return from_rest(*args, **kwargs) if source == 'rest' else from_aws(*args, **kwargs)
+
+    return main
 
 
 # Forecast data and derived products
@@ -108,10 +158,10 @@ def dates(**kwargs) -> dict or str:
 
     Keyword Args:
         format: csv, json, or url, default csv
-        endpoint: the endpoint of an api instance, only applicable for package or rest endpoint developers
+        data_source: location to query for data, either 'rest' or 'aws'
 
     Returns:
-        pd.DataFrame or dict
+        dict or str
 
         the csv is a single column with a header of 'available_dates' and 1 row per date, sorted oldest to newest
         The dictionary structure is {'available_dates': ['list', 'of', 'dates', 'YYYYMMDD', 'format']}
@@ -128,7 +178,7 @@ def forecast(*, reach_id: int, **kwargs) -> pd.DataFrame or dict or str:
         reach_id: the ID of a stream, should be a 9 digit integer
         date: a string specifying the date to request in YYYYMMDD format, returns the latest available if not specified
         format: csv, json, or url, default csv
-        endpoint: the endpoint of an api instance, only applicable for package or rest endpoint developers
+        data_source: location to query for data, either 'rest' or 'aws'
 
     Returns:
         pd.DataFrame or dict or str
@@ -146,7 +196,7 @@ def forecast_stats(*, reach_id: int, **kwargs) -> pd.DataFrame or dict or str:
         reach_id: the ID of a stream, should be a 9 digit integer
         date: a string specifying the date to request in YYYYMMDD format, returns the latest available if not specified
         format: csv, json, or url, default csv
-        endpoint: the endpoint of an api instance, only applicable for package or rest endpoint developers
+        data_source: location to query for data, either 'rest' or 'aws'
 
     Returns:
         pd.DataFrame or dict or str
@@ -163,7 +213,7 @@ def forecast_ensembles(*, reach_id: int, **kwargs) -> pd.DataFrame or dict or st
         reach_id: the ID of a stream, should be a 9 digit integer
         date: a string specifying the date to request in YYYYMMDD format, returns the latest available if not specified
         format: csv, json, or url, default csv
-        endpoint: the endpoint of an api instance, only applicable for package or rest endpoint developers
+        data_source: location to query for data, either 'rest' or 'aws'
 
     Returns:
         pd.DataFrame or dict or str
@@ -181,11 +231,9 @@ def forecast_records(*, reach_id: int, **kwargs) -> pd.DataFrame or dict or str:
         start_date: a YYYYMMDD string giving the earliest date this year to include, defaults to YYYY0101
         end_date: a YYYYMMDD string giving the latest date this year to include, defaults to latest available
         format: csv, json, or url, default csv
-        endpoint: the endpoint of an api instance, only applicable for package or rest endpoint developers
 
     Returns:
         pd.DataFrame or dict or str
-
     """
     pass
 
