@@ -131,7 +131,8 @@ def annual_averages(df: pd.DataFrame) -> pd.DataFrame:
         pandas DataFrame with an index of "%Y" values for each year
     """
     # select years with >= 365 entries
-    return df.groupby(df.index.strftime('%Y')).filter(lambda x: len(x) >= 365).mean()
+    df = df.groupby(df.index.strftime('%Y')).filter(lambda x: len(x) >= 365)
+    return df.groupby(df.index.strftime('%Y')).mean()
 
 
 def daily_variance(df: pd.DataFrame) -> pd.DataFrame:
