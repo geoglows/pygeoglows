@@ -1,16 +1,12 @@
-import json
-import os
-
-import jinja2
 import pandas as pd
 
 __all__ = [
-    'probabilities_table',
-    'return_periods_table',
+    'flood_probabilities',
+    'return_periods',
 ]
 
 
-def probabilities_table(ensem: pd.DataFrame, rperiods: pd.DataFrame) -> str:
+def flood_probabilities(ensem: pd.DataFrame, rperiods: pd.DataFrame) -> str:
     """
     Processes the results of forecast_ensembles and return_periods and shows the probabilities of exceeding the
     return period flow on each day.
@@ -34,56 +30,36 @@ def probabilities_table(ensem: pd.DataFrame, rperiods: pd.DataFrame) -> str:
     percent_series = percent_series.round(1)
     percent_series = percent_series.reset_index()
 
-    # style column background based the the column name and the opacity of the color based on the value
     colors = {
-        'Date': 'rgba(0, 0, 0, 0)',
-        '2 Year': 'rgba(0, 0, 255, {0})',
-        '5 Year': 'rgba(0, 255, 0, {0})',
-        '10 Year': 'rgba(255, 255, 0, {0})',
-        '25 Year': 'rgba(255, 165, 0, {0})',
-        '50 Year': 'rgba(255, 0, 0, {0})',
-        '100 Year': 'rgba(128, 0, 128, {0})',
+        '2 Year': 'rgba(254, 240, 1, {0})',
+        '5 Year': 'rgba(253, 154, 1, {0})',
+        '10 Year': 'rgba(255, 56, 5, {0})',
+        '20 Year': 'rgba(128, 0, 246, {0})',
+        '25 Year': 'rgba(255, 0, 0, {0})',
+        '50 Year': 'rgba(128, 0, 106, {0})',
+        '100 Year': 'rgba(128, 0, 246, {0})',
     }
 
-    def _apply_column_wise_colors(x):
-        return [f'background-color: {colors[x.name].format(round(val * 0.0065, 2))}' for col, val in x.items()]
+    headers = "".join([f'<th>{x}</th>' for x in percent_series.columns])
+    rows = []
+    for row_idx, row in enumerate(percent_series.values.tolist()):
+        cells = []
+        for col_idx, cell in enumerate(row):
+            if col_idx == 0:
+                cells.append(f'<td>{cell}</td>')
+                continue
+            column_name = percent_series.columns[col_idx]
+            stylestring = f'background-color: {colors[column_name].format(round(cell * 0.005, 2))}'
+            cells.append(f'<td style="{stylestring}">{cell}</td>')
+        rows.append(f'<tr>{"".join(cells)}</tr>')
+    rows = "".join(rows)
 
-    # fill the dataframe with random values between 0 and 100 for testing purposes
-    import numpy as np
-    percent_series = pd.DataFrame(np.random.randint(0, 100, size=percent_series.shape), columns=percent_series.columns)
-
-    percent_series = percent_series.style.apply(_apply_column_wise_colors, axis=0, subset=percent_series.columns[1:])
-
-    # rows = ''.join([f"<tr>{''.join([f'<td>{x}</td>' for x in row])}</tr>" for row in percent_series.values.tolist()])
-    # headers = "".join([f'<th>{x}</th>' for x in percent_series.columns])
-    # rows = []
-    # for row_idx, row in enumerate(percent_series.values.tolist()):
-    #     cells = []
-    #     for col_idx, cell in enumerate(row):
-    #         cells.append(f'<td class="cell cell-{col_idx} row row-{row_idx}">{cell}</td>')
-    #     rows.append(f'<tr>{"".join(cells)}</tr>')
-    # rows = "".join(rows)
-    #
-    # return f"""
-    # <div class="forecast-probabilities-table">Percent of Ensembles that Exceed Return Periods</div>
-    # <table id="probabilities_table" align="center"><tbody>{headers}{rows}</tbody></table>
-    # """
-    # return percent_series.to_html(index=False)
-    string = percent_series.to_html(index=False)
-    # replace the id tags with a style tag containing the styles applied to that id
-    # use a regular expression to find the id="*" and class="*"> and replace with style="*"
-    import re
-    all_id_tags = re.findall(r'id=".*?"', string)
-    for idname in all_id_tags:
-        # find the contents of the multiline string that goes #idname { * } and replace the id tag with style="*"
-        css_string = re.search(rf'{idname} {{.*?}}', _apply_column_wise_colors.__doc__, re.DOTALL).group()
-        string = string.replace(idname, f'style="{idname[4:-1]}"')
+    return f'<table id="probabilities_table" align="center"><tbody><tr>{headers}</tr>{rows}</tbody></table>'
 
 
-def return_periods_table(rperiods: pd.DataFrame) -> str:
+def return_periods(rperiods: pd.DataFrame) -> str:
     """
-    Processes the dataframe response from the return_periods function and uses jinja2 to render an html string for a
-    table showing each of the return periods
+    Makes an html string of a table of return periods and river id numbers
 
     Args:
         rperiods: the dataframe from the return periods function
@@ -91,22 +67,32 @@ def return_periods_table(rperiods: pd.DataFrame) -> str:
     Returns:
         string of html
     """
+    colors = {
+        '2 Year': 'rgba(254, 240, 1, .4)',
+        '5 Year': 'rgba(253, 154, 1, .4)',
+        '10 Year': 'rgba(255, 56, 5, .4)',
+        '20 Year': 'rgba(128, 0, 246, .4)',
+        '25 Year': 'rgba(255, 0, 0, .4)',
+        '50 Year': 'rgba(128, 0, 106, .4)',
+        '100 Year': 'rgba(128, 0, 246, .4)',
+    }
+    rperiods = rperiods.astype(float).round(2).astype(str)
+    rperiods.columns = [f'{c} Year' for c in rperiods.columns]
+    rperiods.index = rperiods.index.astype(int).astype(str)
+    rperiods = rperiods.reset_index()
 
-    # find the correct template to render
-    path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates', 'return_periods_table.html'))
-    # work on a copy of the dataframe so you dont ruin the original
-    tmp = rperiods
-    reach_id = str(tmp.index[0])
-    js = json.loads(tmp.to_json())
-    rp = {}
-    for i in js:
-        if i.startswith('return_period'):
-            year = i.split('_')[-1]
-            rp[f'{year} Year'] = js[i][reach_id]
-        elif i == 'max_flow':
-            rp['Max Simulated Flow'] = js[i][reach_id]
+    headers = "".join([f'<th>{x}</th>' for x in rperiods.columns])
+    rows = []
+    for row in rperiods.values.tolist():
+        cells = []
+        for col_idx, cell in enumerate(row):
+            if col_idx == 0:
+                cells.append(f'<td>{cell}</td>')
+                continue
+            column_name = rperiods.columns[col_idx]
+            stylestring = f'background-color: {colors[column_name]}'
+            cells.append(f'<td style="{stylestring}">{cell}</td>')
+        rows.append(f'<tr>{"".join(cells)}</tr>')
+    rows = "".join(rows)
 
-    rp = {key: round(value, 2) for key, value in sorted(rp.items(), key=lambda item: item[1])}
-
-    with open(path) as template:
-        return jinja2.Template(template.read()).render(reach_id=reach_id, rp=rp, colors=_plot_colors())
+    return f'<table id="return_periods_table" align="center"><tbody><tr>{headers}</tr>{rows}</tbody></table>'
