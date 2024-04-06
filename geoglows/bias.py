@@ -166,8 +166,10 @@ def _flow_and_probability_mapper(monthly_data: pd.DataFrame, to_probability: boo
     # interpolated function to convert simulated streamflow to prob
     if to_probability:
         if extrapolate:
-            return interpolate.interp1d(bin_edges, cdf, fill_value='extrapolate')
-        return interpolate.interp1d(bin_edges, cdf)
+            func = interpolate.interp1d(bin_edges, cdf, fill_value='extrapolate')
+        else:
+            func = interpolate.interp1d(bin_edges, cdf)
+        return lambda x: np.clip(func(x), 0, 1)
     # interpolated function to convert simulated prob to observed streamflow
     elif to_flow:
         if extrapolate:
