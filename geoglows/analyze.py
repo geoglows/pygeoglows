@@ -5,6 +5,8 @@ import pandas as pd
 
 __all__ = [
     'gumbel1',
+    'simple_forecast',
+    'forecast_stats',
     'daily_averages',
     'monthly_averages',
     'annual_averages',
@@ -51,6 +53,45 @@ def simple_forecast(ens: pd.DataFrame) -> pd.DataFrame:
         f'flow_uncertainty_lower_cms': np.nanpercentile(df.values, 20, axis=1),
     }, index=df.index)
     return df
+
+
+def forecast_stats(ens: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculates the statistics for a dataframe of forecast ensembles
+
+    Args:
+        ens: a dataframe of forecast ensembles
+
+    Returns:
+        pandas DataFrame with an index of datetime and columns min, max, mean, median, 25%, 75%
+    """
+    df = (
+        ens
+        .drop(columns=['ensemble_52_cms'])
+        .dropna()
+    )
+    return (
+        pd
+        .DataFrame(
+            {
+                'flow_min_cms': df.min(axis=1),
+                'flow_25p_cms': df.quantile(.25, axis=1),
+                'flow_avg_cms': df.mean(axis=1),
+                'flow_med_cms': df.median(axis=1),
+                'flow_75p_cms': df.quantile(.75, axis=1),
+                'flow_max_cms': df.max(axis=1),
+            },
+            index=df.index
+        )
+        .merge(
+            ens[['ensemble_52_cms']]
+            .rename(columns={'ensemble_52_cms': 'high_res_cms'}),
+            left_index=True,
+            right_index=True,
+            how='outer'
+        )
+        .sort_index(ascending=True)
+    )
 
 
 def daily_averages(df: pd.DataFrame) -> pd.DataFrame:
