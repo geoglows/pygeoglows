@@ -61,8 +61,8 @@ def forecast(df: pd.DataFrame, *,
     ]
 
     if rp_df is not None:
-        # todo
-        ...
+        rperiod_scatters = _rperiod_scatters(df.index[0], df.index[-1], rp_df, df['flow_uncertainty_upper_cms'].max())
+        scatter_traces += rperiod_scatters
 
     layout = go.Layout(
         title=build_title('Forecasted Streamflow', plot_titles),
@@ -241,6 +241,7 @@ def forecast_ensembles(df: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_tit
             name='Ensemble ' + str(i),
             x=plot_data['x_1-51'],
             y=plot_data[f'ensemble_{i:02}_cms'],
+            legendgroup='Ensemble Members'
         ))
     scatter_plots += rperiod_scatters
 

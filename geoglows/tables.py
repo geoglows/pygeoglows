@@ -1,4 +1,3 @@
-import datetime
 import json
 import os
 
@@ -11,72 +10,74 @@ __all__ = [
 ]
 
 
-def probabilities_table(stats: pd.DataFrame, ensem: pd.DataFrame, rperiods: pd.DataFrame) -> str:
+def probabilities_table(ensem: pd.DataFrame, rperiods: pd.DataFrame) -> str:
     """
-    Processes the results of forecast_stats , forecast_ensembles, and return_periods and uses jinja2 template
-    rendering to generate html code that shows the probabilities of exceeding the return period flow on each day.
+    Processes the results of forecast_ensembles and return_periods and shows the probabilities of exceeding the
+    return period flow on each day.
 
     Args:
-        stats: the csv response from forecast_stats
         ensem: the csv response from forecast_ensembles
         rperiods: the csv response from return_periods
 
     Return:
          string containing html to build a table with a row of dates and for exceeding each return period threshold
     """
-    dates = stats.index.tolist()
-    startdate = dates[0]
-    enddate = dates[-1]
-    span = enddate - startdate
-    uniqueday = [startdate + datetime.timedelta(days=i) for i in range(span.days + 2)]
-    # get the return periods for the stream reach
-    rp2 = rperiods['return_period_2'].values
-    rp5 = rperiods['return_period_5'].values
-    rp10 = rperiods['return_period_10'].values
-    rp25 = rperiods['return_period_25'].values
-    rp50 = rperiods['return_period_50'].values
-    rp100 = rperiods['return_period_100'].values
-    # fill the lists of things used as context in rendering the template
-    days = []
-    r2 = []
-    r5 = []
-    r10 = []
-    r25 = []
-    r50 = []
-    r100 = []
-    for i in range(len(uniqueday) - 1):  # (-1) omit the extra day used for reference only
-        tmp = ensem.loc[uniqueday[i]:uniqueday[i + 1]]
-        days.append(uniqueday[i].strftime('%b %d'))
-        num2 = 0
-        num5 = 0
-        num10 = 0
-        num25 = 0
-        num50 = 0
-        num100 = 0
-        for column in tmp:
-            column_max = tmp[column].to_numpy().max()
-            if column_max > rp100:
-                num100 += 1
-            if column_max > rp50:
-                num50 += 1
-            if column_max > rp25:
-                num25 += 1
-            if column_max > rp10:
-                num10 += 1
-            if column_max > rp5:
-                num5 += 1
-            if column_max > rp2:
-                num2 += 1
-        r2.append(round(num2 * 100 / 52))
-        r5.append(round(num5 * 100 / 52))
-        r10.append(round(num10 * 100 / 52))
-        r25.append(round(num25 * 100 / 52))
-        r50.append(round(num50 * 100 / 52))
-        r100.append(round(num100 * 100 / 52))
-    path = os.path.abspath(os.path.join(os.path.dirname(__file__), 'templates', 'probabilities_table.html'))
-    with open(path) as template:
-        return jinja2.Template(template.read()).render(days=days, r2=r2, r5=r5, r10=r10, r25=r25, r50=r50, r100=r100,
-                                                       colors=_plot_colors())
+    ens = ensem.drop(columns=['ensemble_52_cms']).dropna()
+    ens = ens.groupby(ens.index.date).max()
+    ens.index = pd.to_datetime(ens.index).strftime('%Y-%m-%d')
+    # for each return period, get the percentage of columns with a value greater than the return period on each day
+    percent_series = {rp: (ens > rperiods[rp].values[0]).mean(axis=1).values.tolist() for rp in rperiods}
+    percent_series = pd.DataFrame(percent_series, index=ens.index)
+    percent_series.index.name = 'Date'
+    percent_series.columns = [f'{c} Year' for c in percent_series.columns]
+    percent_series = percent_series * 100
+    percent_series = percent_series.round(1)
+    percent_series = percent_series.reset_index()
+
+    # style column background based the the column name and the opacity of the color based on the value
+    colors = {
+        'Date': 'rgba(0, 0, 0, 0)',
+        '2 Year': 'rgba(0, 0, 255, {0})',
+        '5 Year': 'rgba(0, 255, 0, {0})',
+        '10 Year': 'rgba(255, 255, 0, {0})',
+        '25 Year': 'rgba(255, 165, 0, {0})',
+        '50 Year': 'rgba(255, 0, 0, {0})',
+        '100 Year': 'rgba(128, 0, 128, {0})',
+    }
+
+    def _apply_column_wise_colors(x):
+        return [f'background-color: {colors[x.name].format(round(val * 0.0065, 2))}' for col, val in x.items()]
+
+    # fill the dataframe with random values between 0 and 100 for testing purposes
+    import numpy as np
+    percent_series = pd.DataFrame(np.random.randint(0, 100, size=percent_series.shape), columns=percent_series.columns)
+
+    percent_series = percent_series.style.apply(_apply_column_wise_colors, axis=0, subset=percent_series.columns[1:])
+
+    # rows = ''.join([f"<tr>{''.join([f'<td>{x}</td>' for x in row])}</tr>" for row in percent_series.values.tolist()])
+    # headers = "".join([f'<th>{x}</th>' for x in percent_series.columns])
+    # rows = []
+    # for row_idx, row in enumerate(percent_series.values.tolist()):
+    #     cells = []
+    #     for col_idx, cell in enumerate(row):
+    #         cells.append(f'<td class="cell cell-{col_idx} row row-{row_idx}">{cell}</td>')
+    #     rows.append(f'<tr>{"".join(cells)}</tr>')
+    # rows = "".join(rows)
+    #
+    # return f"""
+    # <div class="forecast-probabilities-table">Percent of Ensembles that Exceed Return Periods</div>
+    # <table id="probabilities_table" align="center"><tbody>{headers}{rows}</tbody></table>
+    # """
+    # return percent_series.to_html(index=False)
+    string = percent_series.to_html(index=False)
+    # replace the id tags with a style tag containing the styles applied to that id
+    # use a regular expression to find the id="*" and class="*"> and replace with style="*"
+    import re
+    all_id_tags = re.findall(r'id=".*?"', string)
+    for idname in all_id_tags:
+        # find the contents of the multiline string that goes #idname { * } and replace the id tag with style="*"
+        css_string = re.search(rf'{idname} {{.*?}}', _apply_column_wise_colors.__doc__, re.DOTALL).group()
+        string = string.replace(idname, f'style="{idname[4:-1]}"')
 
 
 def return_periods_table(rperiods: pd.DataFrame) -> str:

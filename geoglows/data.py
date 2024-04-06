@@ -7,7 +7,7 @@ import requests
 import s3fs
 import xarray as xr
 
-from ._constants import METADATA_TABLE_LOCAL_PATH, s3_metadata_tables
+from ._constants import METADATA_TABLE_LOCAL_PATH
 
 __all__ = [
     'dates',
@@ -204,8 +204,8 @@ def retrospective(reach_id: int or list) -> pd.DataFrame:
     """
     s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
     s3store = s3fs.S3Map(root=f'{ODP_RETROSPECTIVE_S3_BUCKET_URI}/retrospective.zarr', s3=s3, check=False)
-    return xr.open_zarr(s3store).sel(rivid=reach_id).to_dataframe().reset_index().set_index('time').pivot(
-        columns='rivid', values='Qout')
+    return (xr.open_zarr(s3store).sel(rivid=reach_id).to_dataframe().reset_index().set_index('time')
+            .pivot(columns='rivid', values='Qout'))
 
 
 def historical(*args, **kwargs):
@@ -267,11 +267,12 @@ def return_periods(reach_id: int or list) -> pd.DataFrame:
     """
     s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
     s3store = s3fs.S3Map(root=f'{ODP_RETROSPECTIVE_S3_BUCKET_URI}/return-periods.zarr', s3=s3, check=False)
-    return xr.open_zarr(s3store).sel(rivid=reach_id).to_dataframe()
+    return (xr.open_zarr(s3store).sel(rivid=reach_id)['return_period_flow'].to_dataframe().reset_index()
+            .pivot(index='rivid', columns='return_period', values='return_period_flow'))
 
 
 # model config and supplementary data
-def metadata_tables(columns: list = None, cache: bool = False) -> pd.DataFrame or None:
+def metadata_tables(columns: list = None, cache: bool = True) -> pd.DataFrame:
     """
     Retrieves the master table of stream reaches with all metadata and properties as a pandas DataFrame
     Args:
@@ -281,18 +282,19 @@ def metadata_tables(columns: list = None, cache: bool = False) -> pd.DataFrame o
     Returns:
         pd.DataFrame
     """
-    warn = """
-    Local copy of geoglows v2 metadata table not found. This can be queried online on demand but you should download a 
-    copy for optimal performance and to make the data available when you are offline. Please download the table using 
-    the function `geoglows.data.metadata_tables(cache=True)`. It requires about 400MB of disk space.
-    """
     if os.path.exists(METADATA_TABLE_LOCAL_PATH):
         return pd.read_parquet(METADATA_TABLE_LOCAL_PATH, columns=columns)
+    warn = f"""
+    Local copy of geoglows v2 metadata table not found. You should download a copy for optimal performance and 
+    to make the data available when you are offline. A copy of the table will be cached at {METADATA_TABLE_LOCAL_PATH}.
+    """
     warnings.warn(warn)
-    df = pd.read_parquet(s3_metadata_tables[0], columns=columns)
-    for table in s3_metadata_tables[1:]:
-        df = df.merge(pd.read_parquet(table, columns=columns), left_on='LINKNO', right_on='LINKNO', how='inner')
-    if cache and columns is None:
-        os.makedirs(os.path.dirname(METADATA_TABLE_LOCAL_PATH), exist_ok=True)
+    model_df = pd.read_parquet('http://geoglows-v2.s3-us-west-2.amazonaws.com/tables/v2-model-table.parquet',
+                               columns=['LINKNO', 'VPUCode'])
+    gis_df = pd.read_parquet('http://geoglows-v2.s3-us-west-2.amazonaws.com/tables/v2-countries-table.parquet',
+                             columns=['LINKNO', 'lat', 'lon'])
+    os.makedirs(os.path.dirname(METADATA_TABLE_LOCAL_PATH), exist_ok=True)
+    df = model_df.merge(gis_df, on='LINKNO')
+    if cache:
         df.to_parquet(METADATA_TABLE_LOCAL_PATH)
-    return df
+    return df[columns] if columns else df
