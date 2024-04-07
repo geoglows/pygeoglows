@@ -40,17 +40,17 @@ def simple_forecast(ens: pd.DataFrame) -> pd.DataFrame:
         ens: a dataframe of forecast ensembles
 
     Returns:
-        pandas DataFrame with an index of datetime and columns labeled 'min', 'max', 'mean', 'median'
+        pandas DataFrame with datetime index and columns flow_uncertainty_upper, flow_median, flow_uncertainty_lower
     """
     df = (
         ens
-        .drop(columns=['ensemble_52_cms'])
+        .drop(columns=['ensemble_52'])
         .dropna()
     )
     df = pd.DataFrame({
-        f'flow_uncertainty_upper_cms': np.nanpercentile(df.values, 80, axis=1),
-        f'flow_median_cms': np.median(df.values, axis=1),
-        f'flow_uncertainty_lower_cms': np.nanpercentile(df.values, 20, axis=1),
+        f'flow_uncertainty_upper': np.nanpercentile(df.values, 80, axis=1),
+        f'flow_median': np.median(df.values, axis=1),
+        f'flow_uncertainty_lower': np.nanpercentile(df.values, 20, axis=1),
     }, index=df.index)
     return df
 
@@ -67,25 +67,25 @@ def forecast_stats(ens: pd.DataFrame) -> pd.DataFrame:
     """
     df = (
         ens
-        .drop(columns=['ensemble_52_cms'])
+        .drop(columns=['ensemble_52'])
         .dropna()
     )
     return (
         pd
         .DataFrame(
             {
-                'flow_min_cms': df.min(axis=1),
-                'flow_25p_cms': df.quantile(.25, axis=1),
-                'flow_avg_cms': df.mean(axis=1),
-                'flow_med_cms': df.median(axis=1),
-                'flow_75p_cms': df.quantile(.75, axis=1),
-                'flow_max_cms': df.max(axis=1),
+                'flow_min': df.min(axis=1),
+                'flow_25p': df.quantile(.25, axis=1),
+                'flow_avg': df.mean(axis=1),
+                'flow_med': df.median(axis=1),
+                'flow_75p': df.quantile(.75, axis=1),
+                'flow_max': df.max(axis=1),
             },
             index=df.index
         )
         .merge(
-            ens[['ensemble_52_cms']]
-            .rename(columns={'ensemble_52_cms': 'high_res_cms'}),
+            ens[['ensemble_52']]
+            .rename(columns={'ensemble_52': 'high_res'}),
             left_index=True,
             right_index=True,
             how='outer'

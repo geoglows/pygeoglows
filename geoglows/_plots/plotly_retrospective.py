@@ -17,7 +17,7 @@ __all__ = [
 
 
 def retrospective(retro: pd.DataFrame, *,
-                  rp_df: pd.DataFrame = None, plot_titles: list = None, ) -> go.Figure:
+                  rp_df: pd.DataFrame = None, plot_titles: dict = None, ) -> go.Figure:
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 

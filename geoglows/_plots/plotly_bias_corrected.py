@@ -1,7 +1,6 @@
 import hydrostats.data as hd
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.graph_objs as go
 import scipy.stats
 from plotly.offline import plot as offline_plot
 
@@ -23,7 +22,7 @@ def corrected_historical(corrected: pd.DataFrame, simulated: pd.DataFrame, obser
                          rperiods: pd.DataFrame = None, plot_titles: list = None,
                          plot_type: str = 'plotly') -> go.Figure or str:
     """
-    Creates a plot of corrected discharge, observered discharge, and simulated discharge
+    Creates a plot of corrected discharge, observed discharge, and simulated discharge
 
     Args:
         corrected: the response from the geoglows.bias.correct_historical_simulation function\

@@ -18,7 +18,7 @@ def flood_probabilities(ensem: pd.DataFrame, rperiods: pd.DataFrame) -> str:
     Return:
          string containing html to build a table with a row of dates and for exceeding each return period threshold
     """
-    ens = ensem.drop(columns=['ensemble_52_cms']).dropna()
+    ens = ensem.drop(columns=['ensemble_52']).dropna()
     ens = ens.groupby(ens.index.date).max()
     ens.index = pd.to_datetime(ens.index).strftime('%Y-%m-%d')
     # for each return period, get the percentage of columns with a value greater than the return period on each day

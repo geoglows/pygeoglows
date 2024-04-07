@@ -29,14 +29,14 @@ def forecast(df: pd.DataFrame, *,
     scatter_traces = [
         go.Scatter(
             x=df.index,
-            y=df['flow_median_cms'],
+            y=df['flow_median'],
             name='Streamflow (Median)',
             line=dict(color='black'),
         ),
         go.Scatter(
             name='Uncertainty Bounds',
             x=np.concatenate([df.index.values, df.index.values[::-1]]),
-            y=np.concatenate([df['flow_uncertainty_upper_cms'], df['flow_uncertainty_lower_cms'][::-1]]),
+            y=np.concatenate([df['flow_uncertainty_upper'], df['flow_uncertainty_lower'][::-1]]),
             legendgroup='uncertainty',
             showlegend=True,
             fill='toself',
@@ -45,7 +45,7 @@ def forecast(df: pd.DataFrame, *,
         go.Scatter(
             name='Uncertainty Upper Bounds (80%)',
             x=df.index,
-            y=df['flow_uncertainty_upper_cms'],
+            y=df['flow_uncertainty_upper'],
             legendgroup='uncertainty',
             showlegend=False,
             line=dict(color='lightblue', dash='dash')
@@ -53,7 +53,7 @@ def forecast(df: pd.DataFrame, *,
         go.Scatter(
             name='Uncertainty Lower Bounds (20%)',
             x=df.index,
-            y=df['flow_uncertainty_lower_cms'],
+            y=df['flow_uncertainty_lower'],
             legendgroup='uncertainty',
             showlegend=False,
             line=dict(color='lightblue', dash='dash')
@@ -61,7 +61,7 @@ def forecast(df: pd.DataFrame, *,
     ]
 
     if rp_df is not None:
-        rperiod_scatters = _rperiod_scatters(df.index[0], df.index[-1], rp_df, df['flow_uncertainty_upper_cms'].max())
+        rperiod_scatters = _rperiod_scatters(df.index[0], df.index[-1], rp_df, df['flow_uncertainty_upper'].max())
         scatter_traces += rperiod_scatters
 
     layout = go.Layout(
@@ -95,16 +95,16 @@ def forecast_stats(df: pd.DataFrame, *,
     enddate = dates[-1]
 
     plot_data = {
-        'x_stats': df['flow_avg_cms'].dropna(axis=0).index.tolist(),
-        'x_hires': df['high_res_cms'].dropna(axis=0).index.tolist(),
-        'y_max': max(df['flow_max_cms']),
-        'flow_max': list(df['flow_max_cms'].dropna(axis=0)),
-        'flow_75%': list(df['flow_75p_cms'].dropna(axis=0)),
-        'flow_avg': list(df['flow_avg_cms'].dropna(axis=0)),
-        'flow_med': list(df['flow_med_cms'].dropna(axis=0)),
-        'flow_25%': list(df['flow_25p_cms'].dropna(axis=0)),
-        'flow_min': list(df['flow_min_cms'].dropna(axis=0)),
-        'high_res': list(df['high_res_cms'].dropna(axis=0)),
+        'x_stats': df['flow_avg'].dropna(axis=0).index.tolist(),
+        'x_hires': df['high_res'].dropna(axis=0).index.tolist(),
+        'y_max': max(df['flow_max']),
+        'flow_max': list(df['flow_max'].dropna(axis=0)),
+        'flow_75%': list(df['flow_75p'].dropna(axis=0)),
+        'flow_avg': list(df['flow_avg'].dropna(axis=0)),
+        'flow_med': list(df['flow_med'].dropna(axis=0)),
+        'flow_25%': list(df['flow_25p'].dropna(axis=0)),
+        'flow_min': list(df['flow_min'].dropna(axis=0)),
+        'high_res': list(df['high_res'].dropna(axis=0)),
     }
 
     maxmin_visible = True if show_maxmin else 'legendonly'
@@ -212,8 +212,8 @@ def forecast_ensembles(df: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_tit
 
     # process the series' components and store them in a dictionary
     plot_data = {
-        'x_1-51': df['ensemble_01_cms'].dropna(axis=0).index.tolist(),
-        'x_52': df['ensemble_52_cms'].dropna(axis=0).index.tolist(),
+        'x_1-51': df['ensemble_01'].dropna(axis=0).index.tolist(),
+        'x_52': df['ensemble_52'].dropna(axis=0).index.tolist(),
     }
 
     # add a dictionary entry for each of the ensemble members. the key for each series is the integer ensemble number
@@ -232,7 +232,7 @@ def forecast_ensembles(df: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_tit
     scatter_plots.append(go.Scatter(
         name='High Resolution Forecast',
         x=plot_data['x_52'],
-        y=plot_data['ensemble_52_cms'],
+        y=plot_data['ensemble_52'],
         line=dict(color='black')
     ))
     # create a line for the rest of the ensembles (1-51)
@@ -240,7 +240,7 @@ def forecast_ensembles(df: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_tit
         scatter_plots.append(go.Scatter(
             name='Ensemble ' + str(i),
             x=plot_data['x_1-51'],
-            y=plot_data[f'ensemble_{i:02}_cms'],
+            y=plot_data[f'ensemble_{i:02}'],
             legendgroup='Ensemble Members'
         ))
     scatter_plots += rperiod_scatters

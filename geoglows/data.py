@@ -74,7 +74,7 @@ def _forecast_endpoint_decorator(function):
         else:
             df = df.pivot(index='time', columns='ensemble', values='Qout')
         df = df[sorted(df.columns)]
-        df.columns = [f'ensemble_{str(x).zfill(2)}_cms' for x in df.columns]
+        df.columns = [f'ensemble_{str(x).zfill(2)}' for x in df.columns]
 
         if product_name == 'forecastensembles':
             return df
@@ -329,7 +329,7 @@ def return_periods(reach_id: int or list) -> pd.DataFrame:
 
 
 # model config and supplementary data
-def metadata_tables(columns: list = None, cache: bool = True) -> pd.DataFrame:
+def metadata_tables(columns: list = None) -> pd.DataFrame:
     """
     Retrieves the master table of stream reaches with all metadata and properties as a pandas DataFrame
     Args:
@@ -352,6 +352,5 @@ def metadata_tables(columns: list = None, cache: bool = True) -> pd.DataFrame:
                              columns=['LINKNO', 'lat', 'lon'])
     os.makedirs(os.path.dirname(METADATA_TABLE_LOCAL_PATH), exist_ok=True)
     df = model_df.merge(gis_df, on='LINKNO')
-    if cache:
-        df.to_parquet(METADATA_TABLE_LOCAL_PATH)
+    df.to_parquet(METADATA_TABLE_LOCAL_PATH)
     return df[columns] if columns else df
