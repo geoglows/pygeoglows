@@ -334,7 +334,6 @@ def metadata_tables(columns: list = None) -> pd.DataFrame:
     Retrieves the master table of stream reaches with all metadata and properties as a pandas DataFrame
     Args:
         columns: optional subset of columns names to read from the parquet
-        cache: if True, saves the master table to the local data directory
 
     Returns:
         pd.DataFrame
@@ -346,11 +345,7 @@ def metadata_tables(columns: list = None) -> pd.DataFrame:
     to make the data available when you are offline. A copy of the table will be cached at {METADATA_TABLE_LOCAL_PATH}.
     """
     warnings.warn(warn)
-    model_df = pd.read_parquet('http://geoglows-v2.s3-us-west-2.amazonaws.com/tables/v2-model-table.parquet',
-                               columns=['LINKNO', 'VPUCode'])
-    gis_df = pd.read_parquet('http://geoglows-v2.s3-us-west-2.amazonaws.com/tables/v2-countries-table.parquet',
-                             columns=['LINKNO', 'lat', 'lon'])
+    df = pd.read_parquet('s3://geoglows-v2/tables/package-metadata-table.parquet')
     os.makedirs(os.path.dirname(METADATA_TABLE_LOCAL_PATH), exist_ok=True)
-    df = model_df.merge(gis_df, on='LINKNO')
     df.to_parquet(METADATA_TABLE_LOCAL_PATH)
     return df[columns] if columns else df
