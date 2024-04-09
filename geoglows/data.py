@@ -7,7 +7,7 @@ import requests
 import s3fs
 import xarray as xr
 
-from ._constants import METADATA_TABLE_LOCAL_PATH
+from ._constants import METADATA_TABLE_PATH
 from .analyze import (
     simple_forecast as calc_simple_forecast,
     forecast_stats as calc_forecast_stats,
@@ -342,14 +342,14 @@ def metadata_tables(columns: list = None) -> pd.DataFrame:
     Returns:
         pd.DataFrame
     """
-    if os.path.exists(METADATA_TABLE_LOCAL_PATH):
-        return pd.read_parquet(METADATA_TABLE_LOCAL_PATH, columns=columns)
+    if os.path.exists(METADATA_TABLE_PATH):
+        return pd.read_parquet(METADATA_TABLE_PATH, columns=columns)
     warn = f"""
     Local copy of geoglows v2 metadata table not found. You should download a copy for optimal performance and 
-    to make the data available when you are offline. A copy of the table will be cached at {METADATA_TABLE_LOCAL_PATH}.
+    to make the data available when you are offline. A copy of the table will be cached at {METADATA_TABLE_PATH}.
     """
     warnings.warn(warn)
     df = pd.read_parquet('https://geoglows-v2.s3-website-us-west-2.amazonaws.com/tables/package-metadata-table.parquet')
-    os.makedirs(os.path.dirname(METADATA_TABLE_LOCAL_PATH), exist_ok=True)
-    df.to_parquet(METADATA_TABLE_LOCAL_PATH)
+    os.makedirs(os.path.dirname(METADATA_TABLE_PATH), exist_ok=True)
+    df.to_parquet(METADATA_TABLE_PATH)
     return df[columns] if columns else df
