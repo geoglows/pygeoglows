@@ -69,7 +69,7 @@ def _forecast_endpoint_decorator(function):
         df = xr.open_zarr(s3store).sel(rivid=reach_id).to_dataframe().round(2).reset_index()
 
         # rename columns to match the REST API
-        if type(reach_id) is list:
+        if isinstance(reach_id, list):
             df = df.pivot(columns='ensemble', index=['time', 'rivid'], values='Qout')
         else:
             df = df.pivot(index='time', columns='ensemble', values='Qout')
@@ -149,13 +149,12 @@ def _forecast_endpoint_decorator(function):
             raise ValueError(f'Unsupported return format requested: {return_format}')
 
     def main(*args, **kwargs):
-        source = kwargs.get('data_source', 'rest')
+        source = kwargs.get('data_source', 'aws')
         assert source in ('rest', 'aws'), ValueError(f'Unrecognized data source requested: {source}')
         if source == 'rest':
             return from_rest(*args, **kwargs)
         else:
             return from_aws(*args, **kwargs)
-
     return main
 
 

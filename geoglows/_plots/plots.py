@@ -14,6 +14,18 @@ from .plotly_retrospective import (
     annual_averages as plotly_annual_averages
 )
 
+__all__ = [
+    'forecast',
+    'forecast_stats',
+    'forecast_ensembles',
+    'retrospective',
+    'daily_averages',
+    'monthly_averages',
+    'annual_averages',
+    'daily_variance',
+    'flow_duration_curve',
+]
+
 
 def forecast(df: pd.DataFrame, *,
              plot_type: str = 'plotly',
