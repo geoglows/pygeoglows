@@ -1,28 +1,44 @@
-from setuptools import setup
+import re
+
+from setuptools import setup, find_packages
+
+NAME = 'geoglows'
+DESCRIPTION = 'Package for accessing data from the GEOGLOWS Hydrological Model'
+URL = 'https://data.geoglows.org'
+AUTHOR = 'Riley Hales PhD'
+REQUIRES_PYTHON = '>=3.10.0'
+LICENSE = 'BSD 3-Clause Clear License'
 
 with open("README.md", "r") as readme:
-    long_description = readme.read()
+    LONG_DESCRIPTION = readme.read()
 
-with open('requirements.txt', 'r') as req:
-    install_requires = req.read().splitlines()
+with open(f'./{NAME}/__init__.py') as f:
+    version_pattern = r'__version__ = [\'"](.+)[\'"]'
+    VERSION = re.search(version_pattern, f.read()).group(1)
+
+with open('./requirements.txt') as f:
+    INSTALL_REQUIRES = f.read().splitlines()
 
 setup(
-    name='geoglows',
-    packages=['geoglows'],
-    version='0.27.1',
-    description='Package for accessing data and APIs developed for the GEOGloWS initiative',
-    long_description=long_description,
+    name=NAME,
+    packages=find_packages(exclude=["tests", "*.tests", "*.tests.*", "tests.*"]),
+    version=VERSION,
+    description=DESCRIPTION,
+    long_description=LONG_DESCRIPTION,
     long_description_content_type="text/markdown",
-    author='Riley Hales',
-    url='https://geoglows.org',
-    project_urls=dict(Documentation='https://geoglows.readthedocs.io',
-                      Source='https://github.com/BYU-Hydroinformatics/geoglows'),
-    license='BSD 3-Clause',
+    author=AUTHOR,
+    url=URL,
+    project_urls=dict(
+        Homepage='https://data.geoglows.org',
+        Documentation='https://geoglows.readthedocs.io',
+        Source='https://github.com/geoglows/pygeoglows',
+    ),
+    license=LICENSE,
     license_family='BSD',
     package_data={'': ['*.ipynb', '*.html']},
     include_package_data=True,
     classifiers=[
-        'Development Status :: 4 - Beta',
+        'Development Status :: 5 - Production/Stable',
         'Programming Language :: Python :: 3',
         'Topic :: Scientific/Engineering :: Hydrology',
         'Topic :: Scientific/Engineering :: Visualization',
@@ -30,5 +46,6 @@ setup(
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
     ],
-    install_requires=install_requires
+    install_requires=INSTALL_REQUIRES,
+    python_requires=REQUIRES_PYTHON,
 )
