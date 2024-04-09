@@ -166,8 +166,8 @@ def dates(**kwargs) -> dict or str:
     Gets a list of available forecast product dates
 
     Keyword Args:
-        format: csv, json, or url, default csv
-        data_source: location to query for data, either 'rest' or 'aws'
+        return_format: csv, json, or url, default csv
+        data_source: location to query for data, either 'rest' or 'aws'. default is aws.
 
     Returns:
         dict or str
@@ -179,15 +179,16 @@ def dates(**kwargs) -> dict or str:
 
 
 @_forecast_endpoint_decorator
-def forecast(*, reach_id: int, **kwargs) -> pd.DataFrame or dict or str:
+def forecast(*, reach_id: int, date: str, return_format: str, data_source: str,
+             **kwargs) -> pd.DataFrame or dict or str:
     """
     Gets the average forecasted flow for a certain reach_id on a certain date
 
     Keyword Args:
         reach_id: the ID of a stream, should be a 9 digit integer
         date: a string specifying the date to request in YYYYMMDD format, returns the latest available if not specified
-        format: csv, json, or url, default csv
-        data_source: location to query for data, either 'rest' or 'aws'
+        return_format: csv, json, or url, default csv
+        data_source: location to query for data, either 'rest' or 'aws'. default is aws.
 
     Returns:
         pd.DataFrame or dict or str
@@ -196,7 +197,8 @@ def forecast(*, reach_id: int, **kwargs) -> pd.DataFrame or dict or str:
 
 
 @_forecast_endpoint_decorator
-def forecast_stats(*, reach_id: int, **kwargs) -> pd.DataFrame or dict or str:
+def forecast_stats(*, reach_id: int, date: str, return_format: str, data_source: str,
+                   **kwargs) -> pd.DataFrame or dict or str:
     """
     Retrieves the min, 25%, mean, median, 75%, and max river discharge of the 51 ensembles members for a reach_id
     The 52nd higher resolution member is excluded
@@ -204,8 +206,8 @@ def forecast_stats(*, reach_id: int, **kwargs) -> pd.DataFrame or dict or str:
     Keyword Args:
         reach_id: the ID of a stream, should be a 9 digit integer
         date: a string specifying the date to request in YYYYMMDD format, returns the latest available if not specified
-        format: csv, json, or url, default csv
-        data_source: location to query for data, either 'rest' or 'aws'
+        return_format: csv, json, or url, default csv
+        data_source: location to query for data, either 'rest' or 'aws'. default is aws.
 
     Returns:
         pd.DataFrame or dict or str
@@ -214,15 +216,16 @@ def forecast_stats(*, reach_id: int, **kwargs) -> pd.DataFrame or dict or str:
 
 
 @_forecast_endpoint_decorator
-def forecast_ensembles(*, reach_id: int, **kwargs) -> pd.DataFrame or dict or str:
+def forecast_ensembles(*, reach_id: int, date: str, return_format: str, data_source: str,
+                       **kwargs) -> pd.DataFrame or dict or str:
     """
     Retrieves each of 52 time series of forecasted discharge for a reach_id on a certain date
 
     Keyword Args:
         reach_id: the ID of a stream, should be a 9 digit integer
         date: a string specifying the date to request in YYYYMMDD format, returns the latest available if not specified
-        format: csv, json, or url, default csv
-        data_source: location to query for data, either 'rest' or 'aws'
+        return_format: csv, json, or url, default csv
+        data_source: location to query for data, either 'rest' or 'aws'. default is aws.
 
     Returns:
         pd.DataFrame or dict or str
@@ -231,15 +234,17 @@ def forecast_ensembles(*, reach_id: int, **kwargs) -> pd.DataFrame or dict or st
 
 
 @_forecast_endpoint_decorator
-def forecast_records(*, reach_id: int, **kwargs) -> pd.DataFrame or dict or str:
+def forecast_records(*, reach_id: int, start_date: str, end_date: str, return_format: str, data_source: str,
+                     **kwargs) -> pd.DataFrame or dict or str:
     """
     Retrieves a csv showing the ensemble average forecasted flow for the year from January 1 to the current date
 
     Keyword Args:
         reach_id: the ID of a stream, should be a 9 digit integer
-        start_date: a YYYYMMDD string giving the earliest date this year to include, defaults to YYYY0101
+        start_date: a YYYYMMDD string giving the earliest date this year to include, defaults to 14 days ago.
         end_date: a YYYYMMDD string giving the latest date this year to include, defaults to latest available
-        format: csv, json, or url, default csv
+        data_source: location to query for data, either 'rest' or 'aws'. default is aws.
+        return_format: csv, json, or url, default csv
 
     Returns:
         pd.DataFrame or dict or str
