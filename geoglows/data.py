@@ -345,7 +345,7 @@ def metadata_tables(columns: list = None) -> pd.DataFrame:
     to make the data available when you are offline. A copy of the table will be cached at {METADATA_TABLE_LOCAL_PATH}.
     """
     warnings.warn(warn)
-    df = pd.read_parquet('s3://geoglows-v2/tables/package-metadata-table.parquet')
+    df = pd.read_parquet('https://geoglows-v2.s3-website-us-west-2.amazonaws.com/tables/package-metadata-table.parquet')
     os.makedirs(os.path.dirname(METADATA_TABLE_LOCAL_PATH), exist_ok=True)
     df.to_parquet(METADATA_TABLE_LOCAL_PATH)
     return df[columns] if columns else df
