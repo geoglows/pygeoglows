@@ -47,8 +47,8 @@ def _forecast_endpoint_decorator(function):
             warnings.warn('forecast_records are not available from the AWS Open Data Program.')
             return from_rest(*args, **kwargs)
 
+        reach_id = kwargs.get('reach_id', '')
         reach_id = args[0] if len(args) > 0 else None
-        reach_id = kwargs.get('reach_id', '') if not reach_id else reach_id
 
         s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
         if kwargs.get('date', '') and not product_name == 'dates':
@@ -71,10 +71,11 @@ def _forecast_endpoint_decorator(function):
         df = xr.open_zarr(s3store).sel(rivid=reach_id).to_dataframe().round(2).reset_index()
 
         # rename columns to match the REST API
-        if isinstance(reach_id, list):
-            df = df.pivot(columns='ensemble', index=['time', 'rivid'], values='Qout')
-        else:
+        if isinstance(reach_id, int):
             df = df.pivot(index='time', columns='ensemble', values='Qout')
+        else:
+            df = df.pivot(index=['time', 'rivid'], columns='ensemble', values='Qout')
+            df.index.names = ['time', 'LINKNO']
         df = df[sorted(df.columns)]
         df.columns = [f'ensemble_{str(x).zfill(2)}' for x in df.columns]
 
