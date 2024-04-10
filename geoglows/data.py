@@ -60,9 +60,11 @@ def _forecast_endpoint_decorator(function):
             else:
                 raise ValueError('Date must be YYYYMMDD or YYYYMMDDHH format. Use dates() to view available data.')
         else:
-            dates = sorted([x.split('/')[-1] for x in s3.ls(ODP_FORECAST_S3_BUCKET_URI)])
+            dates = sorted([x.split('/')[-1] for x in s3.ls(ODP_FORECAST_S3_BUCKET_URI)], reverse=True)
+            dates = [x.split('.')[0] for x in dates if x.endswith('.zarr')]  # ignore the index.html file
+            dates = [x.replace('00.zarr', '') for x in dates]
             if product_name == 'dates':
-                return dates
+                return pd.DataFrame(dict(dates=dates))
             date = dates[-1]
         s3store = s3fs.S3Map(root=f'{ODP_FORECAST_S3_BUCKET_URI}/{date}', s3=s3, check=False)
 
