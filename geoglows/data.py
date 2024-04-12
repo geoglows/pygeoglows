@@ -199,7 +199,6 @@ def forecast(*, river_id: int, date: str, return_format: str, data_source: str,
         date (str): a string specifying the date to request in YYYYMMDD format, returns the latest available if not specified
         return_format (str): csv, json, or url, default csv
         data_source (str): location to query for data, either 'rest' or 'aws'. default is aws.
-        version (str): the version of the API and model data to retrieve. default is 'v2'. should be 'v1' or 'v2'
 
     Returns:
         pd.DataFrame or dict or str
