@@ -13,6 +13,11 @@ To find a LINKNO (river ID number), please refer to https://data.geoglows.org an
 Forecasted Streamflow
 ---------------------
 
+.. automodule:: geoglows.data
+	:members:
+		forecast, forecast_stats, forecast_ensembles, forecast_records
+	:noindex:
+
 Historical Simulation
 ---------------------
 
