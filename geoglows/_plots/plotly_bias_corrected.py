@@ -7,9 +7,8 @@ from plotly.offline import plot as offline_plot
 from .format_tools import build_title
 from .plotly_helpers import _rperiod_scatters
 
-
 __all__ = [
-    'corrected_historical',
+    'corrected_retrospective',
     'corrected_scatterplots',
     'corrected_day_average',
     'corrected_month_average',
@@ -18,9 +17,9 @@ __all__ = [
 
 
 # BIAS CORRECTION PLOTS
-def corrected_historical(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
-                         rperiods: pd.DataFrame = None, plot_titles: list = None,
-                         plot_type: str = 'plotly') -> go.Figure or str:
+def corrected_retrospective(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
+                            rperiods: pd.DataFrame = None, plot_titles: list = None,
+                            plot_type: str = 'plotly') -> go.Figure or str:
     """
     Creates a plot of corrected discharge, observed discharge, and simulated discharge
 
@@ -201,7 +200,7 @@ def corrected_month_average(corrected: pd.DataFrame, simulated: pd.DataFrame, ob
                             merged_sim_obs: pd.DataFrame = False, merged_cor_obs: pd.DataFrame = False,
                             plot_titles: list = None, ) -> go.Figure or str:
     """
-    Calculates and plots the monthly average streamflow. This function uses
+    Calculates and _plots the monthly average streamflow. This function uses
     hydrostats.data.merge_data on the 3 inputs. If you have already computed these because you are doing a full
     comparison of bias correction, you can provide them to save time
 
@@ -243,9 +242,9 @@ def corrected_month_average(corrected: pd.DataFrame, simulated: pd.DataFrame, ob
 
 def corrected_day_average(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
                           merged_sim_obs: pd.DataFrame = False, merged_cor_obs: pd.DataFrame = False,
-                          titles: dict = None, ) -> go.Figure or str:
+                          plot_titles: dict = None, ) -> go.Figure or str:
     """
-    Calculates and plots the daily average streamflow. This function uses
+    Calculates and _plots the daily average streamflow. This function uses
     hydrostats.data.merge_data on the 3 inputs. If you have already computed these because you are doing a full
     comparison of bias correction, you can provide them to save time
 
@@ -255,7 +254,7 @@ def corrected_day_average(corrected: pd.DataFrame, simulated: pd.DataFrame, obse
         merged_sim_obs: (optional) if you have already computed it, hydrostats.data.merge_data(simulated, observed)
         merged_cor_obs: (optional) if you have already computed it, hydrostats.data.merge_data(corrected, observed)
         observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
-        titles: (dict) Extra info to show on the title of the plot. For example:
+        plot_titles: (dict) Extra info to show on the title of the plot. For example:
             {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
 
     Returns:
@@ -278,7 +277,7 @@ def corrected_day_average(corrected: pd.DataFrame, simulated: pd.DataFrame, obse
     ]
 
     layout = go.Layout(
-        title=build_title('Daily Average Streamflow Comparison', titles),
+        title=build_title('Daily Average Streamflow Comparison', plot_titles),
         xaxis=dict(title='Days'), yaxis=dict(title='Discharge (m<sup>3</sup>/s)', autorange=True),
         showlegend=True)
 
@@ -289,7 +288,7 @@ def corrected_volume_compare(corrected: pd.DataFrame, simulated: pd.DataFrame, o
                              merged_sim_obs: pd.DataFrame = False, merged_cor_obs: pd.DataFrame = False,
                              plot_titles: dict = None, ) -> go.Figure or str:
     """
-    Calculates and plots the cumulative volume output on each of the 3 datasets provided. This function uses
+    Calculates and _plots the cumulative volume output on each of the 3 datasets provided. This function uses
     hydrostats.data.merge_data on the 3 inputs. If you have already computed these because you are doing a full
     comparison of bias correction, you can provide them to save time
 

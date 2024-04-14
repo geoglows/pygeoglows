@@ -1,7 +1,6 @@
 import pandas as pd
 import plotly.graph_objs as go
 import scipy.stats
-from plotly.offline import plot as offline_plot
 
 from .format_tools import build_title
 from .plotly_helpers import _rperiod_scatters
@@ -26,7 +25,7 @@ def retrospective(retro: pd.DataFrame, *,
         rp_df: the csv response from return_periods
         plot_type: either 'json', 'plotly', or 'html' (default plotly)
         plot_titles: (dict) Extra info to show on the title of the plot. For example:
-            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+            {'River ID': 1234567, 'Drainage Area': '1000km^2'}
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
@@ -73,7 +72,7 @@ def daily_averages(dayavg: pd.DataFrame, plot_titles: list = None, plot_type: st
     Args:
         dayavg: the csv response from daily_averages
         plot_titles: (dict) Extra info to show on the title of the plot. For example:
-            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+            {'River ID': 1234567, 'Drainage Area': '1000km^2'}
         plot_type: either 'plotly', or 'html' (default plotly)
 
     Return:
@@ -97,17 +96,7 @@ def daily_averages(dayavg: pd.DataFrame, plot_titles: list = None, plot_type: st
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date (UTC +0:00)', 'hoverformat': '%b %d', 'tickformat': '%b'},
     )
-    figure = go.Figure(scatter_plots, layout=layout)
-    if plot_type == 'plotly':
-        return figure
-    if plot_type == 'html':
-        return offline_plot(
-            figure,
-            config={'autosizable': True, 'responsive': True},
-            output_type='div',
-            include_plotlyjs=False
-        )
-    raise ValueError('Invalid plot_type chosen. Choose plotly, plotly_scatters, or html')
+    return go.Figure(scatter_plots, layout=layout)
 
 
 def monthly_averages(monavg: pd.DataFrame, titles: dict = None, plot_titles: list = None, plot_type: str = 'plotly') -> go.Figure:
@@ -117,7 +106,7 @@ def monthly_averages(monavg: pd.DataFrame, titles: dict = None, plot_titles: lis
     Args:
         monavg: the csv response from monthly_averages
         titles: (dict) Extra info to show on the title of the plot. For example:
-            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+            {'River ID': 1234567, 'Drainage Area': '1000km^2'}
         plot_type: either 'plotly', or 'html' (default plotly)
 
     Return:
@@ -141,17 +130,7 @@ def monthly_averages(monavg: pd.DataFrame, titles: dict = None, plot_titles: lis
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)'},
         xaxis={'title': 'Month'},
     )
-    figure = go.Figure(scatter_plots, layout=layout)
-    if plot_type == 'plotly':
-        return figure
-    if plot_type == 'html':
-        return offline_plot(
-            figure,
-            config={'autosizable': True, 'responsive': True},
-            output_type='div',
-            include_plotlyjs=False
-        )
-    raise ValueError('Invalid plot_type chosen. Choose plotly, plotly_scatters, or html')
+    return go.Figure(scatter_plots, layout=layout)
 
 
 def annual_averages(df: pd.DataFrame, *, plot_titles: list = None, ) -> go.Figure:
@@ -161,7 +140,7 @@ def annual_averages(df: pd.DataFrame, *, plot_titles: list = None, ) -> go.Figur
     Args:
         df: the csv response from annual_averages
         plot_titles: (dict) Extra info to show on the title of the plot. For example:
-            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+            {'River ID': 1234567, 'Drainage Area': '1000km^2'}
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
@@ -182,14 +161,14 @@ def annual_averages(df: pd.DataFrame, *, plot_titles: list = None, ) -> go.Figur
     return go.Figure(scatter_plots, layout=layout)
 
 
-def flow_duration_curve(hist: pd.DataFrame, titles: dict = None, plot_type: str = 'plotly') -> go.Figure:
+def flow_duration_curve(hist: pd.DataFrame, plot_titles: dict = None, plot_type: str = 'plotly') -> go.Figure:
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
         hist: the csv response from historic_simulation
-        titles: (dict) Extra info to show on the title of the plot. For example:
-            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+        plot_titles: (dict) Extra info to show on the title of the plot. For example:
+            {'River ID': 1234567, 'Drainage Area': '1000km^2'}
         plot_type: either 'json', 'plotly', or 'html' (default plotly)
 
     Return:
@@ -226,31 +205,21 @@ def flow_duration_curve(hist: pd.DataFrame, titles: dict = None, plot_type: str 
     if plot_type == 'plotly_scatters':
         return scatter_plots
     layout = go.Layout(
-        title=build_title('Flow Duration Curve', titles),
+        title=build_title('Flow Duration Curve', plot_titles),
         xaxis={'title': 'Exceedence Probability'},
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
     )
-    figure = go.Figure(scatter_plots, layout=layout)
-    if plot_type == 'plotly':
-        return figure
-    if plot_type == 'html':
-        return offline_plot(
-            figure,
-            config={'autosizable': True, 'responsive': True},
-            output_type='div',
-            include_plotlyjs=False
-        )
-    raise ValueError('Invalid plot_type chosen. Choose json, plotly, plotly_scatters, or html')
+    return go.Figure(scatter_plots, layout=layout)
 
 
-def daily_stats(hist: pd.DataFrame, titles: dict = None, plot_type: str = 'plotly') -> go.Figure:
+def daily_stats(hist: pd.DataFrame, *, plot_titles: dict = None, plot_type: str = 'plotly') -> go.Figure:
     """
     Plots a graph with statistics for each day of year
 
     Args:
         hist: dataframe of values to plot
-        titles: (dict) Extra info to show on the title of the plot. For example:
-            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+        plot_titles: (dict) Extra info to show on the title of the plot. For example:
+            {'River ID': 1234567, 'Drainage Area': '1000km^2'}
         plot_type: either 'plotly' (python object, default), 'plotly_scatters', or 'html'
 
     returns:
@@ -270,21 +239,11 @@ def daily_stats(hist: pd.DataFrame, titles: dict = None, plot_type: str = 'plotl
     if plot_type == 'plotly_scatters':
         return data
     layout = go.Layout(
-        title=build_title('Daily Average Streamflow (Simulated)', titles),
+        title=build_title('Daily Average Streamflow (Simulated)', plot_titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={'title': 'Date (UTC +0:00)', 'hoverformat': '%b %d', 'tickformat': '%b'},
     )
-    figure = go.Figure(data=data, layout=layout)
-    if plot_type == 'plotly':
-        return figure
-    elif plot_type == 'html':
-        return offline_plot(
-            figure,
-            config={'autosizable': True, 'responsive': True},
-            output_type='div',
-            include_plotlyjs=False
-        )
-    raise ValueError('Invalid plot_type chosen. Choose plotly or html')
+    return go.Figure(data=data, layout=layout)
 
 
 def daily_variance(daily_variance: pd.DataFrame, plot_titles: list = None, plot_type: str = 'plotly') -> go.Figure:
@@ -294,7 +253,7 @@ def daily_variance(daily_variance: pd.DataFrame, plot_titles: list = None, plot_
     Args:
       daily_variance: dataframe of values to plot coming from geoglows.analysis.compute_daily_variance
       plot_titles: (dict) Extra info to show on the title of the plot. For example:
-        {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+        {'River ID': 1234567, 'Drainage Area': '1000km^2'}
       plot_type: either 'plotly' (python object, default), 'plotly_scatters', or 'html'
 
     returns:
@@ -309,14 +268,4 @@ def daily_variance(daily_variance: pd.DataFrame, plot_titles: list = None, plot_
     ]
     if plot_type == 'plotly_scatters':
         return data
-    figure = go.Figure(data=data, layout=go.Layout(build_title('Daily Flow Standard Deviation', plot_titles)))
-    if plot_type == 'plotly':
-        return figure
-    elif plot_type == 'html':
-        return offline_plot(
-            figure,
-            config={'autosizable': True, 'responsive': True},
-            output_type='div',
-            include_plotlyjs=False
-        )
-    raise ValueError('Invalid plot_type chosen. Choose plotly or html')
+    return go.Figure(data=data, layout=go.Layout(build_title('Daily Flow Standard Deviation', plot_titles)))

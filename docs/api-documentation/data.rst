@@ -22,14 +22,14 @@ Historical Simulation
 ---------------------
 
 .. automodule:: geoglows.data
-    :members:
-        retrospective, return_periods, annual_averages, monthly_averages, daily_averages,
-    :noindex:
+	:members:
+		retrospective, return_periods, annual_averages, monthly_averages, daily_averages,
+	:noindex:
 
 GEOGLOWS Model Utilities
 ------------------------
 
 .. automodule:: geoglows.data
-    :members:
-        metadata_tables
-    :noindex:
+	:members:
+		metadata_tables
+	:noindex:

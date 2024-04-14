@@ -48,27 +48,41 @@ def _forecast_endpoint_decorator(function):
             return from_rest(*args, **kwargs)
 
         river_id = kwargs.get('river_id', '')
-        river_id = args[0] if len(args) > 0 else None
+        river_id = args[0] if len(args) > 0 else river_id
+
+        return_format = kwargs.get('format', 'df')
+        assert return_format in ('df', 'xarray'), f'Unsupported return format requested: {return_format}'
 
         s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
-        if kwargs.get('date', '') and not product_name == 'dates':
-            date = kwargs['date']
-            if len(date) == 8:
-                date = f'{date}00.zarr'
-            elif len(date) == 10:
-                date = f'{date}.zarr'
-            else:
-                raise ValueError('Date must be YYYYMMDD or YYYYMMDDHH format. Use dates() to view available data.')
-        else:
+        date = kwargs.get('date', False)
+        if not date:
             dates = sorted([x.split('/')[-1] for x in s3.ls(ODP_FORECAST_S3_BUCKET_URI)], reverse=True)
             dates = [x.split('.')[0] for x in dates if x.endswith('.zarr')]  # ignore the index.html file
             dates = [x.replace('00.zarr', '') for x in dates]
             if product_name == 'dates':
                 return pd.DataFrame(dict(dates=dates))
-            date = dates[-1]
+            date = dates[0]
+        if len(date) == 8:
+            date = f'{date}00.zarr'
+        elif len(date) == 10:
+            date = f'{date}.zarr'
+        else:
+            raise ValueError('Date must be YYYYMMDD or YYYYMMDDHH format. Use dates() to view available data.')
+
         s3store = s3fs.S3Map(root=f'{ODP_FORECAST_S3_BUCKET_URI}/{date}', s3=s3, check=False)
 
-        df = xr.open_zarr(s3store).sel(rivid=river_id).to_dataframe().round(2).reset_index()
+        attrs = {
+            'source': 'geoglows',
+            'forecast_date': date[:8],
+            'retrieval_date': pd.Timestamp.now().strftime('%Y%m%d'),
+            'units': 'cubic meters per second',
+        }
+        ds = xr.open_zarr(s3store).sel(rivid=river_id)
+        if return_format == 'xarray' and product_name == 'forecastensembles':
+            ds = ds.rename({'time': 'datetime', 'rivid': 'river_id'})
+            ds.attrs = attrs
+            return ds
+        df = ds.to_dataframe().round(2).reset_index()
 
         # rename columns to match the REST API
         if isinstance(river_id, int):
@@ -79,13 +93,16 @@ def _forecast_endpoint_decorator(function):
         df = df[sorted(df.columns)]
         df.columns = [f'ensemble_{str(x).zfill(2)}' for x in df.columns]
 
-        if product_name == 'forecastensembles':
-            return df
+        if product_name == 'forecast':
+            df = calc_simple_forecast(df)
         elif product_name == 'forecaststats':
-            return calc_forecast_stats(df)
-        elif product_name == 'forecast':
-            return calc_simple_forecast(df)
-        return
+            df = calc_forecast_stats(df)
+
+        if return_format == 'df':
+            return df
+        ds = df.to_xarray()
+        ds.attrs = attrs
+        return ds
 
     def from_rest(*args, **kwargs):
         # update the default values set by the function unless the user has already specified them
@@ -93,7 +110,8 @@ def _forecast_endpoint_decorator(function):
             if key not in kwargs:
                 kwargs[key] = value
 
-        return_url = kwargs.get('format', 'csv') == 'url'
+        return_format = kwargs.get('format', 'csv')
+        assert return_format in ('csv', 'json', 'url'), f'Unsupported format requested: {return_format}'
 
         # parse out the information necessary to build a request url
         endpoint = kwargs.get('endpoint', DEFAULT_REST_ENDPOINT)
@@ -114,9 +132,6 @@ def _forecast_endpoint_decorator(function):
         river_id = int(river_id) if river_id else None
         if river_id and version == 'v2':
             assert river_id < 1_000_000_000 and river_id >= 110_000_000, ValueError('River ID must be a 9 digit integer')
-
-        return_format = kwargs.get('return_format', 'csv')
-        assert return_format in ('csv', 'json', 'url'), f'Unsupported return format requested: {return_format}'
 
         # request parameter validation before submitting
         for key in ('endpoint', 'version', 'river_id'):
@@ -139,7 +154,7 @@ def _forecast_endpoint_decorator(function):
         request_url = f'{request_url}/{river_id}' if river_id else request_url  # add the river_id if it exists
         request_url = f'{request_url}?{params}'  # add the query parameters
 
-        if return_url:
+        if return_format == 'url':
             return request_url.replace(f'source={kwargs["source"]}', '')
 
         response = requests.get(request_url)
@@ -176,7 +191,6 @@ def dates(**kwargs) -> dict or str:
     Gets a list of available forecast product dates
 
     Keyword Args:
-        return_format: csv, json, or url, default csv
         data_source: location to query for data, either 'rest' or 'aws'. default is aws.
 
     Returns:
@@ -189,7 +203,7 @@ def dates(**kwargs) -> dict or str:
 
 
 @_forecast_endpoint_decorator
-def forecast(*, river_id: int, date: str, return_format: str, data_source: str,
+def forecast(*, river_id: int, date: str, format: str, data_source: str,
              **kwargs) -> pd.DataFrame or dict or str:
     """
     Gets the average forecasted flow for a certain river_id on a certain date
@@ -197,7 +211,7 @@ def forecast(*, river_id: int, date: str, return_format: str, data_source: str,
     Keyword Args:
         river_id (str): the ID of a stream, should be a 9 digit integer
         date (str): a string specifying the date to request in YYYYMMDD format, returns the latest available if not specified
-        return_format (str): csv, json, or url, default csv
+        format (str): csv, json, or url, default csv
         data_source (str): location to query for data, either 'rest' or 'aws'. default is aws.
 
     Returns:
@@ -207,7 +221,7 @@ def forecast(*, river_id: int, date: str, return_format: str, data_source: str,
 
 
 @_forecast_endpoint_decorator
-def forecast_stats(*, river_id: int, date: str, return_format: str, data_source: str,
+def forecast_stats(*, river_id: int, date: str, format: str, data_source: str,
                    **kwargs) -> pd.DataFrame or dict or str:
     """
     Retrieves the min, 25%, mean, median, 75%, and max river discharge of the 51 ensembles members for a river_id
@@ -216,7 +230,7 @@ def forecast_stats(*, river_id: int, date: str, return_format: str, data_source:
     Keyword Args:
         river_id: the ID of a stream, should be a 9 digit integer
         date: a string specifying the date to request in YYYYMMDD format, returns the latest available if not specified
-        return_format: csv, json, or url, default csv
+        format: if data_source=="rest": csv, json, or url, default csv. if data_source=="aws": df or xarray
         data_source: location to query for data, either 'rest' or 'aws'. default is aws.
 
     Returns:
@@ -226,7 +240,7 @@ def forecast_stats(*, river_id: int, date: str, return_format: str, data_source:
 
 
 @_forecast_endpoint_decorator
-def forecast_ensembles(*, river_id: int, date: str, return_format: str, data_source: str,
+def forecast_ensembles(*, river_id: int, date: str, format: str, data_source: str,
                        **kwargs) -> pd.DataFrame or dict or str:
     """
     Retrieves each of 52 time series of forecasted discharge for a river_id on a certain date
@@ -234,7 +248,7 @@ def forecast_ensembles(*, river_id: int, date: str, return_format: str, data_sou
     Keyword Args:
         river_id: the ID of a stream, should be a 9 digit integer
         date: a string specifying the date to request in YYYYMMDD format, returns the latest available if not specified
-        return_format: csv, json, or url, default csv
+        format: if data_source=="rest": csv, json, or url, default csv. if data_source=="aws": df or xarray
         data_source: location to query for data, either 'rest' or 'aws'. default is aws.
 
     Returns:
@@ -244,7 +258,7 @@ def forecast_ensembles(*, river_id: int, date: str, return_format: str, data_sou
 
 
 @_forecast_endpoint_decorator
-def forecast_records(*, river_id: int, start_date: str, end_date: str, return_format: str, data_source: str,
+def forecast_records(*, river_id: int, start_date: str, end_date: str, format: str, data_source: str,
                      **kwargs) -> pd.DataFrame or dict or str:
     """
     Retrieves a csv showing the ensemble average forecasted flow for the year from January 1 to the current date
@@ -254,7 +268,7 @@ def forecast_records(*, river_id: int, start_date: str, end_date: str, return_fo
         start_date: a YYYYMMDD string giving the earliest date this year to include, defaults to 14 days ago.
         end_date: a YYYYMMDD string giving the latest date this year to include, defaults to latest available
         data_source: location to query for data, either 'rest' or 'aws'. default is aws.
-        return_format: csv, json, or url, default csv
+        format: if data_source=="rest": csv, json, or url, default csv. if data_source=="aws": df or xarray
 
     Returns:
         pd.DataFrame or dict or str
@@ -263,21 +277,24 @@ def forecast_records(*, river_id: int, start_date: str, end_date: str, return_fo
 
 
 # Retrospective simulation and derived products
-def retrospective(river_id: int or list) -> pd.DataFrame:
+def retrospective(river_id: int or list, format: str = 'df') -> pd.DataFrame or xr.Dataset:
     """
     Retrieves the retrospective simulation of streamflow for a given river_id from the
     AWS Open Data Program GEOGloWS V2 S3 bucket
 
     Args:
         river_id: the ID of a stream, should be a 9 digit integer
+        format: the format to return the data, either 'df' or 'xarray'. default is 'df'
 
     Returns:
         pd.DataFrame
     """
     s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
     s3store = s3fs.S3Map(root=f'{ODP_RETROSPECTIVE_S3_BUCKET_URI}/retrospective.zarr', s3=s3, check=False)
-    return (xr.open_zarr(s3store).sel(rivid=river_id).to_dataframe().reset_index().set_index('time')
-            .pivot(columns='rivid', values='Qout'))
+    ds = xr.open_zarr(s3store).sel(rivid=river_id)
+    if format == 'xarray':
+        return ds
+    return ds.to_dataframe().reset_index().set_index('time').pivot(columns='rivid', values='Qout')
 
 
 def historical(*args, **kwargs):
@@ -285,7 +302,7 @@ def historical(*args, **kwargs):
     return retrospective(*args, **kwargs)
 
 
-def daily_averages(river_id: int or list) -> pd.DataFrame:
+def daily_averages(river_id: int or list) -> pd.DataFrame or xr.Dataset:
     """
     Retrieves daily average streamflow for a given river_id
 
@@ -327,19 +344,23 @@ def annual_averages(river_id: int or list) -> pd.DataFrame:
     return calc_annual_averages(df)
 
 
-def return_periods(river_id: int or list) -> pd.DataFrame:
+def return_periods(river_id: int or list, format: str = 'df') -> pd.DataFrame:
     """
     Retrieves the return period thresholds based on a specified historic simulation forcing on a certain river_id.
 
     Args:
         river_id: the ID of a stream, should be a 9 digit integer
+        format: the format to return the data, either 'df' or 'xarray'. default is 'df'
 
     Returns:
         pd.DataFrame
     """
     s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
     s3store = s3fs.S3Map(root=f'{ODP_RETROSPECTIVE_S3_BUCKET_URI}/return-periods.zarr', s3=s3, check=False)
-    return (xr.open_zarr(s3store).sel(rivid=river_id)['return_period_flow'].to_dataframe().reset_index()
+    ds = xr.open_zarr(s3store).sel(rivid=river_id)
+    if format == 'xarray':
+        return ds
+    return (ds['return_period_flow'].to_dataframe().reset_index()
             .pivot(index='rivid', columns='return_period', values='return_period_flow'))
 
 
