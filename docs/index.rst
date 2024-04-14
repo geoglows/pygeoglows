@@ -15,12 +15,12 @@ Demos
 These links will be maintained to reference the most updated versions of the tutorials.
 The tutorials are GitHub Gists which you can copy and launch in a Google Collaboratory setting directly from the GitHub.
 
-- Retrieve & plot GEOGloWS model data: `<https://gist.github.com/rileyhales/873896e426a5bd1c4e68120b286bc029>`_
+- Retrieve & plot GEOGLOWS model data: `<https://gist.github.com/rileyhales/873896e426a5bd1c4e68120b286bc029>`_
 - Finding Stream ID #'s programmatically: `<https://gist.github.com/rileyhales/ad92d1fce3aa36ef5873f2f7c2632d31>`_
 - Bias Evaluation and Calibration at a point: `<https://gist.github.com/rileyhales/d5290e12b5858d59960d0898fbd0ed69>`_
 - Generate/Download High Res Plot Images: `<https://gist.github.com/rileyhales/9b5bbb0c5f307eb14b9f1ced39d641e4>`_
 
-About GEOGloWS ECMWF Streamflow
+About GEOGLOWS ECMWF Streamflow
 ===============================
 GEOGLOWS ECMWF Streamflow Project: This project provides access to the results of a hydrologic model that is run each
 day. The model is based on a group of unique weather forecasts, known as an ensemble, from ECMWF. Each unique

@@ -2,12 +2,6 @@
 geoglows.plots
 ==============
 
-Plots for Streamflow Data
-~~~~~~~~~~~~~~~~~~~~~~~~~
-
 .. automodule:: geoglows.plots
-    :members:
-        forecast, forecast_stats, forecast_ensembles,
-        retrospective, annual_averages, monthly_averages, daily_averages,
-        daily_variance, flow_duration_curve
-    :noindex:
+	:members:
+		forecast, forecast_stats, forecast_ensembles, retrospective, annual_averages, monthly_averages, daily_averages, flow_duration_curve, corrected_retrospective, corrected_month_average, corrected_day_average, corrected_scatterplots
