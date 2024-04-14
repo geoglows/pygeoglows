@@ -5,10 +5,10 @@ from .data import metadata_tables
 __all__ = ['river_to_vpu', 'latlon_to_river', 'river_to_latlon', ]
 
 
-def river_to_vpu(reach_id: int) -> str or int:
+def river_to_vpu(river_id: int) -> str or int:
     return (
         metadata_tables(columns=['LINKNO', 'VPUCode'])
-        .loc[lambda x: x['LINKNO'] == reach_id, 'VPUCode']
+        .loc[lambda x: x['LINKNO'] == river_id, 'VPUCode']
         .values[0]
     )
 
@@ -19,9 +19,9 @@ def latlon_to_river(lat: float, lon: float) -> int:
     return df.loc[lambda x: x['dist'] == df['dist'].min(), 'LINKNO'].values[0]
 
 
-def river_to_latlon(reach_id: int) -> np.ndarray:
+def river_to_latlon(river_id: int) -> np.ndarray:
     return (
         metadata_tables(columns=['LINKNO', 'lat', 'lon'])
-        .loc[lambda x: x['LINKNO'] == reach_id, ['lat', 'lon']]
+        .loc[lambda x: x['LINKNO'] == river_id, ['lat', 'lon']]
         .values[0]
     )

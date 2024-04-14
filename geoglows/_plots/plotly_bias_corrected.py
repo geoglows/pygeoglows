@@ -30,7 +30,7 @@ def corrected_retrospective(corrected: pd.DataFrame, simulated: pd.DataFrame, ob
         rperiods: the csv response from return_periods
         plot_type: either 'plotly', or 'plotly_html' (default plotly)
         plot_titles: (dict) Extra info to show on the title of the plot. For example:
-            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+            {'River ID': 1234567, 'Drainage Area': '1000km^2'}
 
     Returns:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
@@ -112,7 +112,7 @@ def corrected_scatterplots(corrected: pd.DataFrame, simulated: pd.DataFrame, obs
         merged_sim_obs: (optional) if you have already computed it, hydrostats.data.merge_data(simulated, observed)
         merged_cor_obs: (optional) if you have already computed it, hydrostats.data.merge_data(corrected, observed)
         plot_titles: (dict) Extra info to show on the title of the plot. For example:
-            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+            {'River ID': 1234567, 'Drainage Area': '1000km^2'}
 
     Returns:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
@@ -211,7 +211,7 @@ def corrected_month_average(corrected: pd.DataFrame, simulated: pd.DataFrame, ob
         merged_sim_obs: (optional) if you have already computed it, hydrostats.data.merge_data(simulated, observed)
         merged_cor_obs: (optional) if you have already computed it, hydrostats.data.merge_data(corrected, observed)
         plot_titles: (dict) Extra info to show on the title of the plot. For example:
-            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+            {'River ID': 1234567, 'Drainage Area': '1000km^2'}
 
     Returns:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
@@ -255,7 +255,7 @@ def corrected_day_average(corrected: pd.DataFrame, simulated: pd.DataFrame, obse
         merged_cor_obs: (optional) if you have already computed it, hydrostats.data.merge_data(corrected, observed)
         observed: the dataframe of observed data. Must have a datetime index and a single column of flow values
         plot_titles: (dict) Extra info to show on the title of the plot. For example:
-            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+            {'River ID': 1234567, 'Drainage Area': '1000km^2'}
 
     Returns:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
@@ -299,7 +299,7 @@ def corrected_volume_compare(corrected: pd.DataFrame, simulated: pd.DataFrame, o
         merged_sim_obs: (optional) if you have already computed it, hydrostats.data.merge_data(simulated, observed)
         merged_cor_obs: (optional) if you have already computed it, hydrostats.data.merge_data(corrected, observed)
         plot_titles: (dict) Extra info to show on the title of the plot. For example:
-            {'Reach ID': 1234567, 'Drainage Area': '1000km^2'}
+            {'River ID': 1234567, 'Drainage Area': '1000km^2'}
 
     Returns:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method

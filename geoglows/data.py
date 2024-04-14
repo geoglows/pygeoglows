@@ -367,7 +367,7 @@ def return_periods(river_id: int or list, format: str = 'df') -> pd.DataFrame:
 # model config and supplementary data
 def metadata_tables(columns: list = None) -> pd.DataFrame:
     """
-    Retrieves the master table of stream reaches with all metadata and properties as a pandas DataFrame
+    Retrieves the master table of rivers metadata and properties as a pandas DataFrame
     Args:
         columns: optional subset of columns names to read from the parquet
 
