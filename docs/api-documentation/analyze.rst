@@ -2,8 +2,6 @@
 geoglows.analyze
 ================
 
-Analyze
-~~~~~~~
 Functions which post process results from the streamflow data service into additional, useful products
 
 .. automodule:: geoglows.analyze

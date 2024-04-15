@@ -6,6 +6,7 @@ import pandas as pd
 import requests
 import s3fs
 import xarray as xr
+import numpy as np
 
 from ._constants import METADATA_TABLE_PATH
 from .analyze import (
@@ -85,7 +86,7 @@ def _forecast_endpoint_decorator(function):
         df = ds.to_dataframe().round(2).reset_index()
 
         # rename columns to match the REST API
-        if isinstance(river_id, int):
+        if isinstance(river_id, int) or isinstance(river_id, np.int64):
             df = df.pivot(index='time', columns='ensemble', values='Qout')
         else:
             df = df.pivot(index=['time', 'rivid'], columns='ensemble', values='Qout')
@@ -120,7 +121,7 @@ def _forecast_endpoint_decorator(function):
         endpoint = f'https://{endpoint}' if not endpoint.startswith(('https://', 'http://')) else endpoint
 
         version = kwargs.get('version', DEFAULT_REST_ENDPOINT_VERSION)
-        assert version in ('v1', 'v2', ), ValueError(f'Unrecognized model version parameter: {version}')
+        assert version in ('v2', ), ValueError(f'Unrecognized model version parameter: {version}')
 
         product_name = function.__name__.replace("_", "").lower()
 
@@ -131,7 +132,7 @@ def _forecast_endpoint_decorator(function):
                              'Use data_source="aws" and version="v2" for multiple river_ids.')
         river_id = int(river_id) if river_id else None
         if river_id and version == 'v2':
-            assert river_id < 1_000_000_000 and river_id >= 110_000_000, ValueError('River ID must be a 9 digit integer')
+            assert 1_000_000_000 > river_id >= 110_000_000, ValueError('River ID must be a 9 digit integer')
 
         # request parameter validation before submitting
         for key in ('endpoint', 'version', 'river_id'):
@@ -178,8 +179,7 @@ def _forecast_endpoint_decorator(function):
         assert source in ('rest', 'aws'), ValueError(f'Unrecognized data source requested: {source}')
         if source == 'rest':
             return from_rest(*args, **kwargs)
-        else:
-            return from_aws(*args, **kwargs)
+        return from_aws(*args, **kwargs)
     main.__doc__ = function.__doc__  # necessary for code documentation auto generators
     return main
 
@@ -204,7 +204,7 @@ def dates(**kwargs) -> dict or str:
 
 @_forecast_endpoint_decorator
 def forecast(*, river_id: int, date: str, format: str, data_source: str,
-             **kwargs) -> pd.DataFrame or dict or str:
+             **kwargs) -> pd.DataFrame or xr.Dataset:
     """
     Gets the average forecasted flow for a certain river_id on a certain date
 
@@ -222,7 +222,7 @@ def forecast(*, river_id: int, date: str, format: str, data_source: str,
 
 @_forecast_endpoint_decorator
 def forecast_stats(*, river_id: int, date: str, format: str, data_source: str,
-                   **kwargs) -> pd.DataFrame or dict or str:
+                   **kwargs) -> pd.DataFrame or xr.Dataset:
     """
     Retrieves the min, 25%, mean, median, 75%, and max river discharge of the 51 ensembles members for a river_id
     The 52nd higher resolution member is excluded
@@ -241,7 +241,7 @@ def forecast_stats(*, river_id: int, date: str, format: str, data_source: str,
 
 @_forecast_endpoint_decorator
 def forecast_ensembles(*, river_id: int, date: str, format: str, data_source: str,
-                       **kwargs) -> pd.DataFrame or dict or str:
+                       **kwargs) -> pd.DataFrame or xr.Dataset:
     """
     Retrieves each of 52 time series of forecasted discharge for a river_id on a certain date
 
@@ -258,7 +258,7 @@ def forecast_ensembles(*, river_id: int, date: str, format: str, data_source: st
 
 
 @_forecast_endpoint_decorator
-def forecast_records(*, river_id: int, start_date: str, end_date: str, format: str, data_source: str,
+def forecast_records(*, river_id: int, start_date: str, end_date: str, format: str,
                      **kwargs) -> pd.DataFrame or dict or str:
     """
     Retrieves a csv showing the ensemble average forecasted flow for the year from January 1 to the current date
@@ -267,8 +267,7 @@ def forecast_records(*, river_id: int, start_date: str, end_date: str, format: s
         river_id: the ID of a stream, should be a 9 digit integer
         start_date: a YYYYMMDD string giving the earliest date this year to include, defaults to 14 days ago.
         end_date: a YYYYMMDD string giving the latest date this year to include, defaults to latest available
-        data_source: location to query for data, either 'rest' or 'aws'. default is aws.
-        format: if data_source=="rest": csv, json, or url, default csv. if data_source=="aws": df or xarray
+        format: csv, json, or url, default csv.
 
     Returns:
         pd.DataFrame or dict or str
@@ -280,7 +279,7 @@ def forecast_records(*, river_id: int, start_date: str, end_date: str, format: s
 def retrospective(river_id: int or list, format: str = 'df') -> pd.DataFrame or xr.Dataset:
     """
     Retrieves the retrospective simulation of streamflow for a given river_id from the
-    AWS Open Data Program GEOGloWS V2 S3 bucket
+    AWS Open Data Program GEOGLOWS V2 S3 bucket
 
     Args:
         river_id: the ID of a stream, should be a 9 digit integer
@@ -302,7 +301,7 @@ def historical(*args, **kwargs):
     return retrospective(*args, **kwargs)
 
 
-def daily_averages(river_id: int or list) -> pd.DataFrame or xr.Dataset:
+def daily_averages(river_id: int or list) -> pd.DataFrame:
     """
     Retrieves daily average streamflow for a given river_id
 
@@ -344,7 +343,7 @@ def annual_averages(river_id: int or list) -> pd.DataFrame:
     return calc_annual_averages(df)
 
 
-def return_periods(river_id: int or list, format: str = 'df') -> pd.DataFrame:
+def return_periods(river_id: int or list, format: str = 'df') -> pd.DataFrame or xr.Dataset:
     """
     Retrieves the return period thresholds based on a specified historic simulation forcing on a certain river_id.
 
@@ -379,6 +378,7 @@ def metadata_tables(columns: list = None) -> pd.DataFrame:
     warn = f"""
     Local copy of geoglows v2 metadata table not found. You should download a copy for optimal performance and 
     to make the data available when you are offline. A copy of the table will be cached at {METADATA_TABLE_PATH}.
+    Alternatively, set the environment variable PYGEOGLOWS_METADATA_TABLE_PATH to the path of the table.
     """
     warnings.warn(warn)
     df = pd.read_parquet('https://geoglows-v2.s3-website-us-west-2.amazonaws.com/tables/package-metadata-table.parquet')
