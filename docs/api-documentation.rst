@@ -9,4 +9,5 @@ API Documentation
    api-documentation/bias
    api-documentation/plots
    api-documentation/analyze
+   api-documentation/streams
    api-documentation/streamflow
