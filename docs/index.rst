@@ -10,18 +10,8 @@ geoglows
 The geoglows Python package enables access to data, API's, and code developed for the `GEOGLOWS Streamflow Model <https://geoglows.ecmwf.int>`_.
 Read more about GEOGLOWS at `<https://geoglows.org>`_
 
-Demos and Tutorials
-===================
 For demos, tutorials, and other training materials for GEOGLOWS and the geoglows Python packge, please visit
 `<https://data.geoglows.org>`_.
-
-These links will be maintained to reference the most updated versions of the tutorials.
-The tutorials are GitHub Gists which you can copy and launch in a Google Collaboratory setting directly from the GitHub.
-
-- Retrieve & plot GEOGLOWS model data: `<https://gist.github.com/rileyhales/873896e426a5bd1c4e68120b286bc029>`_
-- Finding Stream ID #'s programmatically: `<https://gist.github.com/rileyhales/ad92d1fce3aa36ef5873f2f7c2632d31>`_
-- Bias Evaluation and Calibration at a point: `<https://gist.github.com/rileyhales/d5290e12b5858d59960d0898fbd0ed69>`_
-- Generate/Download High Res Plot Images: `<https://gist.github.com/rileyhales/9b5bbb0c5f307eb14b9f1ced39d641e4>`_
 
 About GEOGLOWS ECMWF Streamflow
 ===============================
