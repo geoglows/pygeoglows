@@ -191,7 +191,7 @@ def dates(**kwargs) -> dict or str:
     Gets a list of available forecast product dates
 
     Keyword Args:
-        data_source: location to query for data, either 'rest' or 'aws'. default is aws.
+        data_source (str): location to query for data, either 'rest' or 'aws'. default is aws.
 
     Returns:
         dict or str
@@ -209,9 +209,9 @@ def forecast(*, river_id: int, date: str, format: str, data_source: str,
     Gets the average forecasted flow for a certain river_id on a certain date
 
     Keyword Args:
-        river_id (str): the ID of a stream, should be a 9 digit integer
+        river_id (int): the ID of a stream, should be a 9 digit integer
         date (str): a string specifying the date to request in YYYYMMDD format, returns the latest available if not specified
-        format (str): csv, json, or url, default csv
+        format: if data_source=="rest": csv, json, or url, default csv. if data_source=="aws": df or xarray
         data_source (str): location to query for data, either 'rest' or 'aws'. default is aws.
 
     Returns:
@@ -228,10 +228,10 @@ def forecast_stats(*, river_id: int, date: str, format: str, data_source: str,
     The 52nd higher resolution member is excluded
 
     Keyword Args:
-        river_id: the ID of a stream, should be a 9 digit integer
-        date: a string specifying the date to request in YYYYMMDD format, returns the latest available if not specified
-        format: if data_source=="rest": csv, json, or url, default csv. if data_source=="aws": df or xarray
-        data_source: location to query for data, either 'rest' or 'aws'. default is aws.
+        river_id (int): the ID of a stream, should be a 9 digit integer
+        date (str): a string specifying the date to request in YYYYMMDD format, returns the latest available if not specified
+        format (str): if data_source=="rest": csv, json, or url, default csv. if data_source=="aws": df or xarray
+        data_source (str): location to query for data, either 'rest' or 'aws'. default is aws.
 
     Returns:
         pd.DataFrame or dict or str
@@ -246,10 +246,10 @@ def forecast_ensembles(*, river_id: int, date: str, format: str, data_source: st
     Retrieves each of 52 time series of forecasted discharge for a river_id on a certain date
 
     Keyword Args:
-        river_id: the ID of a stream, should be a 9 digit integer
-        date: a string specifying the date to request in YYYYMMDD format, returns the latest available if not specified
-        format: if data_source=="rest": csv, json, or url, default csv. if data_source=="aws": df or xarray
-        data_source: location to query for data, either 'rest' or 'aws'. default is aws.
+        river_id (int): the ID of a stream, should be a 9 digit integer
+        date (str): a string specifying the date to request in YYYYMMDD format, returns the latest available if not specified
+        format (str): if data_source=="rest": csv, json, or url, default csv. if data_source=="aws": df or xarray
+        data_source (str): location to query for data, either 'rest' or 'aws'. default is aws.
 
     Returns:
         pd.DataFrame or dict or str
@@ -264,10 +264,10 @@ def forecast_records(*, river_id: int, start_date: str, end_date: str, format: s
     Retrieves a csv showing the ensemble average forecasted flow for the year from January 1 to the current date
 
     Keyword Args:
-        river_id: the ID of a stream, should be a 9 digit integer
-        start_date: a YYYYMMDD string giving the earliest date this year to include, defaults to 14 days ago.
-        end_date: a YYYYMMDD string giving the latest date this year to include, defaults to latest available
-        format: csv, json, or url, default csv.
+        river_id (int): the ID of a stream, should be a 9 digit integer
+        start_date (str): a YYYYMMDD string giving the earliest date this year to include, defaults to 14 days ago.
+        end_date (str): a YYYYMMDD string giving the latest date this year to include, defaults to latest available
+        format (str): csv, json, or url, default csv.
 
     Returns:
         pd.DataFrame or dict or str
@@ -282,8 +282,8 @@ def retrospective(river_id: int or list, format: str = 'df') -> pd.DataFrame or 
     AWS Open Data Program GEOGLOWS V2 S3 bucket
 
     Args:
-        river_id: the ID of a stream, should be a 9 digit integer
-        format: the format to return the data, either 'df' or 'xarray'. default is 'df'
+        river_id (int): the ID of a stream, should be a 9 digit integer
+        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
 
     Returns:
         pd.DataFrame
@@ -306,7 +306,7 @@ def daily_averages(river_id: int or list) -> pd.DataFrame:
     Retrieves daily average streamflow for a given river_id
 
     Args:
-        river_id: the ID of a stream, should be a 9 digit integer
+        river_id (int): the ID of a stream, should be a 9 digit integer
 
     Returns:
         pd.DataFrame
@@ -320,7 +320,7 @@ def monthly_averages(river_id: int or list) -> pd.DataFrame:
     Retrieves monthly average streamflow for a given river_id
 
     Args:
-        river_id: the ID of a stream, should be a 9 digit integer
+        river_id (int): the ID of a stream, should be a 9 digit integer
 
     Returns:
         pd.DataFrame
@@ -334,7 +334,7 @@ def annual_averages(river_id: int or list) -> pd.DataFrame:
     Retrieves annual average streamflow for a given river_id
 
     Args:
-        river_id: the ID of a stream, should be a 9 digit integer
+        river_id (int): the ID of a stream, should be a 9 digit integer
 
     Returns:
         pd.DataFrame
@@ -348,8 +348,8 @@ def return_periods(river_id: int or list, format: str = 'df') -> pd.DataFrame or
     Retrieves the return period thresholds based on a specified historic simulation forcing on a certain river_id.
 
     Args:
-        river_id: the ID of a stream, should be a 9 digit integer
-        format: the format to return the data, either 'df' or 'xarray'. default is 'df'
+        river_id (int): the ID of a stream, should be a 9 digit integer
+        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
 
     Returns:
         pd.DataFrame
@@ -368,7 +368,7 @@ def metadata_tables(columns: list = None) -> pd.DataFrame:
     """
     Retrieves the master table of rivers metadata and properties as a pandas DataFrame
     Args:
-        columns: optional subset of columns names to read from the parquet
+        columns (list): optional subset of columns names to read from the parquet
 
     Returns:
         pd.DataFrame
