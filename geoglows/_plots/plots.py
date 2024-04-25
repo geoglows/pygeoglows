@@ -2,10 +2,17 @@ import pandas as pd
 import plotly.graph_objects as go
 
 from .format_tools import plotly_figure_to_html_plot
+from .plotly_bias_corrected import (
+    corrected_retrospective as plotly_corrected_retrospective,
+    corrected_month_average as plotly_corrected_month_average,
+    corrected_day_average as plotly_corrected_day_average,
+    corrected_scatterplots as plotly_corrected_scatterplots,
+)
 from .plotly_forecasts import (
     forecast as plotly_forecast,
     forecast_stats as plotly_forecast_stats,
-    forecast_ensembles as plotly_forecast_ensembles
+    forecast_ensembles as plotly_forecast_ensembles,
+    forecast_records as plotly_forecast_records,
 )
 from .plotly_retrospective import (
     retrospective as plotly_retrospective,
@@ -14,17 +21,12 @@ from .plotly_retrospective import (
     annual_averages as plotly_annual_averages,
     flow_duration_curve as plotly_flow_duration_curve,
 )
-from .plotly_bias_corrected import (
-    corrected_retrospective as plotly_corrected_retrospective,
-    corrected_month_average as plotly_corrected_month_average,
-    corrected_day_average as plotly_corrected_day_average,
-    corrected_scatterplots as plotly_corrected_scatterplots,
-)
 
 __all__ = [
     'forecast',
     'forecast_stats',
     'forecast_ensembles',
+    'forecast_records',
 
     'retrospective',
     'daily_averages',
@@ -99,6 +101,29 @@ def forecast_ensembles(df: pd.DataFrame, *,
     """
     if plot_type in ('plotly', 'html'):
         figure = plotly_forecast_ensembles(df, rp_df=rp_df, plot_titles=plot_titles)
+        if plot_type == 'html':
+            return plotly_figure_to_html_plot(figure)
+        return figure
+    raise NotImplementedError(f'Plot type "{plot_type}" is not supported.')
+
+
+def forecast_records(df: pd.DataFrame, *,
+                     plot_type: str = 'plotly',
+                     rp_df: pd.DataFrame = None,
+                     plot_titles: list = None, ) -> go.Figure:
+    """
+    Plots forecasted streamflow and optional return periods
+    Args:
+        df:
+        plot_type:
+        rp_df:
+        plot_titles:
+
+    Returns:
+        go.Figure
+    """
+    if plot_type in ('plotly', 'html'):
+        figure = plotly_forecast_records(df, rp_df=rp_df, plot_titles=plot_titles)
         if plot_type == 'html':
             return plotly_figure_to_html_plot(figure)
         return figure

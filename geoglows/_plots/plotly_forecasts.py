@@ -259,12 +259,12 @@ def forecast_ensembles(df: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_tit
     return go.Figure(scatter_plots, layout=layout)
 
 
-def forecast_records(recs: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_titles: list = False, ) -> go.Figure:
+def forecast_records(df: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_titles: list = False, ) -> go.Figure:
     """
     Makes the streamflow saved forecast data and metadata into a plotly plot
 
     Args:
-        recs: the csv response from forecast_records
+        df: the csv response from forecast_records
         rp_df: the csv response from return_periods
         plot_titles: a list of strings to place in the figure title. each list item will be on a new line.
 
@@ -272,14 +272,14 @@ def forecast_records(recs: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_tit
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
     # Start processing the inputs
-    dates = recs.index.tolist()
+    dates = df.index.tolist()
     startdate = dates[0]
     enddate = dates[-1]
 
     plot_data = {
         'x_records': dates,
-        'recorded_flows': recs.dropna(axis=0).values.flatten(),
-        'y_max': max(recs.values),
+        'recorded_flows': df.dropna(axis=0).values.flatten(),
+        'y_max': np.nanmax(df.values),
     }
     if rp_df is not None:
         plot_data.update(rp_df.to_dict(orient='index').items())
