@@ -57,9 +57,10 @@ def _forecast_endpoint_decorator(function):
         s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
         date = kwargs.get('date', False)
         if not date:
-            dates = sorted([x.split('/')[-1] for x in s3.ls(ODP_FORECAST_S3_BUCKET_URI)], reverse=True)
-            dates = [x.split('.')[0] for x in dates if x.endswith('.zarr')]  # ignore the index.html file
-            dates = [x.replace('00.zarr', '') for x in dates]
+            zarr_vars = ['rivid', 'Qout', 'time', 'ensemble']
+            dates = [s3.glob(os.path.join(ODP_FORECAST_S3_BUCKET_URI, f'*.zarr/{var}')) for var in zarr_vars]
+            dates = [set([d.split('/')[1].replace('.zarr', '') for d in date]) for date in dates]
+            dates = sorted(set.intersection(*dates), reverse=True)
             if product_name == 'dates':
                 return pd.DataFrame(dict(dates=dates))
             date = dates[0]
@@ -121,7 +122,7 @@ def _forecast_endpoint_decorator(function):
         endpoint = f'https://{endpoint}' if not endpoint.startswith(('https://', 'http://')) else endpoint
 
         version = kwargs.get('version', DEFAULT_REST_ENDPOINT_VERSION)
-        assert version in ('v2', ), ValueError(f'Unrecognized model version parameter: {version}')
+        assert version in ('v2',), ValueError(f'Unrecognized model version parameter: {version}')
 
         product_name = function.__name__.replace("_", "").lower()
 
@@ -180,6 +181,7 @@ def _forecast_endpoint_decorator(function):
         if source == 'rest':
             return from_rest(*args, **kwargs)
         return from_aws(*args, **kwargs)
+
     main.__doc__ = function.__doc__  # necessary for code documentation auto generators
     return main
 
@@ -290,15 +292,10 @@ def retrospective(river_id: int or list, format: str = 'df') -> pd.DataFrame or 
     """
     s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
     s3store = s3fs.S3Map(root=f'{ODP_RETROSPECTIVE_S3_BUCKET_URI}/retrospective.zarr', s3=s3, check=False)
-    ds = xr.open_zarr(s3store).sel(rivid=river_id)
+    ds = xr.open_zarr(s3store)
     if format == 'xarray':
         return ds
-    return ds.to_dataframe().reset_index().set_index('time').pivot(columns='rivid', values='Qout')
-
-
-def historical(*args, **kwargs):
-    """Alias for retrospective"""
-    return retrospective(*args, **kwargs)
+    return ds.sel(rivid=river_id).to_dataframe().reset_index().set_index('time').pivot(columns='rivid', values='Qout')
 
 
 def daily_averages(river_id: int or list) -> pd.DataFrame:
@@ -343,24 +340,32 @@ def annual_averages(river_id: int or list) -> pd.DataFrame:
     return calc_annual_averages(df)
 
 
-def return_periods(river_id: int or list, format: str = 'df') -> pd.DataFrame or xr.Dataset:
+def return_periods(river_id: int or list, format: str = 'df', method: str = 'gumbel1') -> pd.DataFrame or xr.Dataset:
     """
     Retrieves the return period thresholds based on a specified historic simulation forcing on a certain river_id.
 
     Args:
         river_id (int): the ID of a stream, should be a 9 digit integer
         format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
+        method (str): the method to use to estimate the return period thresholds. default is 'gumbel1'
+
+    Changelog:
+        v1.4.0: adds method parameter for future expansion of multiple return period methods
 
     Returns:
         pd.DataFrame
     """
+    rp_methods = {
+        'gumbel1': 'gumbel1_return_period',
+    }
+    assert method in rp_methods, f'Unrecognized return period estimation method given: {method}'
     s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
     s3store = s3fs.S3Map(root=f'{ODP_RETROSPECTIVE_S3_BUCKET_URI}/return-periods.zarr', s3=s3, check=False)
-    ds = xr.open_zarr(s3store).sel(rivid=river_id)
+    ds = xr.open_zarr(s3store)
     if format == 'xarray':
         return ds
-    return (ds['return_period_flow'].to_dataframe().reset_index()
-            .pivot(index='rivid', columns='return_period', values='return_period_flow'))
+    return (ds.sel(rivid=river_id)[rp_methods[method]].to_dataframe().reset_index()
+            .pivot(index='rivid', columns='return_period', values=rp_methods[method]))
 
 
 # model config and supplementary data

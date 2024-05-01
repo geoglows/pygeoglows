@@ -1,12 +1,12 @@
-dask>=2024
+dask>=2022
 fastparquet
 requests
 pandas>=1
 plotly>=5
 scipy>=1
-s3fs>=2024
+s3fs>=2022
 numpy>=1
 hydrostats
 HydroErr
-xarray>=2024
+xarray>=2022
 zarr

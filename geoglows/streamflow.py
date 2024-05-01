@@ -42,7 +42,7 @@ def forecast_stats(reach_id: int, return_format: str = 'csv', forecast_date: str
 
             data = streamflow.rst.forecast_stats(12341234)
     """
-    warnings.warn(DEPRECATIONWARNING, DeprecationWarning)
+    warnings.warn(DEPRECATIONWARNING, DeprecationWarning, stacklevel=2)
     method = 'ForecastStats/'
 
     # if you only wanted the url, quit here
@@ -113,7 +113,7 @@ def forecast_warnings(region: str = 'all', return_format='csv',
 
             data = streamflow.rst.forecast_warnings('australia-geoglows')
     """
-    warnings.warn(DEPRECATIONWARNING, DeprecationWarning)
+    warnings.warn(DEPRECATIONWARNING, DeprecationWarning, stacklevel=2)
     method = 'ForecastWarnings/'
 
     # if you only wanted the url, quit here
@@ -148,7 +148,7 @@ def forecast_records(reach_id: int, start_date: str = None, end_date: str = None
 
             data = streamflow.rst.forecast_warnings('australia-geoglows')
     """
-    warnings.warn(DEPRECATIONWARNING, DeprecationWarning)
+    warnings.warn(DEPRECATIONWARNING, DeprecationWarning, stacklevel=2)
     method = 'ForecastRecords/'
 
     # if you only wanted the url, quit here
@@ -188,7 +188,7 @@ def historic_simulation(reach_id: int, return_format='csv', forcing='era_5',
 
             data = streamflow.rst.historic_simulation(12341234)
     """
-    warnings.warn(DEPRECATIONWARNING, DeprecationWarning)
+    warnings.warn(DEPRECATIONWARNING, DeprecationWarning, stacklevel=2)
     method = 'HistoricSimulation/'
 
     # if you only wanted the url, quit here
@@ -223,7 +223,7 @@ def daily_averages(reach_id: int, return_format='csv', forcing='era_5',
 
             data = streamflow.rst.seasonal_average(12341234)
     """
-    warnings.warn(DEPRECATIONWARNING, DeprecationWarning)
+    warnings.warn(DEPRECATIONWARNING, DeprecationWarning, stacklevel=2)
     method = 'DailyAverages/'
 
     # if you only wanted the url, quit here
@@ -258,7 +258,7 @@ def monthly_averages(reach_id: int, return_format='csv', forcing='era_5',
 
             data = streamflow.rst.seasonal_average(12341234)
     """
-    warnings.warn(DEPRECATIONWARNING, DeprecationWarning)
+    warnings.warn(DEPRECATIONWARNING, DeprecationWarning, stacklevel=2)
     method = 'MonthlyAverages/'
 
     # if you only wanted the url, quit here
@@ -293,7 +293,7 @@ def return_periods(reach_id: int, return_format='csv', forcing='era_5',
 
             data = streamflow.rst.return_periods(12341234)
     """
-    warnings.warn(DEPRECATIONWARNING, DeprecationWarning)
+    warnings.warn(DEPRECATIONWARNING, DeprecationWarning, stacklevel=2)
     method = 'ReturnPeriods/'
 
     # if you only wanted the url, quit here
@@ -324,7 +324,7 @@ def available_data(endpoint: str = ENDPOINT, return_format='json', s: requests.S
             data = streamflow.rst.available_data()
 
     """
-    warnings.warn(DEPRECATIONWARNING, DeprecationWarning)
+    warnings.warn(DEPRECATIONWARNING, DeprecationWarning, stacklevel=2)
     method = 'AvailableData/'
 
     # if you only wanted the url, quit here
@@ -356,7 +356,7 @@ def available_dates(reach_id: int = None, region: str = None, return_format: str
 
             data = streamflow.rst.available_dates(12341234)
     """
-    warnings.warn(DEPRECATIONWARNING, DeprecationWarning)
+    warnings.warn(DEPRECATIONWARNING, DeprecationWarning, stacklevel=2)
     method = 'AvailableDates/'
 
     # you need a region for the api call, so the user needs to provide one or a valid reach_id to get it from

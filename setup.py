@@ -6,7 +6,7 @@ NAME = 'geoglows'
 DESCRIPTION = 'Package for accessing data from the GEOGLOWS Hydrological Model'
 URL = 'https://data.geoglows.org'
 AUTHOR = 'Riley Hales PhD'
-REQUIRES_PYTHON = '>=3.10.0'
+REQUIRES_PYTHON = '>=3.7.0'
 LICENSE = 'BSD 3-Clause Clear License'
 
 with open("README.md", "r") as readme:
