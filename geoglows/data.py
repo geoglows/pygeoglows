@@ -292,10 +292,10 @@ def retrospective(river_id: int or list, format: str = 'df') -> pd.DataFrame or 
     """
     s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
     s3store = s3fs.S3Map(root=f'{ODP_RETROSPECTIVE_S3_BUCKET_URI}/retrospective.zarr', s3=s3, check=False)
-    ds = xr.open_zarr(s3store)
+    ds = xr.open_zarr(s3store).sel(rivid=river_id)
     if format == 'xarray':
         return ds
-    return ds.sel(rivid=river_id).to_dataframe().reset_index().set_index('time').pivot(columns='rivid', values='Qout')
+    return ds.to_dataframe().reset_index().set_index('time').pivot(columns='rivid', values='Qout')
 
 
 def daily_averages(river_id: int or list) -> pd.DataFrame:
@@ -361,10 +361,10 @@ def return_periods(river_id: int or list, format: str = 'df', method: str = 'gum
     assert method in rp_methods, f'Unrecognized return period estimation method given: {method}'
     s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
     s3store = s3fs.S3Map(root=f'{ODP_RETROSPECTIVE_S3_BUCKET_URI}/return-periods.zarr', s3=s3, check=False)
-    ds = xr.open_zarr(s3store)
+    ds = xr.open_zarr(s3store).sel(rivid=river_id)
     if format == 'xarray':
         return ds
-    return (ds.sel(rivid=river_id)[rp_methods[method]].to_dataframe().reset_index()
+    return (ds[rp_methods[method]].to_dataframe().reset_index()
             .pivot(index='rivid', columns='return_period', values=rp_methods[method]))
 
 
