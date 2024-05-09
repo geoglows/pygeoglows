@@ -28,6 +28,7 @@ def latlon_to_river(lat: float, lon: float, metadata_table_path: str = None) -> 
     Args:
         lat (float): a latitude
         lon (float): a longitude
+        metadata_table_path (str): optional path to the local metadata table
 
     Returns:
         int: a 9 digit integer that is a valid GEOGLOWS River ID number

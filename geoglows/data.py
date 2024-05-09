@@ -205,6 +205,7 @@ def metadata_tables(columns: list = None, metadata_table_path: str = None) -> pd
     Retrieves the master table of rivers metadata and properties as a pandas DataFrame
     Args:
         columns (list): optional subset of columns names to read from the parquet
+        metadata_table_path (str): optional path to a local copy of the metadata table
 
     Returns:
         pd.DataFrame
