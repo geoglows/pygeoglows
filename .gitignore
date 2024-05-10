@@ -8,3 +8,4 @@ geoglows.egg-info
 dist
 .pypirc
 *.parquet
+*.pyc

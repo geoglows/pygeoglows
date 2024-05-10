@@ -200,24 +200,29 @@ def return_periods(river_id: int or list, *, format: str = 'df', method: str = '
 
 
 # model config and supplementary data
-def metadata_tables(columns: list = None) -> pd.DataFrame:
+def metadata_tables(columns: list = None, metadata_table_path: str = None) -> pd.DataFrame:
     """
     Retrieves the master table of rivers metadata and properties as a pandas DataFrame
     Args:
         columns (list): optional subset of columns names to read from the parquet
+        metadata_table_path (str): optional path to a local copy of the metadata table
 
     Returns:
         pd.DataFrame
     """
     if os.path.exists(METADATA_TABLE_PATH):
         return pd.read_parquet(METADATA_TABLE_PATH, columns=columns)
+
+    if metadata_table_path:
+        return pd.read_parquet(metadata_table_path, columns=columns)
+
     warn = f"""
-    Local copy of geoglows v2 metadata table not found. You should download a copy for optimal performance and 
+    Local copy of geoglows v2 metadata table not found. You should download a copy for optimal performance and
     to make the data available when you are offline. A copy of the table will be cached at {METADATA_TABLE_PATH}.
     Alternatively, set the environment variable PYGEOGLOWS_METADATA_TABLE_PATH to the path of the table.
     """
     warnings.warn(warn)
-    df = pd.read_parquet('https://geoglows-v2.s3-website-us-west-2.amazonaws.com/tables/package-metadata-table.parquet')
+    df = pd.read_parquet('http://geoglows-v2.s3-website-us-west-2.amazonaws.com/tables/package-metadata-table.parquet')
     os.makedirs(os.path.dirname(METADATA_TABLE_PATH), exist_ok=True)
     df.to_parquet(METADATA_TABLE_PATH)
     return df[columns] if columns else df

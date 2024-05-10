@@ -22,17 +22,18 @@ def river_to_vpu(river_id: int) -> int:
     )
 
 
-def latlon_to_river(lat: float, lon: float) -> int:
+def latlon_to_river(lat: float, lon: float, metadata_table_path: str = None) -> int:
     """
     Gives the River ID number whose outlet is nearest the given lat and lon
     Args:
         lat (float): a latitude
         lon (float): a longitude
+        metadata_table_path (str): optional path to the local metadata table
 
     Returns:
         int: a 9 digit integer that is a valid GEOGLOWS River ID number
     """
-    df = metadata_tables(columns=['LINKNO', 'lat', 'lon'])
+    df = metadata_tables(columns=['LINKNO', 'lat', 'lon'], metadata_table_path=metadata_table_path)
     df['dist'] = ((df['lat'] - lat) ** 2 + (df['lon'] - lon) ** 2) ** 0.5
     return df.loc[lambda x: x['dist'] == df['dist'].min(), 'LINKNO'].values[0]
 
