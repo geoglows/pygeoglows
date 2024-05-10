@@ -4,7 +4,7 @@ import warnings
 import pandas as pd
 import xarray as xr
 
-from ._constants import METADATA_TABLE_PATH
+from ._constants import get_metadata_table_path
 from ._download_decorators import _forecast, _retrospective
 
 from .analyze import (
@@ -210,19 +210,18 @@ def metadata_tables(columns: list = None, metadata_table_path: str = None) -> pd
     Returns:
         pd.DataFrame
     """
-    if os.path.exists(METADATA_TABLE_PATH):
-        return pd.read_parquet(METADATA_TABLE_PATH, columns=columns)
-
     if metadata_table_path:
         return pd.read_parquet(metadata_table_path, columns=columns)
-
+    metadata_table_path = get_metadata_table_path()
+    if os.path.exists(metadata_table_path):
+        return pd.read_parquet(metadata_table_path, columns=columns)
     warn = f"""
-    Local copy of geoglows v2 metadata table not found. You should download a copy for optimal performance and
-    to make the data available when you are offline. A copy of the table will be cached at {METADATA_TABLE_PATH}.
-    Alternatively, set the environment variable PYGEOGLOWS_METADATA_TABLE_PATH to the path of the table.
+    Local copy of geoglows v2 metadata table not found.
+    A copy of the table has been cached at {metadata_table_path} which you can move as desired.
+    You should set the environment variable PYGEOGLOWS_METADATA_TABLE_PATH or provide the metadata_table_path argument.
     """
     warnings.warn(warn)
     df = pd.read_parquet('http://geoglows-v2.s3-website-us-west-2.amazonaws.com/tables/package-metadata-table.parquet')
-    os.makedirs(os.path.dirname(METADATA_TABLE_PATH), exist_ok=True)
-    df.to_parquet(METADATA_TABLE_PATH)
+    os.makedirs(os.path.dirname(metadata_table_path), exist_ok=True)
+    df.to_parquet(metadata_table_path)
     return df[columns] if columns else df

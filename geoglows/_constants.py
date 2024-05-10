@@ -9,3 +9,13 @@ METADATA_TABLE_PATH = os.getenv(
     'PYGEOGLOWS_METADATA_TABLE_PATH',
     os.path.join(os.path.dirname(__file__), 'data', 'metadata-tables.parquet')
 )
+
+
+def get_metadata_table_path() -> str:
+    return METADATA_TABLE_PATH
+
+
+def set_metadata_table_path(path: str) -> str:
+    global METADATA_TABLE_PATH
+    METADATA_TABLE_PATH = path
+    return METADATA_TABLE_PATH
