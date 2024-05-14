@@ -35,8 +35,9 @@ def _forecast(function):
             warnings.warn('forecast_records are not available from the AWS Open Data Program.')
             return from_rest(*args, **kwargs)
 
-        river_id = kwargs.get('river_id', '')
-        river_id = args[0] if len(args) > 0 else river_id
+        river_id = args[0] if len(args) > 0 else kwargs.get('river_id', '')
+        if river_id is None or river_id == '':
+            raise ValueError('River ID must be provided to retrieve forecast data.')
 
         return_format = kwargs.get('format', 'df')
         assert return_format in ('df', 'xarray'), f'Unsupported return format requested: {return_format}'
@@ -118,8 +119,7 @@ def _forecast(function):
 
         product_name = function.__name__.replace("_", "").lower()
 
-        river_id = args[0] if len(args) > 0 else None
-        river_id = kwargs.get('river_id', '') if not river_id else river_id
+        river_id = args[0] if len(args) > 0 else kwargs.get('river_id', '')
         if isinstance(river_id, list):
             raise ValueError('Multiple river_ids are not available via REST API or on v1. '
                              'Use data_source="aws" for multiple river_ids.')
@@ -182,8 +182,9 @@ def _retrospective(function):
     def main(*args, **kwargs):
         product_name = function.__name__.replace("_", "-").lower()
 
-        river_id = args[0] if len(args) > 0 else None
-        river_id = kwargs.get('river_id', '') if not river_id else river_id
+        river_id = args[0] if len(args) > 0 else kwargs.get('river_id', '')
+        if river_id is None or river_id == '':
+            raise ValueError('River ID must be provided to retrieve retrospective data.')
 
         return_format = kwargs.get('format', 'df')
         assert return_format in ('df', 'xarray'), f'Unsupported return format requested: {return_format}'
