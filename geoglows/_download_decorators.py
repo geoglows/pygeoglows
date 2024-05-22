@@ -1,22 +1,20 @@
-import os
 import warnings
 from io import StringIO
 
+import numpy as np
 import pandas as pd
 import requests
 import s3fs
 import xarray as xr
-import numpy as np
-
-from .analyze import (
-    simple_forecast as calc_simple_forecast,
-    forecast_stats as calc_forecast_stats,
-)
 
 from ._constants import (
     ODP_FORECAST_S3_BUCKET_URI,
     ODP_RETROSPECTIVE_S3_BUCKET_URI,
     ODP_S3_BUCKET_REGION,
+)
+from .analyze import (
+    simple_forecast as calc_simple_forecast,
+    forecast_stats as calc_forecast_stats,
 )
 
 DEFAULT_REST_ENDPOINT = 'https://geoglows.ecmwf.int/api/'
@@ -29,14 +27,22 @@ __all__ = [
 
 
 def _forecast(function):
+    def _river_id_is_iterable(river_id):
+        return bool(
+                isinstance(river_id, list) or
+                isinstance(river_id, tuple) or
+                isinstance(river_id, set) or
+                isinstance(river_id, np.ndarray)
+        )
+
     def from_aws(*args, **kwargs):
         product_name = function.__name__.replace("_", "").lower()
         if product_name == 'forecastrecords':
             warnings.warn('forecast_records are not available from the AWS Open Data Program.')
             return from_rest(*args, **kwargs)
 
-        river_id = args[0] if len(args) > 0 else kwargs.get('river_id', '')
-        if river_id is None or river_id == '':
+        river_id = args[0] if len(args) > 0 else kwargs.get('river_id', None)
+        if river_id is None:
             raise ValueError('River ID must be provided to retrieve forecast data.')
 
         return_format = kwargs.get('format', 'df')
@@ -51,7 +57,7 @@ def _forecast(function):
         date = kwargs.get('date', False)
         if not date:
             zarr_vars = ['rivid', 'Qout', 'time', 'ensemble']
-            dates = [s3.glob(os.path.join(ODP_FORECAST_S3_BUCKET_URI, f'*.zarr/{var}')) for var in zarr_vars]
+            dates = [s3.glob(ODP_FORECAST_S3_BUCKET_URI + '/' + f'*.zarr/{var}') for var in zarr_vars]
             dates = [set([d.split('/')[1].replace('.zarr', '') for d in date]) for date in dates]
             dates = sorted(set.intersection(*dates), reverse=True)
             if product_name == 'dates':
@@ -119,8 +125,8 @@ def _forecast(function):
 
         product_name = function.__name__.replace("_", "").lower()
 
-        river_id = args[0] if len(args) > 0 else kwargs.get('river_id', '')
-        if isinstance(river_id, list):
+        river_id = args[0] if len(args) > 0 else kwargs.get('river_id', None)
+        if ():
             raise ValueError('Multiple river_ids are not available via REST API or on v1. '
                              'Use data_source="aws" for multiple river_ids.')
         river_id = int(river_id) if river_id else None
@@ -182,8 +188,8 @@ def _retrospective(function):
     def main(*args, **kwargs):
         product_name = function.__name__.replace("_", "-").lower()
 
-        river_id = args[0] if len(args) > 0 else kwargs.get('river_id', '')
-        if river_id is None or river_id == '':
+        river_id = args[0] if len(args) > 0 else kwargs.get('river_id', None)
+        if river_id is None:
             raise ValueError('River ID must be provided to retrieve retrospective data.')
 
         return_format = kwargs.get('format', 'df')

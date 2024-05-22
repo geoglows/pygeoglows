@@ -12,6 +12,6 @@ __all__ = [
     'bias', 'plots', 'data', 'analyze', 'streams', 'tables', 'streamflow',
     'get_metadata_table_path', 'set_metadata_table_path',
 ]
-__version__ = '1.6.1'
+__version__ = '1.6.2'
 __author__ = 'Riley Hales'
 __license__ = 'BSD 3-Clause Clear License'
