@@ -3,6 +3,7 @@ channels:
   - conda-forge
 dependencies:
   - python>=3
+  - cftime
   - dask >=2024
   - fastparquet
   - HydroErr
