@@ -126,10 +126,10 @@ def _forecast(function):
         product_name = function.__name__.replace("_", "").lower()
 
         river_id = args[0] if len(args) > 0 else kwargs.get('river_id', None)
-        if ():
-            raise ValueError('Multiple river_ids are not available via REST API or on v1. '
-                             'Use data_source="aws" for multiple river_ids.')
-        river_id = int(river_id) if river_id else None
+        if river_id is None:
+            raise ValueError('River ID must be provided to retrieve forecast data.')
+        if not isinstance(river_id, (int, np.int64, )):
+            raise ValueError('Multiple river_ids are not available via REST API. Provide a single 9 digit integer.')
         if river_id and version == 'v2':
             assert 1_000_000_000 > river_id >= 110_000_000, ValueError('River ID must be a 9 digit integer')
 
