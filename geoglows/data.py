@@ -5,7 +5,7 @@ import pandas as pd
 import xarray as xr
 
 from ._constants import get_metadata_table_path
-from ._download_decorators import _forecast, _retrospective
+from ._download_decorators import _forecast, _retrospective, DEFAULT_REST_ENDPOINT, DEFAULT_REST_ENDPOINT_VERSION
 
 from .analyze import (
     daily_averages as calc_daily_averages,
@@ -27,6 +27,9 @@ __all__ = [
     'return_periods',
 
     'metadata_tables',
+
+    'DEFAULT_REST_ENDPOINT',
+    'DEFAULT_REST_ENDPOINT_VERSION',
 ]
 
 

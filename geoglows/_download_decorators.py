@@ -27,14 +27,6 @@ __all__ = [
 
 
 def _forecast(function):
-    def _river_id_is_iterable(river_id):
-        return bool(
-                isinstance(river_id, list) or
-                isinstance(river_id, tuple) or
-                isinstance(river_id, set) or
-                isinstance(river_id, np.ndarray)
-        )
-
     def from_aws(*args, **kwargs):
         product_name = function.__name__.replace("_", "").lower()
         if product_name == 'forecastrecords':
@@ -42,7 +34,7 @@ def _forecast(function):
             return from_rest(*args, **kwargs)
 
         river_id = args[0] if len(args) > 0 else kwargs.get('river_id', None)
-        if river_id is None:
+        if river_id is None and product_name != 'dates':
             raise ValueError('River ID must be provided to retrieve forecast data.')
 
         return_format = kwargs.get('format', 'df')
@@ -126,7 +118,7 @@ def _forecast(function):
         product_name = function.__name__.replace("_", "").lower()
 
         river_id = args[0] if len(args) > 0 else kwargs.get('river_id', None)
-        if river_id is None:
+        if river_id is None and product_name != 'dates':
             raise ValueError('River ID must be provided to retrieve forecast data.')
         if not isinstance(river_id, (int, np.int64, )):
             raise ValueError('Multiple river_ids are not available via REST API. Provide a single 9 digit integer.')
