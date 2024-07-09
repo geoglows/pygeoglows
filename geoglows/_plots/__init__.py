@@ -12,6 +12,8 @@ from .plots import (
     corrected_month_average,
     corrected_day_average,
     corrected_scatterplots,
+
+    plotly_figure_to_html_plot as plotly_figure_to_html,
 )
 
 __all__ = [

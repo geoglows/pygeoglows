@@ -76,6 +76,7 @@ def _forecast(function):
             ds.attrs = attrs
             return ds
         df = ds.to_dataframe().round(2).reset_index()
+        df['time'] = pd.to_datetime(df['time'], utc=True)
 
         # rename columns to match the REST API
         if isinstance(river_id, int) or isinstance(river_id, np.int64):
@@ -159,6 +160,7 @@ def _forecast(function):
             if 'datetime' in df.columns:
                 df['datetime'] = pd.to_datetime(df['datetime'])
                 df = df.set_index('datetime')
+                df.index = df.index.tz_localize('UTC')
             return df
         elif return_format == 'json':
             return response.json()
@@ -204,13 +206,15 @@ def _retrospective(function):
         if return_format == 'xarray':
             return ds
         if product_name == 'retrospective':
-            return (
+            df = (
                 ds
                 .to_dataframe()
                 .reset_index()
                 .set_index('time')
                 .pivot(columns='rivid', values='Qout')
             )
+            df.index = df.index.tz_localize('UTC')
+            return df
         if product_name == 'return-periods':
             rp_methods = {
                 'gumbel1': 'gumbel1_return_period',

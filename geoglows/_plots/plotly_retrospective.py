@@ -2,7 +2,7 @@ import pandas as pd
 import plotly.graph_objs as go
 import scipy.stats
 
-from .format_tools import build_title
+from .format_tools import build_title, timezone_label
 from .plotly_helpers import _rperiod_scatters
 
 __all__ = [
@@ -15,13 +15,12 @@ __all__ = [
 ]
 
 
-def retrospective(retro: pd.DataFrame, *,
-                  rp_df: pd.DataFrame = None, plot_titles: dict = None, ) -> go.Figure:
+def retrospective(df: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_titles: dict = None, ) -> go.Figure:
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
-        retro: the csv response from historic_simulation
+        df: the csv response from historic_simulation
         rp_df: the csv response from return_periods
         plot_type: either 'json', 'plotly', or 'html' (default plotly)
         plot_titles: (dict) Extra info to show on the title of the plot. For example:
@@ -30,14 +29,14 @@ def retrospective(retro: pd.DataFrame, *,
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
     """
-    dates = retro.index.tolist()
+    dates = df.index.tolist()
     startdate = dates[0]
     enddate = dates[-1]
 
     plot_data = {
         'x_datetime': dates,
-        'y_flow': retro.values.flatten(),
-        'y_max': retro.values.max(),
+        'y_flow': df.values.flatten(),
+        'y_max': df.values.max(),
     }
     if rp_df is not None:
         plot_data.update(rp_df.to_dict(orient='index').items())
@@ -56,7 +55,7 @@ def retrospective(retro: pd.DataFrame, *,
         title=build_title('Retrospective Streamflow Simulation', plot_titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={
-            'title': 'Date (UTC +0:00)',
+            'title': timezone_label(df.index.tz),
             'range': [startdate, enddate],
             'hoverformat': '%b %d %Y',
             'tickformat': '%Y'
@@ -94,12 +93,13 @@ def daily_averages(dayavg: pd.DataFrame, plot_titles: list = None, plot_type: st
     layout = go.Layout(
         title=build_title('Daily Average Streamflow (Simulated)', plot_titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
-        xaxis={'title': 'Date (UTC +0:00)', 'hoverformat': '%b %d', 'tickformat': '%b'},
+        xaxis={'title': 'Date', 'hoverformat': '%b %d', 'tickformat': '%b'},
     )
     return go.Figure(scatter_plots, layout=layout)
 
 
-def monthly_averages(monavg: pd.DataFrame, titles: dict = None, plot_titles: list = None, plot_type: str = 'plotly') -> go.Figure:
+def monthly_averages(monavg: pd.DataFrame, titles: dict = None, plot_titles: list = None,
+                     plot_type: str = 'plotly') -> go.Figure:
     """
     Makes the daily_averages data and metadata into a plotly plot
 
@@ -161,12 +161,12 @@ def annual_averages(df: pd.DataFrame, *, plot_titles: list = None, ) -> go.Figur
     return go.Figure(scatter_plots, layout=layout)
 
 
-def flow_duration_curve(hist: pd.DataFrame, plot_titles: dict = None, plot_type: str = 'plotly') -> go.Figure:
+def flow_duration_curve(df: pd.DataFrame, plot_titles: dict = None, plot_type: str = 'plotly') -> go.Figure:
     """
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
-        hist: the csv response from historic_simulation
+        df: the dataframe response from data.retrospective
         plot_titles: (dict) Extra info to show on the title of the plot. For example:
             {'River ID': 1234567, 'Drainage Area': '1000km^2'}
         plot_type: either 'json', 'plotly', or 'html' (default plotly)
@@ -178,7 +178,7 @@ def flow_duration_curve(hist: pd.DataFrame, plot_titles: dict = None, plot_type:
         raise ValueError('invalid plot_type specified. pick json, plotly, plotly_scatters, or html')
 
     # process the hist dataframe to create the flow duration curve
-    sorted_hist = hist.values.flatten()
+    sorted_hist = df.values.flatten()
     sorted_hist.sort()
 
     # ranks data from smallest to largest
@@ -212,12 +212,12 @@ def flow_duration_curve(hist: pd.DataFrame, plot_titles: dict = None, plot_type:
     return go.Figure(scatter_plots, layout=layout)
 
 
-def daily_stats(hist: pd.DataFrame, *, plot_titles: dict = None, plot_type: str = 'plotly') -> go.Figure:
+def daily_stats(df: pd.DataFrame, *, plot_titles: dict = None, plot_type: str = 'plotly') -> go.Figure:
     """
     Plots a graph with statistics for each day of year
 
     Args:
-        hist: dataframe of values to plot
+        df: dataframe of values to plot
         plot_titles: (dict) Extra info to show on the title of the plot. For example:
             {'River ID': 1234567, 'Drainage Area': '1000km^2'}
         plot_type: either 'plotly' (python object, default), 'plotly_scatters', or 'html'
@@ -226,7 +226,7 @@ def daily_stats(hist: pd.DataFrame, *, plot_titles: dict = None, plot_type: str 
         plot of the graph of the low flows
     """
 
-    stats_df = daily_stats(hist)
+    stats_df = daily_stats(df)
 
     data = [
         go.Scatter(
@@ -241,7 +241,7 @@ def daily_stats(hist: pd.DataFrame, *, plot_titles: dict = None, plot_type: str 
     layout = go.Layout(
         title=build_title('Daily Average Streamflow (Simulated)', plot_titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
-        xaxis={'title': 'Date (UTC +0:00)', 'hoverformat': '%b %d', 'tickformat': '%b'},
+        xaxis={'title': timezone_label(df.index.tz), 'hoverformat': '%b %d', 'tickformat': '%b'},
     )
     return go.Figure(data=data, layout=layout)
 

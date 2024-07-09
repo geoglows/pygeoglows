@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 
-from .format_tools import build_title
+from .format_tools import build_title, timezone_label
 from .plotly_helpers import _rperiod_scatters
 
 __all__ = [
@@ -35,7 +35,7 @@ def forecast(df: pd.DataFrame, *,
         ),
         go.Scatter(
             name='Uncertainty Bounds',
-            x=np.concatenate([df.index.values, df.index.values[::-1]]),
+            x=np.concatenate([df.index, df.index[::-1]]),
             y=np.concatenate([df['flow_uncertainty_upper'], df['flow_uncertainty_lower'][::-1]]),
             legendgroup='uncertainty',
             showlegend=True,
@@ -67,7 +67,7 @@ def forecast(df: pd.DataFrame, *,
     layout = go.Layout(
         title=build_title('Forecasted Streamflow', plot_titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
-        xaxis={'title': 'Date (UTC +0:00)', 'range': [df.index[0], df.index[-1]]},
+        xaxis={'title': timezone_label(df.index.tz), 'range': [df.index[0], df.index[-1]]},
     )
 
     return go.Figure(scatter_traces, layout=layout)
@@ -179,7 +179,7 @@ def forecast_stats(df: pd.DataFrame, *,
             'range': [0, 'auto']
         },
         xaxis={
-            'title': 'Date (UTC +0:00)',
+            'title': timezone_label(df.index.tz),
             'range': [startdate, enddate],
             'hoverformat': '%b %d %Y',
             'tickformat': '%b %d %Y'
@@ -250,7 +250,7 @@ def forecast_ensembles(df: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_tit
         title=build_title('Ensemble Predicted Streamflow', plot_titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
         xaxis={
-            'title': 'Date (UTC +0:00)',
+            'title': timezone_label(df.index.tz),
             'range': [startdate, enddate],
             'hoverformat': '%b %d %Y',
             'tickformat': '%b %d %Y'
@@ -297,6 +297,6 @@ def forecast_records(df: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_title
     layout = go.Layout(
         title=build_title('Previous Forecasted Streamflow', plot_titles=plot_titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
-        xaxis={'title': 'Date (UTC +0:00)', 'range': [startdate, enddate]},
+        xaxis={'title': timezone_label(df.index.tz), 'range': [startdate, enddate]},
     )
     return go.Figure(scatter_plots, layout=layout)
