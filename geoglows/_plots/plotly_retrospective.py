@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import plotly.graph_objs as go
 import scipy.stats
@@ -22,7 +23,6 @@ def retrospective(df: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_titles: 
     Args:
         df: the csv response from historic_simulation
         rp_df: the csv response from return_periods
-        plot_type: either 'json', 'plotly', or 'html' (default plotly)
         plot_titles: (dict) Extra info to show on the title of the plot. For example:
             {'River ID': 1234567, 'Drainage Area': '1000km^2'}
 
@@ -57,7 +57,7 @@ def retrospective(df: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_titles: 
         xaxis={
             'title': timezone_label(df.index.tz),
             'range': [startdate, enddate],
-            'hoverformat': '%b %d %Y',
+            'hoverformat': '%d %b %Y',
             'tickformat': '%Y'
         },
     )
@@ -98,14 +98,14 @@ def daily_averages(dayavg: pd.DataFrame, plot_titles: list = None, plot_type: st
     return go.Figure(scatter_plots, layout=layout)
 
 
-def monthly_averages(monavg: pd.DataFrame, titles: dict = None, plot_titles: list = None,
+def monthly_averages(monavg: pd.DataFrame, plot_titles: list = None,
                      plot_type: str = 'plotly') -> go.Figure:
     """
     Makes the daily_averages data and metadata into a plotly plot
 
     Args:
         monavg: the csv response from monthly_averages
-        titles: (dict) Extra info to show on the title of the plot. For example:
+        plot_titles: (dict) Extra info to show on the title of the plot. For example:
             {'River ID': 1234567, 'Drainage Area': '1000km^2'}
         plot_type: either 'plotly', or 'html' (default plotly)
 
@@ -133,7 +133,7 @@ def monthly_averages(monavg: pd.DataFrame, titles: dict = None, plot_titles: lis
     return go.Figure(scatter_plots, layout=layout)
 
 
-def annual_averages(df: pd.DataFrame, *, plot_titles: list = None, ) -> go.Figure:
+def annual_averages(df: pd.DataFrame, *, plot_titles: list = None, decade_averages: bool = False) -> go.Figure:
     """
     Makes the annual_averages data and metadata into a plotly plot
 
@@ -141,6 +141,7 @@ def annual_averages(df: pd.DataFrame, *, plot_titles: list = None, ) -> go.Figur
         df: the csv response from annual_averages
         plot_titles: (dict) Extra info to show on the title of the plot. For example:
             {'River ID': 1234567, 'Drainage Area': '1000km^2'}
+        decade_averages: (bool) if True, will plot the average flow for each decade
 
     Return:
          plotly.GraphObject: plotly object, especially for use with python notebooks and the .show() method
@@ -153,6 +154,29 @@ def annual_averages(df: pd.DataFrame, *, plot_titles: list = None, ) -> go.Figur
             line=dict(color='blue')
         ),
     ]
+
+    if decade_averages:
+        # get a list of decades covered by the data in the index
+        first_year = str(int(df.index[0]))[:-1] + '0'
+        last_year = str(int(df.index[-1]))[:-1] + '9'
+        first_year = int(first_year)
+        last_year = int(last_year)
+        decades = [decade for decade in range(int(first_year), int(last_year) + 1, 10)]
+        for idx, decade in enumerate(decades):
+            decade_values = df[np.logical_and(df.index.astype(int) >= decade, df.index.astype(int) < decade + 10)]
+            mean_flow = decade_values.values.flatten().mean()
+            scatter_plots.append(
+                go.Scatter(
+                    name=f'{decade}s: {mean_flow:.2f} m<sup>3</sup>/s',
+                    x=[decade_values.index[0], decade_values.index[-1]],
+                    y=mean_flow * np.ones(2),
+                    line=dict(color='red'),
+                    hoverinfo='name',
+                    legendgroup='decade_averages',
+                    legendgrouptitle=dict(text='Decade Averages')
+                )
+            )
+
     layout = go.Layout(
         title=build_title('Annual Average Streamflow (Simulated)', plot_titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)'},

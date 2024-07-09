@@ -67,7 +67,11 @@ def forecast(df: pd.DataFrame, *,
     layout = go.Layout(
         title=build_title('Forecasted Streamflow', plot_titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
-        xaxis={'title': timezone_label(df.index.tz), 'range': [df.index[0], df.index[-1]]},
+        xaxis={
+            'title': timezone_label(df.index.tz),
+            'range': [df.index[0], df.index[-1]],
+            'hoverformat': '%d %b %Y %X',
+        },
     )
 
     return go.Figure(scatter_traces, layout=layout)
@@ -181,7 +185,7 @@ def forecast_stats(df: pd.DataFrame, *,
         xaxis={
             'title': timezone_label(df.index.tz),
             'range': [startdate, enddate],
-            'hoverformat': '%b %d %Y',
+            'hoverformat': '%d %b %Y %X',
             'tickformat': '%b %d %Y'
         },
     )
@@ -252,7 +256,7 @@ def forecast_ensembles(df: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_tit
         xaxis={
             'title': timezone_label(df.index.tz),
             'range': [startdate, enddate],
-            'hoverformat': '%b %d %Y',
+            'hoverformat': '%d %b %Y %X',
             'tickformat': '%b %d %Y'
         },
     )
@@ -297,6 +301,10 @@ def forecast_records(df: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_title
     layout = go.Layout(
         title=build_title('Previous Forecasted Streamflow', plot_titles=plot_titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)', 'range': [0, 'auto']},
-        xaxis={'title': timezone_label(df.index.tz), 'range': [startdate, enddate]},
+        xaxis={
+            'title': timezone_label(df.index.tz),
+            'range': [startdate, enddate],
+            'hoverformat': '%d %b %Y %X',
+        },
     )
     return go.Figure(scatter_plots, layout=layout)
