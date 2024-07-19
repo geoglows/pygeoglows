@@ -200,7 +200,8 @@ def monthly_averages(df: pd.DataFrame, *,
 
 def annual_averages(df: pd.DataFrame, *,
                     plot_type: str = 'plotly',
-                    plot_titles: list = None, ) -> go.Figure:
+                    plot_titles: list = None,
+                    decade_averages: bool = False, ) -> go.Figure:
     """
     Makes a plotly figure of the annual average flows
 
@@ -208,12 +209,13 @@ def annual_averages(df: pd.DataFrame, *,
         df: a dataframe of the annual average flows
         plot_type: either plotly or html
         plot_titles: additional key-value pairs to display in the title of the figure
+        decade_averages: if True, the figure will include the average flows for each decade
 
     Returns:
         go.Figure
     """
     if plot_type in ('plotly', 'html'):
-        figure = plotly_annual_averages(df, plot_titles=plot_titles)
+        figure = plotly_annual_averages(df, plot_titles=plot_titles, decade_averages=decade_averages)
         if plot_type == 'html':
             return plotly_figure_to_html_plot(figure)
         return figure

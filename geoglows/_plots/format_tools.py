@@ -1,3 +1,6 @@
+import datetime
+
+import pytz
 from plotly.offline import plot as offline_plot
 
 
@@ -26,3 +29,13 @@ def plotly_figure_to_html_plot(figure, include_plotlyjs: bool = False, ) -> str:
         output_type='div',
         include_plotlyjs=include_plotlyjs
     )
+
+
+def timezone_label(timezone: str = None):
+    timezone = str(timezone) if timezone is not None else 'UTC'
+    # get the number of hours the timezone is offset from UTC
+    now = datetime.datetime.now(pytz.timezone(timezone))
+    utc_offset = now.utcoffset().total_seconds() / 3600
+    # convert float number of hours to HH:MM format
+    utc_offset = f'{int(utc_offset):+03d}:{int((utc_offset % 1) * 60):02d}'
+    return f'Datetime ({timezone} {utc_offset})'
