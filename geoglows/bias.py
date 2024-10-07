@@ -6,6 +6,8 @@ import hydrostats.data as hd
 import numpy as np
 import pandas as pd
 from scipy import interpolate
+from .data import retrieve_sfdc_for_river_id, retrieve_fdc
+from .data import retrospective
 
 __all__ = [
     'correct_historical',
@@ -47,6 +49,215 @@ def correct_historical(simulated_data: pd.DataFrame, observed_data: pd.DataFrame
     corrected.sort_index(inplace=True)
     return corrected
 
+def do_bias_correction_for_me(river_id: int) -> pd.DataFrame:
+    """
+    Corrects the bias in the simulated data for a given river_id using the SFDC method. This method is based on the
+     https://github.com/rileyhales/saber-hbc repository.
+
+    Args: river_id: int: a 9 digit integer that is a valid GEOGLOWS River ID number
+
+    Returns: pandas DataFrame with a DateTime index and columns with Simulated flow, Bias Corrected Simulation flow.
+
+    """
+    simulated_data = retrospective(river_id=river_id)
+    sfdc_b = retrieve_sfdc_for_river_id(river_id=river_id)
+    sim_fdc_b = retrieve_fdc(river_id=river_id)
+    # List to store results for each month
+    monthly_results = []
+
+    # Process for each month in the simulated data
+    for month in sorted(set(simulated_data.index.month)):
+        mon_sim_b = simulated_data[simulated_data.index.month == month].dropna().clip(lower=0)
+        qb_original = mon_sim_b.values.flatten()
+
+        #Extract the sfdc and fdc for the current month
+        scalar_fdc = sfdc_b.filter(regex=f'_{month}$')
+        sim_fdc_b_m = sim_fdc_b.filter(regex=f'_{month}$')
+
+        exceed_prob = np.linspace(0, 100, 101)
+        t_scalar_fdc = scalar_fdc.T.set_index(pd.Index(exceed_prob, name='p_exceed'))
+        t_sim_fdc = sim_fdc_b_m.T.set_index(pd.Index(exceed_prob, name='p_exceed'))
+
+        flow_to_percent = _make_interpolator(t_sim_fdc.values.flatten(),
+                                             t_sim_fdc.index,
+                                             extrap='nearest',
+                                             fill_value=None)
+
+        percent_to_scalar = _make_interpolator(t_scalar_fdc.index,
+                                               t_scalar_fdc.values.flatten(),
+                                               extrap='nearest',
+                                               fill_value=None)
+        p_exceed = flow_to_percent(qb_original)
+        scalars = percent_to_scalar(p_exceed)
+        qb_adjusted = qb_original / scalars
+
+        # Create a DataFrame for this month's results
+        month_df = pd.DataFrame({
+            'date': mon_sim_b.index,
+            'Simulated': qb_original,
+            'Bias Corrected Simulation': qb_adjusted
+        })
+
+        # Append the month's DataFrame to the results list
+        monthly_results.append(month_df)
+    return pd.concat(monthly_results).set_index('date').sort_index()
+
+def bias_correct_ungauge(simulated_data: pd.DataFrame, sfdc: pd.DataFrame) -> pd.DataFrame:
+    """
+    Corrects the bias in the simulated data for a given river_id using the SFDC method.
+    """
+
+
+
+def make_sfdc(simulated_df: pd.DataFrame, gauge_df: pd.DataFrame,
+              use_log: bool = False,fix_seasonally: bool = True, empty_months: str = 'skip',
+              drop_outliers: bool = False, outlier_threshold: int or float = 2.5,
+              filter_scalar_fdc: bool = False, filter_range: tuple = (0, 80),
+              extrapolate: str = 'nearest', fill_value: int or float = None,
+              fit_gumbel: bool = False, fit_range: tuple = (10, 90),
+              metadata: bool = False, ) -> pd.DataFrame:
+    """
+    Makes a scalar flow duration curve (SFDC) mapping from simulated to observed (gauge) flow data. SFDC is used in SABER to
+    correct timeseries data for a ungauged riverid.
+
+    Args:
+        simulated_data: A dataframe with a datetime index and a single column of simulated streamflow values
+        gauge_df: A dataframe with a datetime index and a single column of observed streamflow values
+        extrapolate: Method to use for extrapolation. Options: nearest, const, linear, average, max, min
+        fill_value: Value to use for extrapolation when extrapolate_method='const'
+        filter_range: Lower and upper bounds of the filter range
+        drop_outliers: Flag to exclude outliers
+        outlier_threshold: Number of std deviations from mean to exclude from flow duration curve
+
+    Returns:
+        pandas DataFrame with a DateTime index and columns with corrected flow, uncorrected flow, the scalar adjustment
+        factor applied to correct the discharge, and the percentile of the uncorrected flow (in the seasonal grouping,
+        if applicable).
+    """
+    if fix_seasonally:
+        # list of the unique months in the historical simulation. should always be 1->12 but just in case...
+        monthly_results = []
+        for month in sorted(set(simulated_df.index.strftime('%m'))):
+            # filter data to current iteration's month
+            mon_obs_a = gauge_df[gauge_df.index.month == int(month)].dropna().clip(lower=0)
+            if mon_obs_a.empty:
+                if empty_months == 'skip':
+                    continue
+                else:
+                    raise ValueError(f'Invalid value for argument "empty_months". Given: {empty_months}.')
+
+            mon_sim_b = simulated_df[simulated_df.index.month == int(month)].dropna().clip(lower=0)
+            monthly_results.append(make_sfdc(
+                mon_obs_a, mon_sim_b,
+                fix_seasonally=False, empty_months=empty_months,
+                drop_outliers=drop_outliers, outlier_threshold=outlier_threshold,
+                filter_scalar_fdc=filter_scalar_fdc, filter_range=filter_range,
+                extrapolate=extrapolate, fill_value=fill_value,
+                fit_gumbel=fit_gumbel, fit_range=fit_range, )
+            )
+        # combine the results from each monthly into a single dataframe (sorted chronologically) and return it
+        return pd.concat(monthly_results).sort_index()
+
+
+    if drop_outliers:
+        simulated_df = _drop_outliers_by_zscore(simulated_df, threshold=outlier_threshold)
+        gauge_df = _drop_outliers_by_zscore(gauge_df, threshold=outlier_threshold)
+
+    # compute the flow duration curves
+    sim_fdc = fdc(simulated_df)
+    obs_fdc = fdc(gauge_df)
+
+    # calculate the scalar flow duration curve
+    scalar_fdc = sfdc(sim_fdc, obs_fdc)
+
+    return scalar_fdc
+
+def fdc(flows: np.array, steps: int = 101, col_name: str = 'Q') -> pd.DataFrame:
+    """
+    Compute flow duration curve (exceedance probabilities) from a list of flows
+
+    Args:
+        flows: array of flows
+        steps: number of steps (exceedance probabilities) to use in the FDC
+        col_name: name of the column in the returned dataframe
+
+    Returns:
+        pd.DataFrame with index 'p_exceed' and columns 'Q' (or col_name)
+    """
+    # calculate the FDC and save to parquet
+    exceed_prob = np.linspace(100, 0, steps)
+    fdc_flows = np.nanpercentile(flows, exceed_prob)
+    df = pd.DataFrame(fdc_flows, columns=[col_name, ], index=exceed_prob)
+    df.index.name = 'p_exceed'
+    return df
+
+def _drop_outliers_by_zscore(df: pd.DataFrame, threshold: float = 3) -> pd.DataFrame:
+    """
+    Drop outliers from a dataframe by their z-score and a threshold
+    Based on https://stackoverflow.com/questions/23199796/detect-and-exclude-outliers-in-pandas-data-frame
+    Args:
+        df: dataframe to drop outliers from
+        threshold: z-score threshold
+
+    Returns:
+        pd.DataFrame with outliers removed
+    """
+    return df[(np.abs(stats.zscore(df)) < threshold).all(axis=1)]
+
+def sfdc(sim_fdc: pd.DataFrame, obs_fdc: pd.DataFrame) -> pd.DataFrame:
+    """
+    Compute the scalar flow duration curve (exceedance probabilities) from two flow duration curves
+
+    Args:
+        sim_fdc: simulated flow duration curve
+        obs_fdc: observed flow duration curve
+
+    Returns:
+        pd.DataFrame with index (exceedance probabilities) and a column of scalars
+    """
+    scalars_df = pd.DataFrame(np.divide(sim_fdc.values.flatten(),obs_fdc.values.flatten()),
+        columns=['scalars', ],
+        index=sim_fdc.index
+    )
+    scalars_df.replace(np.inf, np.nan, inplace=True)
+    scalars_df.dropna(inplace=True)
+    return scalars_df
+
+def _make_interpolator(x: np.array, y: np.array, extrap: str = 'nearest',
+                       fill_value: int or float = None) -> interpolate.interp1d:
+    """
+    Make an interpolator from two arrays
+
+    Args:
+        x: x values
+        y: y values
+        extrap: method for extrapolation: nearest, const, linear, average, max, min
+        fill_value: value to use when extrap='const'
+
+    Returns:
+        interpolate.interp1d
+    """
+    # todo check that flows are not negative and have sufficient variance - even for small variance in SAF
+    # if np.max(y) - np.min(y) < 5:
+    #     logger.warning('The y data has similar max/min values. You may get unanticipated results.')
+
+    # make interpolator which converts the percentiles to scalars
+    if extrap == 'nearest':
+        return interpolate.interp1d(x, y, fill_value='extrapolate', kind='nearest')
+    elif extrap == 'const':
+        if fill_value is None:
+            raise ValueError('Must provide the const kwarg when extrap_method="const"')
+        return interpolate.interp1d(x, y, fill_value=fill_value, bounds_error=False)
+    elif extrap == 'linear':
+        return interpolate.interp1d(x, y, fill_value='extrapolate')
+    elif extrap == 'average':
+        return interpolate.interp1d(x, y, fill_value=np.mean(y), bounds_error=False)
+    elif extrap == 'max' or extrap == 'maximum':
+        return interpolate.interp1d(x, y, fill_value=np.max(y), bounds_error=False)
+    elif extrap == 'min' or extrap == 'minimum':
+        return interpolate.interp1d(x, y, fill_value=np.min(y), bounds_error=False)
+    else:
+        raise ValueError('Invalid extrapolation method provided')
 
 def correct_forecast(forecast_data: pd.DataFrame, simulated_data: pd.DataFrame,
                      observed_data: pd.DataFrame, use_month: int = 0) -> pd.DataFrame:

@@ -4,7 +4,7 @@ import warnings
 import pandas as pd
 import xarray as xr
 
-from ._constants import get_metadata_table_path
+from ._constants import get_metadata_table_path, get_sfdc_table_path, get_saber_assign_table_path, get_fdc_table_path
 from ._download_decorators import _forecast, _retrospective, DEFAULT_REST_ENDPOINT, DEFAULT_REST_ENDPOINT_VERSION
 
 from .analyze import (
@@ -25,8 +25,14 @@ __all__ = [
     'monthly_averages',
     'annual_averages',
     'return_periods',
+    'lookup_assign_saber_table',
+    'retrieve_sfdc',
+    'retrieve_sfdc_for_river_id',
 
     'metadata_tables',
+    'saber_assign_table',
+    'sfdc_table',
+    'fdc_table',
 
     'DEFAULT_REST_ENDPOINT',
     'DEFAULT_REST_ENDPOINT_VERSION',
@@ -182,6 +188,97 @@ def annual_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
     df = retrospective(river_id, **kwargs)
     return calc_annual_averages(df)
 
+def lookup_assign_saber_table(river_id: int or list, saber_assign_table_path: str = None) -> list:
+    """
+    Retrieves 'asgn_mid' values from the SABER assign table for the given river_id(s).
+
+    Args:
+        river_id (int or list): ID(s) of a stream(s), should be a 9-digit integer or a list of such integers.
+        saber_assign_table_path (str): Path to the local copy of the SABER assign table.
+
+    Returns:
+        list: List of 'asgn_mid' values for given river_id.
+    """
+    # Read the SABER assign table into a DataFrame
+    df = saber_assign_table(columns=['model_id', 'asgn_mid','asgn_gid'], saber_table_path=saber_assign_table_path)
+
+    # Retrieve 'asgn_mid' based on river_id(s)
+    if isinstance(river_id, int):
+        asgn_mid = df.loc[df['model_id'] == river_id, 'asgn_mid'].tolist()
+    elif isinstance(river_id, list):
+        asgn_mid = df.loc[df['model_id'].isin(river_id), 'asgn_mid'].tolist()
+
+    return asgn_mid
+
+
+def retrieve_sfdc(asgn_mid: int or list, sfdc_table_path: str = None) -> pd.DataFrame:
+    """
+    Retrieves data from the SFDC table based on 'asgn_mid' values for given river_id.
+
+    Args:
+        asgn_mid (int or list): Single or list of 'asgn_mid' values to filter the SFDC table.
+        sfdc_table_path (str): Path to the local copy of the SFDC table.
+
+    Returns:
+        pd.DataFrame: Filtered DataFrame based on 'asgn_mid' values from the SFDC table.
+    """
+    # Read the SFDC table into a DataFrame
+    df = sfdc_table(sfdc_table_path= sfdc_table_path)
+
+    # Filter the DataFrame using the provided 'asgn_mid' values
+    if isinstance(asgn_mid, int):
+        sfdc = df.loc[df['asgn_mid'] == asgn_mid]
+    elif isinstance(asgn_mid, list):
+        sfdc = df.loc[df['asgn_mid'].isin(asgn_mid)]
+    else:
+        raise ValueError("asgn_mid must be an integer or a list of integers")
+
+    return sfdc
+
+
+def retrieve_sfdc_for_river_id(river_id: int or list, sfdc_table_path: str,
+                                saber_assign_table_path: str) -> pd.DataFrame:
+    """
+    Retrieves data from the SFDC table using 'asgn_mid' values obtained from the SABER assign table for the given 'river_id'.
+
+    Args:
+        river_id (int or list): ID(s) of a stream(s).
+        sfdc_table_path (str): Path to the local copy of the SFDC table.
+        saber_assign_table_path (str): Path to the local copy of the SABER assign table.
+
+    Returns:
+        pd.DataFrame: Filtered DataFrame from the SFDC table based on 'asgn_mid' values.
+    """
+    # Step 1: Get 'asgn_mid' values for the given river_id(s)
+    asgn_mids = lookup_assign_saber_table(river_id)
+
+    # Step 2: Retrieve SFDC data based on 'asgn_mid' values
+    filtered_sfdc = retrieve_sfdc(asgn_mids)
+
+    return filtered_sfdc
+
+def retrieve_fdc(river_id: int or list, fdc_table_path: str = None) -> pd.DataFrame:
+    """
+    Retrieves data from the FDC table based on 'asgn_mid' values for given river_id.
+
+    Args:
+        asgn_mid (int or list): Single or list of 'asgn_mid' values to filter the FDC table.
+        fdc_table_path (str): Path to the local copy of the FDC table.
+
+    Returns:
+        pd.DataFrame: Filtered DataFrame based on 'asgn_mid' values from the FDC table.
+    """
+    # Read the FDC table into a DataFrame
+    df = fdc_table(fdc_table_path= fdc_table_path)
+
+    if isinstance(river_id, int):
+        fdc = df.loc[df['rivid'] == river_id]
+    elif isinstance(river_id, list):
+        fdc = df.loc[df['asgn_mid'].isin(river_id)]
+    else:
+        raise ValueError("river_id must be an integer or a list of integers")
+
+    return fdc
 
 @_retrospective
 def return_periods(river_id: int or list, *, format: str = 'df', method: str = 'gumbel1') -> pd.DataFrame or xr.Dataset:
@@ -227,4 +324,100 @@ def metadata_tables(columns: list = None, metadata_table_path: str = None) -> pd
     df = pd.read_parquet('http://geoglows-v2.s3-website-us-west-2.amazonaws.com/tables/package-metadata-table.parquet')
     os.makedirs(os.path.dirname(metadata_table_path), exist_ok=True)
     df.to_parquet(metadata_table_path)
+    return df[columns] if columns else df
+
+
+def saber_assign_table(columns: list = None, saber_table_path: str = None) -> pd.DataFrame:
+    """
+    Retrieves the SABER assign table as a pandas DataFrame
+
+    Args:
+        columns (list): optional subset of column names to read from the parquet
+        saber_table_path (str): optional path to a local copy of the SABER assign table
+
+    Returns:
+        pd.DataFrame
+    """
+    if saber_table_path:
+        return pd.read_parquet(saber_table_path, columns=columns)
+    saber_table_path = get_saber_assign_table_path()
+    if os.path.exists(saber_table_path):
+        return pd.read_parquet(saber_table_path, columns=columns)
+
+    warn = f"""
+    Local copy of SABER assign table not found.
+    A copy of the table has been cached at {saber_table_path} which you can move as desired.
+    You should set the environment variable PYGEOGLOWS_SABER_ASSIGN_TABLE_PATH or provide the saber_table_path argument.
+    """
+    warnings.warn(warn)
+
+    # Assuming the S3 URL for the SABER assign table. You may need to adjust this URL.
+    df = pd.read_parquet('http://geoglows-v2.s3-website-us-west-2.amazonaws.com/tables/saber-assign-table.parquet')
+
+    os.makedirs(os.path.dirname(saber_table_path), exist_ok=True)
+    df.to_parquet(saber_table_path)
+
+    return df[columns] if columns else df
+
+
+def sfdc_table(columns: list = None, sfdc_table_path: str = None) -> pd.DataFrame:
+    """
+    Retrieves the SFDC table as a pandas DataFrame
+
+    Args:
+        columns (list): optional subset of column names to read from the parquet
+        sfdc_table_path (str): optional path to a local copy of the SFDC table
+
+    Returns:
+        pd.DataFrame
+    """
+    if sfdc_table_path:
+        return pd.read_parquet(sfdc_table_path, columns=columns)
+
+    sfdc_table_path = get_sfdc_table_path()
+    if os.path.exists(sfdc_table_path):
+        return pd.read_parquet(sfdc_table_path, columns=columns)
+
+    warn = f"""
+    Local copy of SFDC table not found.
+    A copy of the table has been cached at {sfdc_table_path} which you can move as desired.
+    You should set the environment variable PYGEOGLOWS_SFDC_TABLE_PATH or provide the sfdc_table_path argument.
+    """
+    warnings.warn(warn)
+
+    df = pd.read_parquet('http://geoglows-v2.s3-website-us-west-2.amazonaws.com/tables/sfdc-removing-zero.parquet')
+    os.makedirs(os.path.dirname(sfdc_table_path), exist_ok=True)
+    df.to_parquet(sfdc_table_path)
+
+    return df[columns] if columns else df
+
+def fdc_table(columns: list = None, fdc_table_path: str = None) -> pd.DataFrame:
+    """
+    Retrieves the FDC table as a pandas DataFrame
+
+    Args:
+        columns (list): optional subset of column names to read from the parquet
+        fdc_table_path (str): optional path to a local copy of the FDC table
+
+    Returns:
+        pd.DataFrame
+    """
+    if fdc_table_path:
+        return pd.read_parquet(fdc_table_path, columns=columns)
+
+    fdc_table_path = get_fdc_table_path()
+    if os.path.exists(fdc_table_path):
+        return pd.read_parquet(fdc_table_path, columns=columns)
+
+    warn = f"""
+    Local copy of FDC table not found.
+    A copy of the table has been cached at {fdc_table_path} which you can move as desired.
+    You should set the environment variable PYGEOGLOWS_FDC_TABLE_PATH or provide the fdc_table_path argument.
+    """
+    warnings.warn(warn)
+
+    df = pd.read_parquet('http://geoglows-v2.s3-website-us-west-2.amazonaws.com/tables/simulated_monthly.parquet')
+    os.makedirs(os.path.dirname(fdc_table_path), exist_ok=True)
+    df.to_parquet(fdc_table_path)
+
     return df[columns] if columns else df
