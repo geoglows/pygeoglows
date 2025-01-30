@@ -1,6 +1,6 @@
 import os
 import warnings
-
+import numpy as np
 import pandas as pd
 import xarray as xr
 
@@ -199,14 +199,21 @@ def lookup_assign_saber_table(river_id: int or list, saber_assign_table_path: st
     Returns:
         list: List of 'asgn_mid' values for given river_id.
     """
-    # Read the SABER assign table into a DataFrame
-    df = saber_assign_table(columns=['model_id', 'asgn_mid','asgn_gid'], saber_table_path=saber_assign_table_path)
-
-    # Retrieve 'asgn_mid' based on river_id(s)
-    if isinstance(river_id, int):
-        asgn_mid = df.loc[df['model_id'] == river_id, 'asgn_mid'].tolist()
+    if hasattr(river_id, 'item'):
+        river_id = river_id.item()
+    if isinstance(river_id, (int, np.integer)):
+        river_id = [river_id]
     elif isinstance(river_id, list):
-        asgn_mid = df.loc[df['model_id'].isin(river_id), 'asgn_mid'].tolist()
+        if not all(isinstance(x, int) for x in river_id):
+            raise ValueError("All river_id values must be integers")
+    else:
+        raise ValueError("river_id must be an integer or a list of integers")
+    if hasattr(river_id, 'item'):
+        river_id = river_id.item()
+
+    # Read the SABER assign table into a DataFrame
+    df = pd.read_parquet(saber_assign_table_path=saber_assign_table_path)
+    asgn_mid = df.loc[df['model_id'].isin(river_id), 'asgn_mid'].tolist()
 
     return asgn_mid
 
@@ -217,27 +224,20 @@ def retrieve_sfdc(asgn_mid: int or list, sfdc_table_path: str = None) -> pd.Data
 
     Args:
         asgn_mid (int or list): Single or list of 'asgn_mid' values to filter the SFDC table.
-        sfdc_table_path (str): Path to the local copy of the SFDC table.
+        sfdc_table_path (str): Path to the copy of the SFDC table.
 
     Returns:
         pd.DataFrame: Filtered DataFrame based on 'asgn_mid' values from the SFDC table.
     """
     # Read the SFDC table into a DataFrame
-    df = sfdc_table(sfdc_table_path= sfdc_table_path)
-
-    # Filter the DataFrame using the provided 'asgn_mid' values
-    if isinstance(asgn_mid, int):
-        sfdc = df.loc[df['asgn_mid'] == asgn_mid]
-    elif isinstance(asgn_mid, list):
-        sfdc = df.loc[df['asgn_mid'].isin(asgn_mid)]
-    else:
-        raise ValueError("asgn_mid must be an integer or a list of integers")
-
-    return sfdc
+    ds = xr.open_zarr(sfdc_table_path= sfdc_table_path)
+    # Filter the dataset based on 'asgn_mid' matching 'rivid'
+    filtered_ds = ds.sel(rivid=asgn_mid)
+    return filtered_ds.to_dataframe().reset_index()
 
 
-def retrieve_sfdc_for_river_id(river_id: int or list, sfdc_table_path: str,
-                                saber_assign_table_path: str) -> pd.DataFrame:
+def retrieve_sfdc_for_river_id(river_id: int or list, sfdc_table_path: str = None,
+                                saber_assign_table_path: str = None) -> pd.DataFrame:
     """
     Retrieves data from the SFDC table using 'asgn_mid' values obtained from the SABER assign table for the given 'river_id'.
 
@@ -251,34 +251,36 @@ def retrieve_sfdc_for_river_id(river_id: int or list, sfdc_table_path: str,
     """
     # Step 1: Get 'asgn_mid' values for the given river_id(s)
     asgn_mids = lookup_assign_saber_table(river_id)
-
     # Step 2: Retrieve SFDC data based on 'asgn_mid' values
     filtered_sfdc = retrieve_sfdc(asgn_mids)
-
     return filtered_sfdc
 
 def retrieve_fdc(river_id: int or list, fdc_table_path: str = None) -> pd.DataFrame:
     """
-    Retrieves data from the FDC table based on 'asgn_mid' values for given river_id.
+    Retrieves data from the FDC table based on river_id.
 
     Args:
-        asgn_mid (int or list): Single or list of 'asgn_mid' values to filter the FDC table.
+        river_id (int or list): Single or list of unique river identifier to filter the FDC table.
         fdc_table_path (str): Path to the local copy of the FDC table.
 
     Returns:
         pd.DataFrame: Filtered DataFrame based on 'asgn_mid' values from the FDC table.
     """
-    # Read the FDC table into a DataFrame
-    df = fdc_table(fdc_table_path= fdc_table_path)
-
-    if isinstance(river_id, int):
-        fdc = df.loc[df['rivid'] == river_id]
+    if hasattr(river_id, 'item'):
+        river_id = river_id.item()
+    if isinstance(river_id, (int, np.integer)):
+        river_id = [river_id]
+        # Check if list contains only integers
     elif isinstance(river_id, list):
-        fdc = df.loc[df['asgn_mid'].isin(river_id)]
+        if not all(isinstance(x, int) for x in river_id):
+            raise ValueError("All river_id values must be integers")
     else:
         raise ValueError("river_id must be an integer or a list of integers")
 
-    return fdc
+        # Open and filter the dataset
+    df = xr.open_zarr(fdc_table_path)
+    fdc = df.sel(rivid=river_id)
+    return fdc.to_dataframe().reset_index()
 
 @_retrospective
 def return_periods(river_id: int or list, *, format: str = 'df', method: str = 'gumbel1') -> pd.DataFrame or xr.Dataset:

@@ -6,6 +6,7 @@ import hydrostats.data as hd
 import numpy as np
 import pandas as pd
 from scipy import interpolate
+from scipy import stats
 from .data import retrieve_sfdc_for_river_id, retrieve_fdc
 from .data import retrospective
 
@@ -60,31 +61,26 @@ def do_bias_correction_for_me(river_id: int) -> pd.DataFrame:
 
     """
     simulated_data = retrospective(river_id=river_id)
-    sfdc_b = retrieve_sfdc_for_river_id(river_id=river_id)
-    sim_fdc_b = retrieve_fdc(river_id=river_id)
+    sfdc_b = retrieve_sfdc_for_river_id(river_id=river_id) # I used to provide  sfdc_table_path and saber_assign_table_path in the arguments in my local environment
+    sim_fdc_b = retrieve_fdc(river_id=river_id) # I used to provide fdc_table_path in the arguments in my local environment
     # List to store results for each month
     monthly_results = []
 
-    # Process for each month in the simulated data
+    # Process each month from January (1) to December (12)
     for month in sorted(set(simulated_data.index.month)):
         mon_sim_b = simulated_data[simulated_data.index.month == month].dropna().clip(lower=0)
-        qb_original = mon_sim_b.values.flatten()
 
-        #Extract the sfdc and fdc for the current month
-        scalar_fdc = sfdc_b.filter(regex=f'_{month}$')
-        sim_fdc_b_m = sim_fdc_b.filter(regex=f'_{month}$')
+        qb_original = mon_sim_b['Qout'].values.flatten() #'Qout maynot be the column header
+        scalar_fdc = sfdc_b[sfdc_b['month'] == month][['p_exceed', 'sfdc']].set_index('p_exceed')
+        sim_fdc_b_m = sim_fdc_b[sim_fdc_b['month'] == month][['p_exceed', 'fdc']].set_index('p_exceed')
 
-        exceed_prob = np.linspace(0, 100, 101)
-        t_scalar_fdc = scalar_fdc.T.set_index(pd.Index(exceed_prob, name='p_exceed'))
-        t_sim_fdc = sim_fdc_b_m.T.set_index(pd.Index(exceed_prob, name='p_exceed'))
-
-        flow_to_percent = _make_interpolator(t_sim_fdc.values.flatten(),
-                                             t_sim_fdc.index,
+        flow_to_percent = _make_interpolator(sim_fdc_b_m.values.flatten(),
+                                             sim_fdc_b_m.index,
                                              extrap='nearest',
                                              fill_value=None)
 
-        percent_to_scalar = _make_interpolator(t_scalar_fdc.index,
-                                               t_scalar_fdc.values.flatten(),
+        percent_to_scalar = _make_interpolator(scalar_fdc.index,
+                                               scalar_fdc.values.flatten(),
                                                extrap='nearest',
                                                fill_value=None)
         p_exceed = flow_to_percent(qb_original)
@@ -104,8 +100,48 @@ def do_bias_correction_for_me(river_id: int) -> pd.DataFrame:
 
 def bias_correct_ungauge(simulated_data: pd.DataFrame, sfdc: pd.DataFrame) -> pd.DataFrame:
     """
-    Corrects the bias in the simulated data for a given river_id using the SFDC method.
+    Perform bias correction on the simulated data using the SFDC table.
+
+    Args:
+        simulated_data (pd.DataFrame): DataFrame containing the simulated data to be bias-corrected.
+        sfdc (pd.DataFrame): DataFrame containing the SFDC table for the corresponding river.
+
+    Returns:
+        pd.DataFrame: DataFrame with bias-corrected simulated data.
     """
+    # List to store results for each month
+    monthly_results = []
+
+    # Process each month from January (1) to December (12)
+    for month in sorted(set(simulated_data.index.month)):
+        mon_sim = simulated_data[simulated_data.index.month == month].dropna().clip(lower=0)
+
+        qb_original = mon_sim['Qout'].values.flatten()
+        scalar_fdc = sfdc[sfdc['month'] == month][['p_exceed', 'sfdc']].set_index('p_exceed')
+        flow_to_percent = _make_interpolator(scalar_fdc['sfdc'].values.flatten(),
+                                             scalar_fdc.index,
+                                             extrap='nearest',
+                                             fill_value=None)
+        p_exceed = flow_to_percent(qb_original)
+        percent_to_scalar = _make_interpolator(scalar_fdc.index,
+                                               scalar_fdc['sfdc'].values.flatten(),
+                                               extrap='nearest',
+                                               fill_value=None)
+        scalars = percent_to_scalar(p_exceed)
+        qb_adjusted = qb_original / scalars
+
+        # Create a DataFrame for this month's results
+        month_df = pd.DataFrame({
+            'date': mon_sim.index,
+            'Simulated': qb_original,
+            'Bias Corrected Simulation': qb_adjusted
+        })
+
+        # Append the month's DataFrame to the results list
+        monthly_results.append(month_df)
+
+    return pd.concat(monthly_results).set_index('date').sort_index()
+
 
 
 
