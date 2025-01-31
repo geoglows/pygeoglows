@@ -35,8 +35,6 @@ __all__ = [
 
     'metadata_tables',
     'saber_assign_table',
-    'sfdc_table',
-    'fdc_table',
 
     'DEFAULT_REST_ENDPOINT',
     'DEFAULT_REST_ENDPOINT_VERSION',
