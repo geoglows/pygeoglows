@@ -1,12 +1,12 @@
 import os
 import warnings
 
+import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ._constants import get_metadata_table_path
+from ._constants import get_metadata_table_path, get_sfdc_table_path, get_saber_assign_table_path, get_fdc_table_path, get_sfdc_zarr_uri, get_transformer_table_uri
 from ._download_decorators import _forecast, _retrospective, DEFAULT_REST_ENDPOINT, DEFAULT_REST_ENDPOINT_VERSION
-
 from .analyze import (
     daily_averages as calc_daily_averages,
     monthly_averages as calc_monthly_averages,
@@ -14,19 +14,27 @@ from .analyze import (
 )
 
 __all__ = [
+    # forecast products
     'dates',
     'forecast',
     'forecast_stats',
     'forecast_ensembles',
     'forecast_records',
 
+    # retrospective products
     'retrospective',
     'daily_averages',
     'monthly_averages',
     'annual_averages',
     'return_periods',
 
+    # transformers
+    'sfdc',
+    'assigned_sfdc_curve_id',
+    'sfdc_for_river_id',
+
     'metadata_tables',
+    'saber_assign_table',
 
     'DEFAULT_REST_ENDPOINT',
     'DEFAULT_REST_ENDPOINT_VERSION',
@@ -183,6 +191,69 @@ def annual_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
     return calc_annual_averages(df)
 
 
+def assigned_sfdc_curve_id(river_id: int or list) -> list:
+    """
+    Retrieves 'asgn_mid' values from the SABER assign table for the given river_id(s).
+
+    Args:
+        river_id (int or list): ID(s) of a stream(s), should be a 9-digit integer or a list of such integers.
+
+    Returns:
+        list: List of 'asgn_mid' values for given river_id.
+    """
+    if hasattr(river_id, 'item'):
+        river_id = river_id.item()
+    if isinstance(river_id, (int, np.integer)):
+        river_id = [river_id]
+    elif isinstance(river_id, list):
+        if not all(isinstance(x, int) for x in river_id):
+            raise ValueError("All river_id values must be integers")
+    else:
+        raise ValueError("river_id must be an integer or a list of integers")
+    if hasattr(river_id, 'item'):
+        river_id = river_id.item()
+
+    # Read the SABER assign table into a DataFrame
+    df = pd.read_parquet(get_transformer_table_uri())
+    curve_ids = df.loc[df['river_id'].isin(river_id), 'sfdc_curve_id'].tolist()
+    return curve_ids
+
+
+def sfdc(curve_id: int or list) -> pd.DataFrame:
+    """
+    Retrieves data from the SFDC table based on 'asgn_mid' values for given river_id.
+
+    Args:
+        curve_id (int or list): Single or list of sfdc curve IDs
+
+    Returns:
+        pd.DataFrame
+    """
+    # check that curve_id is a 12 digit integer or a list of such integers
+    if isinstance(curve_id, (int, np.integer)):
+        assert len(str(curve_id)) == 12, "curve_id must be a 12 digit integer"
+    if isinstance(curve_id, list):
+        assert all(len(str(x)) == 12 for x in curve_id), "curve_id must be a 12 digit integer"
+        assert all(isinstance(x, int) for x in curve_id), "curve_id must be a 12 digit integer"
+    ds = xr.open_zarr(get_sfdc_zarr_uri())
+    return ds.sel(curve_id=curve_id).to_dataframe().reset_index()
+
+
+def sfdc_for_river_id(river_id: int or list) -> pd.DataFrame:
+    """
+    Retrieves data from the SFDC table using 'asgn_mid' values obtained from the SABER assign table for the given 'river_id'.
+
+    Args:
+        river_id (int or list): ID(s) of a stream(s).
+
+    Returns:
+        pd.DataFrame: Filtered DataFrame from the SFDC table based on 'asgn_mid' values.
+    """
+    curve_ids = assigned_sfdc_curve_id(river_id)
+    filtered_sfdc = sfdc(curve_ids)
+    return filtered_sfdc
+
+
 @_retrospective
 def return_periods(river_id: int or list, *, format: str = 'df', method: str = 'gumbel1') -> pd.DataFrame or xr.Dataset:
     """
@@ -227,4 +298,37 @@ def metadata_tables(columns: list = None, metadata_table_path: str = None) -> pd
     df = pd.read_parquet('http://geoglows-v2.s3-website-us-west-2.amazonaws.com/tables/package-metadata-table.parquet')
     os.makedirs(os.path.dirname(metadata_table_path), exist_ok=True)
     df.to_parquet(metadata_table_path)
+    return df[columns] if columns else df
+
+
+def saber_assign_table(columns: list = None, saber_table_path: str = None) -> pd.DataFrame:
+    """
+    Retrieves the SABER assign table as a pandas DataFrame
+
+    Args:
+        columns (list): optional subset of column names to read from the parquet
+        saber_table_path (str): optional path to a local copy of the SABER assign table
+
+    Returns:
+        pd.DataFrame
+    """
+    if saber_table_path:
+        return pd.read_parquet(saber_table_path, columns=columns)
+    saber_table_path = get_saber_assign_table_path()
+    if os.path.exists(saber_table_path):
+        return pd.read_parquet(saber_table_path, columns=columns)
+
+    warn = f"""
+    Local copy of SABER assign table not found.
+    A copy of the table has been cached at {saber_table_path} which you can move as desired.
+    You should set the environment variable PYGEOGLOWS_SABER_ASSIGN_TABLE_PATH or provide the saber_table_path argument.
+    """
+    warnings.warn(warn)
+
+    # Assuming the S3 URL for the SABER assign table. You may need to adjust this URL.
+    df = pd.read_parquet('http://geoglows-v2.s3-website-us-west-2.amazonaws.com/tables/saber-assign-table.parquet')
+
+    os.makedirs(os.path.dirname(saber_table_path), exist_ok=True)
+    df.to_parquet(saber_table_path)
+
     return df[columns] if columns else df
