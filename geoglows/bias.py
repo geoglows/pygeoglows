@@ -7,7 +7,8 @@ import numpy as np
 import pandas as pd
 from scipy import interpolate
 from scipy import stats
-from .data import retrieve_sfdc_for_river_id, retrieve_fdc
+
+from .data import sfdc_for_river_id
 from .data import retrospective
 
 __all__ = [
@@ -50,7 +51,8 @@ def correct_historical(simulated_data: pd.DataFrame, observed_data: pd.DataFrame
     corrected.sort_index(inplace=True)
     return corrected
 
-def do_bias_correction_for_me(river_id: int) -> pd.DataFrame:
+
+def sfdc_bias_correction(river_id: int) -> pd.DataFrame:
     """
     Corrects the bias in the simulated data for a given river_id using the SFDC method. This method is based on the
      https://github.com/rileyhales/saber-hbc repository.
@@ -61,16 +63,20 @@ def do_bias_correction_for_me(river_id: int) -> pd.DataFrame:
 
     """
     simulated_data = retrospective(river_id=river_id)
-    sfdc_b = retrieve_sfdc_for_river_id(river_id=river_id) # I used to provide  sfdc_table_path and saber_assign_table_path in the arguments in my local environment
-    sim_fdc_b = retrieve_fdc(river_id=river_id) # I used to provide fdc_table_path in the arguments in my local environment
-    # List to store results for each month
-    monthly_results = []
+    print(simulated_data)
+    sfdc_b = sfdc_for_river_id(river_id=river_id)
+    sim_fdc_b = []
+    for i in range(1, 13):
+        mdf = fdc(simulated_data[simulated_data.index.month == i].values.flatten()).rename(columns={'Q': 'fdc'}).reset_index()
+        mdf['month'] = i
+        sim_fdc_b.append(mdf)
+    sim_fdc_b = pd.concat(sim_fdc_b, axis=0)
 
     # Process each month from January (1) to December (12)
+    monthly_results = []
     for month in sorted(set(simulated_data.index.month)):
         mon_sim_b = simulated_data[simulated_data.index.month == month].dropna().clip(lower=0)
-
-        qb_original = mon_sim_b['Qout'].values.flatten() #'Qout maynot be the column header
+        qb_original = mon_sim_b[river_id].values.flatten()
         scalar_fdc = sfdc_b[sfdc_b['month'] == month][['p_exceed', 'sfdc']].set_index('p_exceed')
         sim_fdc_b_m = sim_fdc_b[sim_fdc_b['month'] == month][['p_exceed', 'fdc']].set_index('p_exceed')
 
@@ -98,55 +104,9 @@ def do_bias_correction_for_me(river_id: int) -> pd.DataFrame:
         monthly_results.append(month_df)
     return pd.concat(monthly_results).set_index('date').sort_index()
 
-def bias_correct_ungauge(simulated_data: pd.DataFrame, sfdc: pd.DataFrame) -> pd.DataFrame:
-    """
-    Perform bias correction on the simulated data using the SFDC table.
-
-    Args:
-        simulated_data (pd.DataFrame): DataFrame containing the simulated data to be bias-corrected.
-        sfdc (pd.DataFrame): DataFrame containing the SFDC table for the corresponding river.
-
-    Returns:
-        pd.DataFrame: DataFrame with bias-corrected simulated data.
-    """
-    # List to store results for each month
-    monthly_results = []
-
-    # Process each month from January (1) to December (12)
-    for month in sorted(set(simulated_data.index.month)):
-        mon_sim = simulated_data[simulated_data.index.month == month].dropna().clip(lower=0)
-
-        qb_original = mon_sim['Qout'].values.flatten()
-        scalar_fdc = sfdc[sfdc['month'] == month][['p_exceed', 'sfdc']].set_index('p_exceed')
-        flow_to_percent = _make_interpolator(scalar_fdc['sfdc'].values.flatten(),
-                                             scalar_fdc.index,
-                                             extrap='nearest',
-                                             fill_value=None)
-        p_exceed = flow_to_percent(qb_original)
-        percent_to_scalar = _make_interpolator(scalar_fdc.index,
-                                               scalar_fdc['sfdc'].values.flatten(),
-                                               extrap='nearest',
-                                               fill_value=None)
-        scalars = percent_to_scalar(p_exceed)
-        qb_adjusted = qb_original / scalars
-
-        # Create a DataFrame for this month's results
-        month_df = pd.DataFrame({
-            'date': mon_sim.index,
-            'Simulated': qb_original,
-            'Bias Corrected Simulation': qb_adjusted
-        })
-
-        # Append the month's DataFrame to the results list
-        monthly_results.append(month_df)
-
-    return pd.concat(monthly_results).set_index('date').sort_index()
-
-
-
 
 def make_sfdc(simulated_df: pd.DataFrame, gauge_df: pd.DataFrame,
-              use_log: bool = False,fix_seasonally: bool = True, empty_months: str = 'skip',
+              use_log: bool = False, fix_seasonally: bool = True, empty_months: str = 'skip',
               drop_outliers: bool = False, outlier_threshold: int or float = 2.5,
               filter_scalar_fdc: bool = False, filter_range: tuple = (0, 80),
               extrapolate: str = 'nearest', fill_value: int or float = None,
@@ -194,7 +154,6 @@ def make_sfdc(simulated_df: pd.DataFrame, gauge_df: pd.DataFrame,
         # combine the results from each monthly into a single dataframe (sorted chronologically) and return it
         return pd.concat(monthly_results).sort_index()
 
-
     if drop_outliers:
         simulated_df = _drop_outliers_by_zscore(simulated_df, threshold=outlier_threshold)
         gauge_df = _drop_outliers_by_zscore(gauge_df, threshold=outlier_threshold)
@@ -207,6 +166,7 @@ def make_sfdc(simulated_df: pd.DataFrame, gauge_df: pd.DataFrame,
     scalar_fdc = sfdc(sim_fdc, obs_fdc)
 
     return scalar_fdc
+
 
 def fdc(flows: np.array, steps: int = 101, col_name: str = 'Q') -> pd.DataFrame:
     """
@@ -227,6 +187,7 @@ def fdc(flows: np.array, steps: int = 101, col_name: str = 'Q') -> pd.DataFrame:
     df.index.name = 'p_exceed'
     return df
 
+
 def _drop_outliers_by_zscore(df: pd.DataFrame, threshold: float = 3) -> pd.DataFrame:
     """
     Drop outliers from a dataframe by their z-score and a threshold
@@ -240,6 +201,7 @@ def _drop_outliers_by_zscore(df: pd.DataFrame, threshold: float = 3) -> pd.DataF
     """
     return df[(np.abs(stats.zscore(df)) < threshold).all(axis=1)]
 
+
 def sfdc(sim_fdc: pd.DataFrame, obs_fdc: pd.DataFrame) -> pd.DataFrame:
     """
     Compute the scalar flow duration curve (exceedance probabilities) from two flow duration curves
@@ -251,13 +213,14 @@ def sfdc(sim_fdc: pd.DataFrame, obs_fdc: pd.DataFrame) -> pd.DataFrame:
     Returns:
         pd.DataFrame with index (exceedance probabilities) and a column of scalars
     """
-    scalars_df = pd.DataFrame(np.divide(sim_fdc.values.flatten(),obs_fdc.values.flatten()),
-        columns=['scalars', ],
-        index=sim_fdc.index
-    )
+    scalars_df = pd.DataFrame(np.divide(sim_fdc.values.flatten(), obs_fdc.values.flatten()),
+                              columns=['scalars', ],
+                              index=sim_fdc.index
+                              )
     scalars_df.replace(np.inf, np.nan, inplace=True)
     scalars_df.dropna(inplace=True)
     return scalars_df
+
 
 def _make_interpolator(x: np.array, y: np.array, extrap: str = 'nearest',
                        fill_value: int or float = None) -> interpolate.interp1d:
@@ -294,6 +257,7 @@ def _make_interpolator(x: np.array, y: np.array, extrap: str = 'nearest',
         return interpolate.interp1d(x, y, fill_value=np.min(y), bounds_error=False)
     else:
         raise ValueError('Invalid extrapolation method provided')
+
 
 def correct_forecast(forecast_data: pd.DataFrame, simulated_data: pd.DataFrame,
                      observed_data: pd.DataFrame, use_month: int = 0) -> pd.DataFrame:
