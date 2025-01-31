@@ -39,10 +39,10 @@ def _rperiod_scatters(startdate: str,
 
     return [
         template('Return Periods', (r2, r2, rmax, rmax), 'rgba(0,0,0,0)', fill='none'),
-        template(f'2 Year: {r2}', (r2, r2, r5, r5), colors['2 Year']),
-        template(f'5 Year: {r5}', (r5, r5, r10, r10), colors['5 Year']),
-        template(f'10 Year: {r10}', (r10, r10, r25, r25), colors['10 Year']),
-        template(f'25 Year: {r25}', (r25, r25, r50, r50), colors['25 Year']),
-        template(f'50 Year: {r50}', (r50, r50, r100, r100), colors['50 Year']),
-        template(f'100 Year: {r100}', (r100, r100, rmax, rmax), colors['100 Year']),
+        template(f'2: {r2}', (r2, r2, r5, r5), colors['2 Year']),
+        template(f'5: {r5}', (r5, r5, r10, r10), colors['5 Year']),
+        template(f'10: {r10}', (r10, r10, r25, r25), colors['10 Year']),
+        template(f'25: {r25}', (r25, r25, r50, r50), colors['25 Year']),
+        template(f'50: {r50}', (r50, r50, r100, r100), colors['50 Year']),
+        template(f'100: {r100}', (r100, r100, rmax, rmax), colors['100 Year']),
     ]

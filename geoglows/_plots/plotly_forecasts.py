@@ -61,8 +61,7 @@ def forecast(df: pd.DataFrame, *,
     ]
 
     if rp_df is not None:
-        rperiod_scatters = _rperiod_scatters(df.index[0], df.index[-1], rp_df, df['flow_uncertainty_upper'].max())
-        scatter_traces += rperiod_scatters
+        scatter_traces += _rperiod_scatters(df.index[0], df.index[-1], rp_df, df['flow_uncertainty_upper'].max())
 
     layout = go.Layout(
         title=build_title('Forecasted Streamflow', plot_titles),
@@ -205,38 +204,25 @@ def forecast_ensembles(df: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_tit
     Return:
          go.Figure
     """
-    # variables to determine the maximum flow and hold all the scatter plot lines
-    max_flows = []
+    # variable to hold all the scatter plot lines
     scatter_plots = []
 
     # determine the threshold values for return periods and the start/end dates so we can plot them
-    dates = df.index.tolist()
-    startdate = dates[0]
-    enddate = dates[-1]
+    startdate = df.index[0]
+    enddate = df.index[-1]
 
     # process the series' components and store them in a dictionary
     plot_data = {
         'x_1-51': df['ensemble_01'].dropna(axis=0).index.tolist(),
         'x_52': df['ensemble_52'].dropna(axis=0).index.tolist(),
+        'y_max': np.nanmax(df.values),
     }
-
-    # add a dictionary entry for each of the ensemble members. the key for each series is the integer ensemble number
-    for ensemble in df.columns:
-        plot_data[ensemble] = df[ensemble].dropna(axis=0).tolist()
-        max_flows.append(max(plot_data[ensemble]))
-    plot_data['y_max'] = max(max_flows)
-
-    if rp_df is not None:
-        plot_data.update(rp_df.to_dict(orient='index').items())
-        rperiod_scatters = _rperiod_scatters(startdate, enddate, rp_df, plot_data['y_max'])
-    else:
-        rperiod_scatters = []
 
     # create the high resolution line (ensemble 52)
     scatter_plots.append(go.Scatter(
         name='High Resolution Forecast',
         x=plot_data['x_52'],
-        y=plot_data['ensemble_52'],
+        y=df['ensemble_52'],
         line=dict(color='black')
     ))
     # create a line for the rest of the ensembles (1-51)
@@ -244,10 +230,12 @@ def forecast_ensembles(df: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_tit
         scatter_plots.append(go.Scatter(
             name='Ensemble ' + str(i),
             x=plot_data['x_1-51'],
-            y=plot_data[f'ensemble_{i:02}'],
+            y=df[f'ensemble_{i:02}'].dropna().values,
             legendgroup='Ensemble Members'
         ))
-    scatter_plots += rperiod_scatters
+
+    if rp_df is not None:
+        scatter_plots += _rperiod_scatters(startdate, enddate, rp_df, plot_data['y_max'])
 
     # define a layout for the plot
     layout = go.Layout(

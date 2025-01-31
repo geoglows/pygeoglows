@@ -47,8 +47,9 @@ def retrospective(df: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_titles: 
     scatter_plots = [go.Scatter(
         name='Retrospective Simulation',
         x=plot_data['x_datetime'],
-        y=plot_data['y_flow'])
-    ]
+        y=plot_data['y_flow'],
+        showlegend = False,
+    )]
     scatter_plots += rperiod_scatters
 
     layout = go.Layout(
@@ -64,12 +65,12 @@ def retrospective(df: pd.DataFrame, *, rp_df: pd.DataFrame = None, plot_titles: 
     return go.Figure(scatter_plots, layout=layout)
 
 
-def daily_averages(dayavg: pd.DataFrame, plot_titles: list = None, plot_type: str = 'plotly') -> go.Figure:
+def daily_averages(df: pd.DataFrame, plot_titles: list = None, plot_type: str = 'plotly') -> go.Figure:
     """
     Makes the daily_averages data and metadata into a plotly plot
 
     Args:
-        dayavg: the csv response from daily_averages
+        df: the csv response from daily_averages
         plot_titles: (dict) Extra info to show on the title of the plot. For example:
             {'River ID': 1234567, 'Drainage Area': '1000km^2'}
         plot_type: either 'plotly', or 'html' (default plotly)
@@ -83,8 +84,8 @@ def daily_averages(dayavg: pd.DataFrame, plot_titles: list = None, plot_type: st
     scatter_plots = [
         go.Scatter(
             name='Average Daily Flow',
-            x=dayavg.index.tolist(),
-            y=dayavg.values.flatten(),
+            x=df.index.tolist(),
+            y=df.values.flatten(),
             line=dict(color='blue')
         ),
     ]
@@ -98,13 +99,12 @@ def daily_averages(dayavg: pd.DataFrame, plot_titles: list = None, plot_type: st
     return go.Figure(scatter_plots, layout=layout)
 
 
-def monthly_averages(monavg: pd.DataFrame, plot_titles: list = None,
-                     plot_type: str = 'plotly') -> go.Figure:
+def monthly_averages(df: pd.DataFrame, plot_titles: list = None, plot_type: str = 'plotly') -> go.Figure:
     """
     Makes the daily_averages data and metadata into a plotly plot
 
     Args:
-        monavg: the csv response from monthly_averages
+        df: the csv response from monthly_averages
         plot_titles: (dict) Extra info to show on the title of the plot. For example:
             {'River ID': 1234567, 'Drainage Area': '1000km^2'}
         plot_type: either 'plotly', or 'html' (default plotly)
@@ -118,8 +118,8 @@ def monthly_averages(monavg: pd.DataFrame, plot_titles: list = None,
     scatter_plots = [
         go.Scatter(
             name='Average Monthly Flow',
-            x=pd.to_datetime(monavg.index, format='%m').strftime('%B'),
-            y=monavg.values.flatten(),
+            x=pd.to_datetime(df.index, format='%m').strftime('%B'),
+            y=df.values.flatten(),
             line=dict(color='blue')
         ),
     ]
@@ -177,8 +177,11 @@ def annual_averages(df: pd.DataFrame, *, plot_titles: list = None, decade_averag
                 )
             )
 
+    title_string = 'Annual Average Streamflow (Simulated)'
+    if decade_averages:
+        title_string += ' with Decadal Averages Marked'
     layout = go.Layout(
-        title=build_title('Annual Average Streamflow (Simulated)', plot_titles),
+        title=build_title(title_string, plot_titles),
         yaxis={'title': 'Streamflow (m<sup>3</sup>/s)'},
         xaxis={'title': 'Year'},
     )
@@ -190,7 +193,7 @@ def flow_duration_curve(df: pd.DataFrame, plot_titles: dict = None, plot_type: s
     Makes the streamflow ensemble data and metadata into a plotly plot
 
     Args:
-        df: the dataframe response from data.retrospective
+        df: the dataframe response from geoglows.data.retrospective
         plot_titles: (dict) Extra info to show on the title of the plot. For example:
             {'River ID': 1234567, 'Drainage Area': '1000km^2'}
         plot_type: either 'json', 'plotly', or 'html' (default plotly)
@@ -270,12 +273,12 @@ def daily_stats(df: pd.DataFrame, *, plot_titles: dict = None, plot_type: str = 
     return go.Figure(data=data, layout=layout)
 
 
-def daily_variance(daily_variance: pd.DataFrame, plot_titles: list = None, plot_type: str = 'plotly') -> go.Figure:
+def daily_variance(df: pd.DataFrame, plot_titles: list = None, plot_type: str = 'plotly') -> go.Figure:
     """
     A dataframe of daily variances computed by the geoglows.analysis.compute_daily_variance function
 
     Args:
-      daily_variance: dataframe of values to plot coming from geoglows.analysis.compute_daily_variance
+      df: dataframe of values to plot coming from geoglows.analysis.compute_daily_variance
       plot_titles: (dict) Extra info to show on the title of the plot. For example:
         {'River ID': 1234567, 'Drainage Area': '1000km^2'}
       plot_type: either 'plotly' (python object, default), 'plotly_scatters', or 'html'
@@ -285,8 +288,8 @@ def daily_variance(daily_variance: pd.DataFrame, plot_titles: list = None, plot_
     """
     data = [
         go.Scatter(
-            x=daily_variance['date'],
-            y=daily_variance['flow_std'],
+            x=df['date'],
+            y=df['flow_std'],
             name="Daily Standard Deviation"
         ),
     ]

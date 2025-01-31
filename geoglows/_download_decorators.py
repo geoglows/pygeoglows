@@ -9,8 +9,8 @@ import xarray as xr
 
 from ._constants import (
     ODP_FORECAST_S3_BUCKET_URI,
-    ODP_RETROSPECTIVE_S3_BUCKET_URI,
     ODP_S3_BUCKET_REGION,
+    ODP_RFS_V2_S3_BUCKET_URI
 )
 from .analyze import (
     simple_forecast as calc_simple_forecast,
@@ -62,15 +62,13 @@ def _forecast(function):
         else:
             raise ValueError('Date must be YYYYMMDD or YYYYMMDDHH format. Use dates() to view available data.')
 
-        s3store = s3fs.S3Map(root=f'{ODP_FORECAST_S3_BUCKET_URI}/{date}', s3=s3, check=False)
-
         attrs = {
             'source': 'geoglows',
             'forecast_date': date[:8],
             'retrieval_date': pd.Timestamp.now().strftime('%Y%m%d'),
             'units': 'cubic meters per second',
         }
-        ds = xr.open_zarr(s3store).sel(rivid=river_id)
+        ds = xr.open_zarr(f'{ODP_FORECAST_S3_BUCKET_URI}/{date}').sel(rivid=river_id)
         if return_format == 'xarray' and product_name == 'forecastensembles':
             ds = ds.rename({'time': 'datetime', 'rivid': 'river_id'})
             ds.attrs = attrs
@@ -121,7 +119,7 @@ def _forecast(function):
         river_id = args[0] if len(args) > 0 else kwargs.get('river_id', None)
         if river_id is None and product_name != 'dates':
             raise ValueError('River ID must be provided to retrieve forecast data.')
-        if not isinstance(river_id, (int, np.int64, )):
+        if not isinstance(river_id, (int, np.int64,)):
             raise ValueError('Multiple river_ids are not available via REST API. Provide a single 9 digit integer.')
         if river_id and version == 'v2':
             assert 1_000_000_000 > river_id >= 110_000_000, ValueError('River ID must be a 9 digit integer')
@@ -196,25 +194,14 @@ def _retrospective(function):
                           timeout=1,  # short timeout because we don't need the response, post just needs to be received
                           json={'river_id': river_id, 'product': product_name, 'format': return_format})
 
-        s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
-        s3store = s3fs.S3Map(root=f'{ODP_RETROSPECTIVE_S3_BUCKET_URI}/{product_name}.zarr', s3=s3, check=False)
-        ds = xr.open_zarr(s3store)
+        zarr_path = f'{ODP_RFS_V2_S3_BUCKET_URI}/retrospective/{product_name}.zarr'
+        ds = xr.open_zarr(zarr_path)
         try:
             ds = ds.sel(rivid=river_id)
         except Exception:
             raise ValueError(f'River ID(s) not found in the retrospective dataset: {river_id}')
         if return_format == 'xarray':
             return ds
-        if product_name == 'retrospective':
-            df = (
-                ds
-                .to_dataframe()
-                .reset_index()
-                .set_index('time')
-                .pivot(columns='rivid', values='Qout')
-            )
-            df.index = df.index.tz_localize('UTC')
-            return df
         if product_name == 'return-periods':
             rp_methods = {
                 'gumbel1': 'gumbel1_return_period',
@@ -227,6 +214,16 @@ def _retrospective(function):
                 .reset_index()
                 .pivot(index='rivid', columns='return_period', values=rp_methods[method])
             )
+        if product_name == 'retrospective':
+            df = (
+                ds
+                .to_dataframe()
+                .reset_index()
+                .set_index('time')
+                .pivot(columns='rivid', values='Qout')
+            )
+            df.index = df.index.tz_localize('UTC')
+            return df
         raise ValueError(f'Unsupported product requested: {product_name}')
 
     main.__doc__ = function.__doc__  # necessary for code documentation auto generators
