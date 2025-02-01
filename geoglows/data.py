@@ -33,8 +33,8 @@ __all__ = [
     'assigned_sfdc_curve_id',
     'sfdc_for_river_id',
 
+    # metadata
     'metadata_tables',
-    'saber_assign_table',
 
     'DEFAULT_REST_ENDPOINT',
     'DEFAULT_REST_ENDPOINT_VERSION',
