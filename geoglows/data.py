@@ -31,8 +31,10 @@ __all__ = [
 
     # transformers
     'sfdc',
-    'assigned_sfdc_curve_id',
+    'wse',
+    'transform_curve_ids',
     'sfdc_for_river_id',
+    'wse_for_river_id',
 
     # metadata
     'metadata_tables',
@@ -300,23 +302,34 @@ def sfdc(curve_id: int or list) -> pd.DataFrame:
     pass
 
 
-def sfdc_for_river_id(river_id: int) -> pd.DataFrame:
+@_transformer
+def wse(curve_id: int or list) -> pd.DataFrame:
     """
-    Retrieves data from the SFDC table using 'asgn_mid' values obtained from the SABER assign table for the given 'river_id'.
+    Retrieves data from the WSE table based on 'asgn_mid' values for given river_id.
 
     Args:
-        river_id (int or list): ID(s) of a stream(s).
+        curve_id (int or list): Single or list of wse curve IDs
 
     Returns:
-        pd.DataFrame: Filtered DataFrame from the SFDC table based on 'asgn_mid' values.
+        pd.DataFrame
     """
-    assert isinstance(river_id, int), 'river_id must be an integer'
-    curve_ids = assigned_sfdc_curve_id(river_id)
-    filtered_sfdc = sfdc(curve_ids)
-    return filtered_sfdc
+    # todo update decorator
+    pass
 
 
-def assigned_sfdc_curve_id(river_id: int) -> list:
+@_transformer
+def transform_table() -> pd.DataFrame:
+    """
+    Retrieves the SABER assign table as a pandas DataFrame.
+
+    Returns:
+        pd.DataFrame
+    """
+    # todo update decorator
+    pass
+
+
+def transform_curve_ids(river_id: int) -> dict:
     """
     Retrieves 'asgn_mid' values from the SABER assign table for the given river_id(s).
 
@@ -328,8 +341,39 @@ def assigned_sfdc_curve_id(river_id: int) -> list:
     """
     assert isinstance(river_id, int), 'river_id must be an integer'
     df = pd.read_parquet(get_transformer_table_uri())
-    curve_ids = df.loc[df['river_id'] == river_id, 'sfdc_curve_id'].values[0]
+    # make a dictionary of column: value pairs
+    curve_ids = df.loc[df['river_id'] == river_id].to_dict(orient='records')[0]
     return curve_ids
+
+
+def sfdc_for_river_id(river_id: int) -> pd.DataFrame:
+    """
+    Retrieves data from the SFDC table using 'asgn_mid' values obtained from the SABER assign table for the given 'river_id'.
+
+    Args:
+        river_id (int or list): ID(s) of a stream(s).
+
+    Returns:
+        pd.DataFrame: Filtered DataFrame from the SFDC table based on 'asgn_mid' values.
+    """
+    assert isinstance(river_id, int), 'river_id must be an integer'
+    curve_ids = transform_curve_ids(river_id)['sfdc_curve_id']
+    return sfdc(curve_ids)
+
+
+def wse_for_river_id(river_id: int) -> pd.DataFrame:
+    """
+    Retrieves data from the WSE table using 'asgn_mid' values obtained from the SABER assign table for the given 'river_id'.
+
+    Args:
+        river_id (int or list): ID(s) of a stream(s).
+
+    Returns:
+        pd.DataFrame: Filtered DataFrame from the WSE table based on 'asgn_mid' values.
+    """
+    assert isinstance(river_id, int), 'river_id must be an integer'
+    curve_ids = transform_curve_ids(river_id)['wse_curve_id']
+    return wse(curve_ids)
 
 
 # model config and supplementary data
