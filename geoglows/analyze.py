@@ -14,7 +14,9 @@ __all__ = [
     'daily_variance',
     'daily_flow_anomaly',
     'return_periods',
-    'low_return_periods'
+    'low_return_periods',
+    'fdc',
+    'sfdc',
 ]
 
 
@@ -253,3 +255,42 @@ def low_return_periods(hist: pd.DataFrame, rps: tuple = (2, 5, 10, 25, 50, 100))
         low_flows[f'return_period_{rp}'] = value
 
     return low_flows
+
+
+def fdc(flows: np.array, steps: int = 101, col_name: str = 'Q') -> pd.DataFrame:
+    """
+    Compute flow duration curve (exceedance probabilities) from a list of flows
+
+    Args:
+        flows: array of flows
+        steps: number of steps (exceedance probabilities) to use in the FDC
+        col_name: name of the column in the returned dataframe
+
+    Returns:
+        pd.DataFrame with index 'p_exceed' and columns 'Q' (or col_name)
+    """
+    # calculate the FDC and save to parquet
+    exceed_prob = np.linspace(100, 0, steps)
+    fdc_flows = np.nanpercentile(flows, exceed_prob)
+    df = pd.DataFrame(fdc_flows, columns=[col_name, ], index=exceed_prob)
+    df.index.name = 'p_exceed'
+    return df
+
+
+def sfdc(sim_fdc: pd.DataFrame, obs_fdc: pd.DataFrame) -> pd.DataFrame:
+    """
+    Compute the scalar flow duration curve (exceedance probabilities) from two flow duration curves
+
+    Args:
+        sim_fdc: simulated flow duration curve
+        obs_fdc: observed flow duration curve
+
+    Returns:
+        pd.DataFrame with index (exceedance probabilities) and a column of scalars
+    """
+    scalars_df = pd.DataFrame(np.divide(sim_fdc.values.flatten(), obs_fdc.values.flatten()),
+                              columns=['scalars', ],
+                              index=sim_fdc.index, )
+    scalars_df.replace(np.inf, np.nan, inplace=True)
+    scalars_df.dropna(inplace=True)
+    return scalars_df
