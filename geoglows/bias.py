@@ -6,15 +6,16 @@ import hydrostats.data as hd
 import numpy as np
 import pandas as pd
 from scipy import interpolate
-from scipy import stats
 
-from .data import sfdc_for_river_id
+from .analyze import fdc
 from .data import retrospective
+from .data import sfdc_for_river_id
 
 __all__ = [
     'correct_historical',
     'correct_forecast',
     'statistics_tables',
+    'sfdc_bias_correction',
 ]
 
 
@@ -62,20 +63,19 @@ def sfdc_bias_correction(river_id: int) -> pd.DataFrame:
     Returns: pandas DataFrame with a DateTime index and columns with Simulated flow, Bias Corrected Simulation flow.
 
     """
-    simulated_data = retrospective(river_id=river_id)
-    print(simulated_data)
+    sim_data = retrospective(river_id=river_id)
     sfdc_b = sfdc_for_river_id(river_id=river_id)
     sim_fdc_b = []
     for i in range(1, 13):
-        mdf = fdc(simulated_data[simulated_data.index.month == i].values.flatten()).rename(columns={'Q': 'fdc'}).reset_index()
+        mdf = fdc(sim_data[sim_data.index.month == i].values.flatten()).rename(columns={'Q': 'fdc'}).reset_index()
         mdf['month'] = i
         sim_fdc_b.append(mdf)
     sim_fdc_b = pd.concat(sim_fdc_b, axis=0)
 
     # Process each month from January (1) to December (12)
     monthly_results = []
-    for month in sorted(set(simulated_data.index.month)):
-        mon_sim_b = simulated_data[simulated_data.index.month == month].dropna().clip(lower=0)
+    for month in sorted(set(sim_data.index.month)):
+        mon_sim_b = sim_data[sim_data.index.month == month].dropna().clip(lower=0)
         qb_original = mon_sim_b[river_id].values.flatten()
         scalar_fdc = sfdc_b[sfdc_b['month'] == month][['p_exceed', 'sfdc']].set_index('p_exceed')
         sim_fdc_b_m = sim_fdc_b[sim_fdc_b['month'] == month][['p_exceed', 'fdc']].set_index('p_exceed')
@@ -103,123 +103,6 @@ def sfdc_bias_correction(river_id: int) -> pd.DataFrame:
         # Append the month's DataFrame to the results list
         monthly_results.append(month_df)
     return pd.concat(monthly_results).set_index('date').sort_index()
-
-
-def make_sfdc(simulated_df: pd.DataFrame, gauge_df: pd.DataFrame,
-              use_log: bool = False, fix_seasonally: bool = True, empty_months: str = 'skip',
-              drop_outliers: bool = False, outlier_threshold: int or float = 2.5,
-              filter_scalar_fdc: bool = False, filter_range: tuple = (0, 80),
-              extrapolate: str = 'nearest', fill_value: int or float = None,
-              fit_gumbel: bool = False, fit_range: tuple = (10, 90),
-              metadata: bool = False, ) -> pd.DataFrame:
-    """
-    Makes a scalar flow duration curve (SFDC) mapping from simulated to observed (gauge) flow data. SFDC is used in SABER to
-    correct timeseries data for a ungauged riverid.
-
-    Args:
-        simulated_data: A dataframe with a datetime index and a single column of simulated streamflow values
-        gauge_df: A dataframe with a datetime index and a single column of observed streamflow values
-        extrapolate: Method to use for extrapolation. Options: nearest, const, linear, average, max, min
-        fill_value: Value to use for extrapolation when extrapolate_method='const'
-        filter_range: Lower and upper bounds of the filter range
-        drop_outliers: Flag to exclude outliers
-        outlier_threshold: Number of std deviations from mean to exclude from flow duration curve
-
-    Returns:
-        pandas DataFrame with a DateTime index and columns with corrected flow, uncorrected flow, the scalar adjustment
-        factor applied to correct the discharge, and the percentile of the uncorrected flow (in the seasonal grouping,
-        if applicable).
-    """
-    if fix_seasonally:
-        # list of the unique months in the historical simulation. should always be 1->12 but just in case...
-        monthly_results = []
-        for month in sorted(set(simulated_df.index.strftime('%m'))):
-            # filter data to current iteration's month
-            mon_obs_a = gauge_df[gauge_df.index.month == int(month)].dropna().clip(lower=0)
-            if mon_obs_a.empty:
-                if empty_months == 'skip':
-                    continue
-                else:
-                    raise ValueError(f'Invalid value for argument "empty_months". Given: {empty_months}.')
-
-            mon_sim_b = simulated_df[simulated_df.index.month == int(month)].dropna().clip(lower=0)
-            monthly_results.append(make_sfdc(
-                mon_obs_a, mon_sim_b,
-                fix_seasonally=False, empty_months=empty_months,
-                drop_outliers=drop_outliers, outlier_threshold=outlier_threshold,
-                filter_scalar_fdc=filter_scalar_fdc, filter_range=filter_range,
-                extrapolate=extrapolate, fill_value=fill_value,
-                fit_gumbel=fit_gumbel, fit_range=fit_range, )
-            )
-        # combine the results from each monthly into a single dataframe (sorted chronologically) and return it
-        return pd.concat(monthly_results).sort_index()
-
-    if drop_outliers:
-        simulated_df = _drop_outliers_by_zscore(simulated_df, threshold=outlier_threshold)
-        gauge_df = _drop_outliers_by_zscore(gauge_df, threshold=outlier_threshold)
-
-    # compute the flow duration curves
-    sim_fdc = fdc(simulated_df)
-    obs_fdc = fdc(gauge_df)
-
-    # calculate the scalar flow duration curve
-    scalar_fdc = sfdc(sim_fdc, obs_fdc)
-
-    return scalar_fdc
-
-
-def fdc(flows: np.array, steps: int = 101, col_name: str = 'Q') -> pd.DataFrame:
-    """
-    Compute flow duration curve (exceedance probabilities) from a list of flows
-
-    Args:
-        flows: array of flows
-        steps: number of steps (exceedance probabilities) to use in the FDC
-        col_name: name of the column in the returned dataframe
-
-    Returns:
-        pd.DataFrame with index 'p_exceed' and columns 'Q' (or col_name)
-    """
-    # calculate the FDC and save to parquet
-    exceed_prob = np.linspace(100, 0, steps)
-    fdc_flows = np.nanpercentile(flows, exceed_prob)
-    df = pd.DataFrame(fdc_flows, columns=[col_name, ], index=exceed_prob)
-    df.index.name = 'p_exceed'
-    return df
-
-
-def _drop_outliers_by_zscore(df: pd.DataFrame, threshold: float = 3) -> pd.DataFrame:
-    """
-    Drop outliers from a dataframe by their z-score and a threshold
-    Based on https://stackoverflow.com/questions/23199796/detect-and-exclude-outliers-in-pandas-data-frame
-    Args:
-        df: dataframe to drop outliers from
-        threshold: z-score threshold
-
-    Returns:
-        pd.DataFrame with outliers removed
-    """
-    return df[(np.abs(stats.zscore(df)) < threshold).all(axis=1)]
-
-
-def sfdc(sim_fdc: pd.DataFrame, obs_fdc: pd.DataFrame) -> pd.DataFrame:
-    """
-    Compute the scalar flow duration curve (exceedance probabilities) from two flow duration curves
-
-    Args:
-        sim_fdc: simulated flow duration curve
-        obs_fdc: observed flow duration curve
-
-    Returns:
-        pd.DataFrame with index (exceedance probabilities) and a column of scalars
-    """
-    scalars_df = pd.DataFrame(np.divide(sim_fdc.values.flatten(), obs_fdc.values.flatten()),
-                              columns=['scalars', ],
-                              index=sim_fdc.index
-                              )
-    scalars_df.replace(np.inf, np.nan, inplace=True)
-    scalars_df.dropna(inplace=True)
-    return scalars_df
 
 
 def _make_interpolator(x: np.array, y: np.array, extrap: str = 'nearest',
