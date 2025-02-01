@@ -1,17 +1,12 @@
 import os
 import warnings
 
-import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ._constants import get_metadata_table_path, get_sfdc_zarr_uri, get_transformer_table_uri
-from ._download_decorators import _forecast, _retrospective, DEFAULT_REST_ENDPOINT, DEFAULT_REST_ENDPOINT_VERSION
-from .analyze import (
-    daily_averages as calc_daily_averages,
-    monthly_averages as calc_monthly_averages,
-    annual_averages as calc_annual_averages,
-)
+from ._constants import get_metadata_table_path, get_transformer_table_uri
+from ._download_decorators import _forecast, _retrospective, _transformer
+
 
 __all__ = [
     # forecast products
@@ -23,10 +18,16 @@ __all__ = [
 
     # retrospective products
     'retrospective',
-    'daily_averages',
-    'monthly_averages',
-    'annual_averages',
+    'retrospective_hourly',
+    'retrospective_daily',
+    'retrospective_monthly',
+    'retrospective_yearly',
+    'retrospective_monthly_timeseries',
+    'retrospective_monthly_timesteps',
+    'retrospective_yearly_timeseries',
+    'retrospective_yearly_timesteps',
     'return_periods',
+    'annual_maximums',
 
     # transformers
     'sfdc',
@@ -35,9 +36,6 @@ __all__ = [
 
     # metadata
     'metadata_tables',
-
-    'DEFAULT_REST_ENDPOINT',
-    'DEFAULT_REST_ENDPOINT_VERSION',
 ]
 
 
@@ -134,13 +132,15 @@ def forecast_records(*, river_id: int, start_date: str, end_date: str, format: s
 
 # Retrospective simulation and derived products
 @_retrospective
-def retrospective(river_id: int or list, *, format: str = 'df') -> pd.DataFrame or xr.Dataset:
+def retrospective(river_id: int or list,
+                  *, resolution: str = 'daily', format: str = 'df') -> pd.DataFrame or xr.Dataset:
     """
     Retrieves the retrospective simulation of streamflow for a given river_id from the
     AWS Open Data Program GEOGLOWS V2 S3 bucket
 
     Args:
         river_id (int): the ID of a stream, should be a 9 digit integer
+        resolution (str): the time step of the data: 'hourly' (default), 'daily', 'monthly', or 'yearly.
         format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
 
     Returns:
@@ -149,9 +149,9 @@ def retrospective(river_id: int or list, *, format: str = 'df') -> pd.DataFrame 
     pass
 
 
-def daily_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
+def retrospective_hourly(river_id: int or list, **kwargs) -> pd.DataFrame:
     """
-    Retrieves daily average streamflow for a given river_id
+    Retrieves hourly retrospective streamflow simulation for a given river_id
 
     Args:
         river_id (int): the ID of a stream, should be a 9 digit integer
@@ -159,13 +159,12 @@ def daily_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
     Returns:
         pd.DataFrame
     """
-    df = retrospective(river_id, **kwargs)
-    return calc_daily_averages(df)
+    return retrospective(river_id, resolution='hourly', **kwargs)
 
 
-def monthly_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
+def retrospective_daily(river_id: int or list, **kwargs) -> pd.DataFrame:
     """
-    Retrieves monthly average streamflow for a given river_id
+    Retrieves daily retrospective streamflow simulation for a given river_id
 
     Args:
         river_id (int): the ID of a stream, should be a 9 digit integer
@@ -173,13 +172,12 @@ def monthly_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
     Returns:
         pd.DataFrame
     """
-    df = retrospective(river_id, **kwargs)
-    return calc_monthly_averages(df)
+    return retrospective(river_id, resolution='daily', **kwargs)
 
 
-def annual_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
+def retrospective_monthly(river_id: int or list, **kwargs) -> pd.DataFrame:
     """
-    Retrieves annual average streamflow for a given river_id
+    Retrieves monthly retrospective streamflow simulation for a given river_id
 
     Args:
         river_id (int): the ID of a stream, should be a 9 digit integer
@@ -187,10 +185,108 @@ def annual_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
     Returns:
         pd.DataFrame
     """
-    df = retrospective(river_id, **kwargs)
-    return calc_annual_averages(df)
+    return retrospective_monthly_timeseries(river_id, **kwargs)
 
 
+def retrospective_yearly(river_id: int or list, **kwargs) -> pd.DataFrame:
+    """
+    Retrieves yearly retrospective streamflow simulation for a given river_id
+
+    Args:
+        river_id (int): the ID of a stream, should be a 9 digit integer
+
+    Returns:
+        pd.DataFrame
+    """
+    return retrospective(river_id, resolution='yearly-timeseries', **kwargs)
+
+
+def retrospective_monthly_timeseries(river_id: int or list, **kwargs) -> pd.DataFrame:
+    """
+    Retrieves monthly retrospective streamflow simulation for a given river_id
+
+    Args:
+        river_id (int): the ID of a stream, should be a 9 digit integer
+
+    Returns:
+        pd.DataFrame
+    """
+    return retrospective(river_id, resolution='monthly-timeseries', **kwargs)
+
+
+def retrospective_monthly_timesteps(river_id: int or list, **kwargs) -> pd.DataFrame:
+    """
+    Retrieves monthly retrospective streamflow simulation for a given river_id
+
+    Args:
+        river_id (int): the ID of a stream, should be a 9 digit integer
+
+    Returns:
+        pd.DataFrame
+    """
+    return retrospective(river_id, resolution='monthly-timesteps', **kwargs)
+
+
+def retrospective_yearly_timeseries(river_id: int or list, **kwargs) -> pd.DataFrame:
+    """
+    Retrieves yearly retrospective streamflow simulation for a given river_id
+
+    Args:
+        river_id (int): the ID of a stream, should be a 9 digit integer
+
+    Returns:
+        pd.DataFrame
+    """
+    return retrospective(river_id, resolution='yearly-timeseries', **kwargs)
+
+
+def retrospective_yearly_timesteps(river_id: int or list, **kwargs) -> pd.DataFrame:
+    """
+    Retrieves yearly retrospective streamflow simulation for a given river_id
+
+    Args:
+        river_id (int): the ID of a stream, should be a 9 digit integer
+
+    Returns:
+        pd.DataFrame
+    """
+    return retrospective(river_id, resolution='yearly-timesteps', **kwargs)
+
+
+@_retrospective
+def return_periods(river_id: int or list, *, format: str = 'df', method: str = 'gumbel1') -> pd.DataFrame or xr.Dataset:
+    """
+    Retrieves the return period thresholds based on a specified historic simulation forcing on a certain river_id.
+
+    Args:
+        river_id (int): the ID of a stream, should be a 9 digit integer
+        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
+        method (str): the method to use to estimate the return period thresholds. default is 'gumbel1'
+
+    Changelog:
+        v1.4.0: adds method parameter for future expansion of multiple return period methods
+
+    Returns:
+        pd.DataFrame
+    """
+    pass
+
+
+@_retrospective
+def annual_maximums(river_id: int or list) -> pd.DataFrame:
+    """
+    Retrieves the annual maximum streamflow for a given river_id based on hourly retrospective simulation data.
+
+    Args:
+        river_id (int): the ID of a stream, should be a 9 digit integer
+
+    Returns:
+        pd.DataFrame
+    """
+    pass
+
+
+@_transformer
 def sfdc(curve_id: int or list) -> pd.DataFrame:
     """
     Retrieves data from the SFDC table based on 'asgn_mid' values for given river_id.
@@ -201,14 +297,7 @@ def sfdc(curve_id: int or list) -> pd.DataFrame:
     Returns:
         pd.DataFrame
     """
-    # check that curve_id is a 12 digit integer or a list of such integers
-    if isinstance(curve_id, (int, np.integer)):
-        assert len(str(curve_id)) == 12, "curve_id must be a 12 digit integer"
-    if isinstance(curve_id, list):
-        assert all(len(str(x)) == 12 for x in curve_id), "curve_id must be a 12 digit integer"
-        assert all(isinstance(x, int) for x in curve_id), "curve_id must be a 12 digit integer"
-    ds = xr.open_zarr(get_sfdc_zarr_uri(), storage_options={'anon': True})
-    return ds.sel(curve_id=curve_id).to_dataframe().reset_index()
+    pass
 
 
 def sfdc_for_river_id(river_id: int) -> pd.DataFrame:
@@ -241,25 +330,6 @@ def assigned_sfdc_curve_id(river_id: int) -> list:
     df = pd.read_parquet(get_transformer_table_uri())
     curve_ids = df.loc[df['river_id'] == river_id, 'sfdc_curve_id'].values[0]
     return curve_ids
-
-
-@_retrospective
-def return_periods(river_id: int or list, *, format: str = 'df', method: str = 'gumbel1') -> pd.DataFrame or xr.Dataset:
-    """
-    Retrieves the return period thresholds based on a specified historic simulation forcing on a certain river_id.
-
-    Args:
-        river_id (int): the ID of a stream, should be a 9 digit integer
-        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
-        method (str): the method to use to estimate the return period thresholds. default is 'gumbel1'
-
-    Changelog:
-        v1.4.0: adds method parameter for future expansion of multiple return period methods
-
-    Returns:
-        pd.DataFrame
-    """
-    pass
 
 
 # model config and supplementary data

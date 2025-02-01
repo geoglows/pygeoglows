@@ -9,20 +9,19 @@ import xarray as xr
 
 from ._constants import (
     ODP_FORECAST_S3_BUCKET_URI,
-    ODP_RETROSPECTIVE_S3_BUCKET_URI,
     ODP_S3_BUCKET_REGION,
+    DEFAULT_REST_ENDPOINT,
+    DEFAULT_REST_ENDPOINT_VERSION,
 )
 from .analyze import (
     simple_forecast as calc_simple_forecast,
     forecast_stats as calc_forecast_stats,
 )
 
-DEFAULT_REST_ENDPOINT = 'https://geoglows.ecmwf.int/api/'
-DEFAULT_REST_ENDPOINT_VERSION = 'v2'  # 'v1, v2, latest'
-
 __all__ = [
     '_forecast',
     '_retrospective',
+    '_transformer',
 ]
 
 
@@ -43,7 +42,7 @@ def _forecast(function):
         if kwargs.get('skip_log', False):
             requests.post(f'{DEFAULT_REST_ENDPOINT}{DEFAULT_REST_ENDPOINT_VERSION}/log',
                           json={'river_id': river_id, 'product': product_name, 'format': return_format},
-                          timeout=1, )  # short timeout- don't need the response, post only needs to be received
+                          timeout=1, )  # short time out. Don't need the response, post only needs to be received
 
         s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
         date = kwargs.get('date', False)
@@ -180,62 +179,71 @@ def _forecast(function):
 def _retrospective(function):
     def main(*args, **kwargs):
         product_name = function.__name__.replace("_", "-").lower()
+        if product_name == 'retrospective':
+            product_name = kwargs.get('resolution', 'daily')
 
         river_id = args[0] if len(args) > 0 else kwargs.get('river_id', None)
-        if river_id is None:
-            raise ValueError('River ID must be provided to retrieve retrospective data.')
-
         return_format = kwargs.get('format', 'df')
         assert return_format in ('df', 'xarray'), f'Unsupported return format requested: {return_format}'
-
-        method = kwargs.get('method', 'gumbel1')
 
         if kwargs.get('skip_log', False):
             requests.post(f'{DEFAULT_REST_ENDPOINT}{DEFAULT_REST_ENDPOINT_VERSION}/log',
                           timeout=1,  # short timeout because we don't need the response, post just needs to be received
                           json={'river_id': river_id, 'product': product_name, 'format': return_format})
 
-        ds = xr.open_zarr(f'{ODP_RETROSPECTIVE_S3_BUCKET_URI}/{product_name}.zarr', storage_options={'anon': True})
-        try:
-            ds = ds.sel(rivid=river_id)
-        except Exception:
-            raise ValueError(f'River ID(s) not found in the retrospective dataset: {river_id}')
+        ds = xr.open_zarr(f's3://rfs-v2/retrospective/{product_name}.zarr', storage_options={'anon': True})
         if return_format == 'xarray':
             return ds
-        if product_name == 'retrospective':
-            df = (
-                ds
-                .to_dataframe()
-                .reset_index()
-                .set_index('time')
-                .pivot(columns='rivid', values='Qout')
-            )
-            df.index = df.index.tz_localize('UTC')
-            return df
+
+        if river_id is None:
+            raise ValueError('River ID must be provided to retrieve retrospective data.')
         if product_name == 'return-periods':
-            rp_methods = {
-                'gumbel1': 'gumbel1_return_period',
-            }
-            assert method in rp_methods, f'Unrecognized return period estimation method given: {method}'
+            method = kwargs.get('method', 'gumbel')
             return (
                 ds
-                [rp_methods[method]]
+                .sel(river_id=river_id)
+                [method]
                 .to_dataframe()
                 .reset_index()
-                .pivot(index='rivid', columns='return_period', values=rp_methods[method])
+                .pivot(index='river_id', columns='return_period', values=method)
             )
-        raise ValueError(f'Unsupported product requested: {product_name}')
+        df = (
+            ds
+            .sel(river_id=river_id)
+            .to_dataframe()
+            .reset_index()
+            .set_index('time')
+            .pivot(columns='river_id', values='Q')
+        )
+        if df.index.tz is None:
+            df.index = df.index.tz_localize('UTC')
+        return df
 
     main.__doc__ = function.__doc__  # necessary for code documentation auto generators
     return main
 
 
-def transformer(function):
+def _transformer(function):
     def main(*args, **kwargs):
         product_name = function.__name__.replace("_", "").lower()
+
+        # todo reconcile allowing local vs remote copies of the dataset if the user has set the env var
+        # check that curve_id is a 12 digit integer or a list of such integers
+        curve_id = args[0] if len(args) > 0 else kwargs.get('curve_id', None)
+        if isinstance(curve_id, (int, np.integer)):
+            assert len(str(curve_id)) == 12, "curve_id must be a 12 digit integer"
+        if isinstance(curve_id, list):
+            assert all(len(str(x)) == 12 for x in curve_id), "curve_id must be a 12 digit integer"
+            assert all(isinstance(x, int) for x in curve_id), "curve_id must be a 12 digit integer"
+
+        return_format = kwargs.get('format', 'df')
         bucket_uri = f's3://rfs-v2/transformers/{product_name}.zarr'
         ds = xr.open_zarr(bucket_uri, storage_options={'anon': True})
-        return function(*args, **kwargs)
+        if return_format == 'xarray':
+            return ds
+        if curve_id is None:
+            raise ValueError('Curve ID must be provided to retrieve transformer data.')
+        return ds.sel(curve_id=curve_id).to_dataframe().reset_index()
 
     main.__doc__ = function.__doc__  # necessary for code documentation auto generators
     return main

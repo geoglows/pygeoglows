@@ -64,7 +64,7 @@ def sfdc_bias_correction(river_id: int) -> pd.DataFrame:
 
     """
     assert isinstance(river_id, int), 'river_id must be an integer'
-    sim_data = retrospective(river_id=river_id)
+    sim_data = retrospective(river_id=river_id, resolution='daily')
     sfdc_b = sfdc_for_river_id(river_id=river_id)
     sim_fdc_b = []
     for i in range(1, 13):
