@@ -48,10 +48,9 @@ def _forecast(function):
         s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
         date = kwargs.get('date', False)
         if not date:
-            zarr_vars = ['rivid', 'Qout', 'time', 'ensemble']
-            dates = [s3.glob(ODP_FORECAST_S3_BUCKET_URI + '/' + f'*.zarr/{var}') for var in zarr_vars]
-            dates = [set([d.split('/')[1].replace('.zarr', '') for d in date]) for date in dates]
-            dates = sorted(set.intersection(*dates), reverse=True)
+            dates = s3.glob(ODP_FORECAST_S3_BUCKET_URI + '/' + f'*.zarr')
+            dates = set([date.split('/')[1].replace('.zarr', '') for date in dates])
+            dates = sorted(dates, reverse=True)
             if product_name == 'dates':
                 return pd.DataFrame(dict(dates=dates))
             date = dates[0]
@@ -62,15 +61,13 @@ def _forecast(function):
         else:
             raise ValueError('Date must be YYYYMMDD or YYYYMMDDHH format. Use dates() to view available data.')
 
-        s3store = s3fs.S3Map(root=f'{ODP_FORECAST_S3_BUCKET_URI}/{date}', s3=s3, check=False)
-
         attrs = {
             'source': 'geoglows',
             'forecast_date': date[:8],
             'retrieval_date': pd.Timestamp.now().strftime('%Y%m%d'),
             'units': 'cubic meters per second',
         }
-        ds = xr.open_zarr(s3store).sel(rivid=river_id)
+        ds = xr.open_zarr(f'{ODP_FORECAST_S3_BUCKET_URI}/{date}', storage_options={'anon': True}).sel(rivid=river_id)
         if return_format == 'xarray' and product_name == 'forecastensembles':
             ds = ds.rename({'time': 'datetime', 'rivid': 'river_id'})
             ds.attrs = attrs
@@ -160,7 +157,9 @@ def _forecast(function):
             if 'datetime' in df.columns:
                 df['datetime'] = pd.to_datetime(df['datetime'])
                 df = df.set_index('datetime')
-                df.index = df.index.tz_localize('UTC')
+                # check if the datetime index is timezone aware and convert to UTC if not
+                if df.index.tz is None:
+                    df.index = df.index.tz_localize('UTC')
             return df
         elif return_format == 'json':
             return response.json()
@@ -196,9 +195,7 @@ def _retrospective(function):
                           timeout=1,  # short timeout because we don't need the response, post just needs to be received
                           json={'river_id': river_id, 'product': product_name, 'format': return_format})
 
-        s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
-        s3store = s3fs.S3Map(root=f'{ODP_RETROSPECTIVE_S3_BUCKET_URI}/{product_name}.zarr', s3=s3, check=False)
-        ds = xr.open_zarr(s3store)
+        ds = xr.open_zarr(f'{ODP_RETROSPECTIVE_S3_BUCKET_URI}/{product_name}.zarr', storage_options={'anon': True})
         try:
             ds = ds.sel(rivid=river_id)
         except Exception:
@@ -228,6 +225,17 @@ def _retrospective(function):
                 .pivot(index='rivid', columns='return_period', values=rp_methods[method])
             )
         raise ValueError(f'Unsupported product requested: {product_name}')
+
+    main.__doc__ = function.__doc__  # necessary for code documentation auto generators
+    return main
+
+
+def transformer(function):
+    def main(*args, **kwargs):
+        product_name = function.__name__.replace("_", "").lower()
+        bucket_uri = f's3://rfs-v2/transformers/{product_name}.zarr'
+        ds = xr.open_zarr(bucket_uri, storage_options={'anon': True})
+        return function(*args, **kwargs)
 
     main.__doc__ = function.__doc__  # necessary for code documentation auto generators
     return main
