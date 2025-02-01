@@ -211,7 +211,7 @@ def sfdc(curve_id: int or list) -> pd.DataFrame:
     return ds.sel(curve_id=curve_id).to_dataframe().reset_index()
 
 
-def sfdc_for_river_id(river_id: int or list) -> pd.DataFrame:
+def sfdc_for_river_id(river_id: int) -> pd.DataFrame:
     """
     Retrieves data from the SFDC table using 'asgn_mid' values obtained from the SABER assign table for the given 'river_id'.
 
@@ -221,12 +221,13 @@ def sfdc_for_river_id(river_id: int or list) -> pd.DataFrame:
     Returns:
         pd.DataFrame: Filtered DataFrame from the SFDC table based on 'asgn_mid' values.
     """
+    assert isinstance(river_id, int), 'river_id must be an integer'
     curve_ids = assigned_sfdc_curve_id(river_id)
     filtered_sfdc = sfdc(curve_ids)
     return filtered_sfdc
 
 
-def assigned_sfdc_curve_id(river_id: int or list) -> list:
+def assigned_sfdc_curve_id(river_id: int) -> list:
     """
     Retrieves 'asgn_mid' values from the SABER assign table for the given river_id(s).
 
@@ -236,22 +237,11 @@ def assigned_sfdc_curve_id(river_id: int or list) -> list:
     Returns:
         list: List of 'asgn_mid' values for given river_id.
     """
-    if hasattr(river_id, 'item'):
-        river_id = river_id.item()
-    if isinstance(river_id, (int, np.integer)):
-        river_id = [river_id]
-    elif isinstance(river_id, list):
-        if not all(isinstance(x, int) for x in river_id):
-            raise ValueError("All river_id values must be integers")
-    else:
-        raise ValueError("river_id must be an integer or a list of integers")
-    if hasattr(river_id, 'item'):
-        river_id = river_id.item()
-
-    # Read the SABER assign table into a DataFrame
+    assert isinstance(river_id, int), 'river_id must be an integer'
     df = pd.read_parquet(get_transformer_table_uri())
-    curve_ids = df.loc[df['river_id'].isin(river_id), 'sfdc_curve_id'].tolist()
+    curve_ids = df.loc[df['river_id'] == river_id, 'sfdc_curve_id'].values[0]
     return curve_ids
+
 
 @_retrospective
 def return_periods(river_id: int or list, *, format: str = 'df', method: str = 'gumbel1') -> pd.DataFrame or xr.Dataset:

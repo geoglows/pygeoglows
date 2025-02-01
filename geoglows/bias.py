@@ -63,6 +63,7 @@ def sfdc_bias_correction(river_id: int) -> pd.DataFrame:
     Returns: pandas DataFrame with a DateTime index and columns with Simulated flow, Bias Corrected Simulation flow.
 
     """
+    assert isinstance(river_id, int), 'river_id must be an integer'
     sim_data = retrospective(river_id=river_id)
     sfdc_b = sfdc_for_river_id(river_id=river_id)
     sim_fdc_b = []
