@@ -39,7 +39,7 @@ def _forecast(function):
         return_format = kwargs.get('format', 'df')
         assert return_format in ('df', 'xarray'), f'Unsupported return format requested: {return_format}'
 
-        if kwargs.get('skip_log', False):
+        if not kwargs.get('skip_log', False):
             requests.post(f'{DEFAULT_REST_ENDPOINT}{DEFAULT_REST_ENDPOINT_VERSION}/log',
                           json={'river_id': river_id, 'product': product_name, 'format': return_format},
                           timeout=1, )  # short time out. Don't need the response, post only needs to be received
@@ -186,7 +186,7 @@ def _retrospective(function):
         return_format = kwargs.get('format', 'df')
         assert return_format in ('df', 'xarray'), f'Unsupported return format requested: {return_format}'
 
-        if kwargs.get('skip_log', False):
+        if not kwargs.get('skip_log', False):
             requests.post(f'{DEFAULT_REST_ENDPOINT}{DEFAULT_REST_ENDPOINT_VERSION}/log',
                           timeout=1,  # short timeout because we don't need the response, post just needs to be received
                           json={'river_id': river_id, 'product': product_name, 'format': return_format})
