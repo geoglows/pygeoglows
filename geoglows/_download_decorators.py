@@ -9,7 +9,6 @@ import xarray as xr
 
 from ._constants import (
     ODP_FORECAST_S3_BUCKET_URI,
-    ODP_RETROSPECTIVE_S3_BUCKET_URI,
     ODP_S3_BUCKET_REGION,
 )
 from .analyze import (
@@ -180,12 +179,17 @@ def _forecast(function):
 
 def _retrospective(function):
     def main(*args, **kwargs):
-        product_name = function.__name__.replace("_", "-").lower()
+        product_name = function.__name__.lower()
+
+        zarr_name_table = {
+            'retrospective': 's3://rfs-v2/retrospective/hourly.zarr',
+            'daily_averages': 's3://rfs-v2/retrospective/daily.zarr',
+            'monthly_averages': 's3://rfs-v2/retrospective/monthly-timeseries.zarr',
+            'annual_averages': 's3://rfs-v2/retrospective/yearly-timeseries.zarr',
+            'return_periods': 's3://geoglows-v2-retrospective/return-periods.zarr',
+        }
 
         river_id = args[0] if len(args) > 0 else kwargs.get('river_id', None)
-        if river_id is None:
-            raise ValueError('River ID must be provided to retrieve retrospective data.')
-
         return_format = kwargs.get('format', 'df')
         assert return_format in ('df', 'xarray'), f'Unsupported return format requested: {return_format}'
 
@@ -197,37 +201,39 @@ def _retrospective(function):
                           json={'river_id': river_id, 'product': product_name, 'format': return_format})
 
         s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
-        s3store = s3fs.S3Map(root=f'{ODP_RETROSPECTIVE_S3_BUCKET_URI}/{product_name}.zarr', s3=s3, check=False)
-        ds = xr.open_zarr(s3store)
-        try:
-            ds = ds.sel(rivid=river_id)
-        except Exception:
-            raise ValueError(f'River ID(s) not found in the retrospective dataset: {river_id}')
-        if return_format == 'xarray':
-            return ds
-        if product_name == 'retrospective':
-            df = (
-                ds
-                .to_dataframe()
-                .reset_index()
-                .set_index('time')
-                .pivot(columns='rivid', values='Qout')
-            )
-            df.index = df.index.tz_localize('UTC')
-            return df
-        if product_name == 'return-periods':
-            rp_methods = {
-                'gumbel1': 'gumbel1_return_period',
-            }
-            assert method in rp_methods, f'Unrecognized return period estimation method given: {method}'
-            return (
-                ds
-                [rp_methods[method]]
-                .to_dataframe()
-                .reset_index()
-                .pivot(index='rivid', columns='return_period', values=rp_methods[method])
-            )
-        raise ValueError(f'Unsupported product requested: {product_name}')
+        s3store = s3fs.S3Map(root=zarr_name_table[product_name], s3=s3, check=False)
+        with xr.open_zarr(s3store) as ds:
+            if return_format == 'xarray':
+                return ds
+            if river_id is None:
+                raise ValueError('River ID must be provided to retrieve retrospective data.')
+            try:
+                ds = ds.sel(river_id=river_id)
+            except Exception:
+                raise ValueError(f'River ID(s) not found in the retrospective dataset: {river_id}')
+            if product_name in ('retrospective', 'daily_averages', 'monthly_averages', 'annual_averages'):
+                df = (
+                    ds
+                    .to_dataframe()
+                    .reset_index()
+                    .set_index('time')
+                    .pivot(columns='river_id', values='Q')
+                )
+                df.index = df.index.tz_localize('UTC')
+                return df
+            if product_name == 'return-periods':
+                rp_methods = {
+                    'gumbel1': 'gumbel1_return_period',
+                }
+                assert method in rp_methods, f'Unrecognized return period estimation method given: {method}'
+                return (
+                    ds
+                    [rp_methods[method]]
+                    .to_dataframe()
+                    .reset_index()
+                    .pivot(index='rivid', columns='return_period', values=rp_methods[method])
+                )
+            raise ValueError(f'Unsupported product requested: {product_name}')
 
     main.__doc__ = function.__doc__  # necessary for code documentation auto generators
     return main

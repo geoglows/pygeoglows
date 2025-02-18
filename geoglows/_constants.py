@@ -2,7 +2,6 @@ import os
 
 ODP_CORE_S3_BUCKET_URI = 's3://geoglows-v2'
 ODP_FORECAST_S3_BUCKET_URI = 's3://geoglows-v2-forecasts'
-ODP_RETROSPECTIVE_S3_BUCKET_URI = 's3://geoglows-v2-retrospective'
 ODP_S3_BUCKET_REGION = 'us-west-2'
 
 METADATA_TABLE_ENV_KEY = 'PYGEOGLOWS_METADATA_TABLE_PATH'

@@ -149,46 +149,49 @@ def retrospective(river_id: int or list, *, format: str = 'df') -> pd.DataFrame 
     pass
 
 
+@_retrospective
 def daily_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
     """
     Retrieves daily average streamflow for a given river_id
 
     Args:
         river_id (int): the ID of a stream, should be a 9 digit integer
+        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
 
     Returns:
         pd.DataFrame
     """
-    df = retrospective(river_id, **kwargs)
-    return calc_daily_averages(df)
+    pass
 
 
+@_retrospective
 def monthly_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
     """
     Retrieves monthly average streamflow for a given river_id
 
     Args:
         river_id (int): the ID of a stream, should be a 9 digit integer
+        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
 
     Returns:
         pd.DataFrame
     """
-    df = retrospective(river_id, **kwargs)
-    return calc_monthly_averages(df)
+    pass
 
 
+@_retrospective
 def annual_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
     """
     Retrieves annual average streamflow for a given river_id
 
     Args:
         river_id (int): the ID of a stream, should be a 9 digit integer
+        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
 
     Returns:
         pd.DataFrame
     """
-    df = retrospective(river_id, **kwargs)
-    return calc_annual_averages(df)
+    pass
 
 
 def sfdc(curve_id: int or list) -> pd.DataFrame:

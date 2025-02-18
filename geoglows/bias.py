@@ -61,7 +61,6 @@ def sfdc_bias_correction(river_id: int) -> pd.DataFrame:
     Args: river_id: int: a 9 digit integer that is a valid GEOGLOWS River ID number
 
     Returns: pandas DataFrame with a DateTime index and columns with Simulated flow, Bias Corrected Simulation flow.
-
     """
     assert isinstance(river_id, int), 'river_id must be an integer'
     sim_data = retrospective(river_id=river_id)
