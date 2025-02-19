@@ -8,6 +8,7 @@ ODP_S3_BUCKET_REGION = 'us-west-2'
 METADATA_TABLE_ENV_KEY = 'PYGEOGLOWS_METADATA_TABLE_PATH'
 TRANSFORMER_TABLE_ENV_KEY = 'PYGEOGLOWS_TRANSFORMER_TABLE_URI'
 SFDC_ZARR_ENV_KEY = 'PYGEOGLOWS_SFDC_ZARR_URI'
+HYDROWEB_ZARR_ENV_KEY = 'PYGEOGLOWS_HYDROWEB_ZARR_URI'
 
 
 def get_sfdc_zarr_uri() -> str:
@@ -25,6 +26,15 @@ def get_transformer_table_uri() -> str:
 
 def set_transformer_table_uri(uri: str) -> None:
     os.environ[TRANSFORMER_TABLE_ENV_KEY] = uri
+    return
+
+
+def get_hydroweb_zarr_uri() -> str:
+    return os.getenv(HYDROWEB_ZARR_ENV_KEY, 's3://rfs-v2/transformers/hydroweb.zarr')
+
+
+def set_hydroweb_zarr_uri(uri: str) -> None:
+    os.environ[HYDROWEB_ZARR_ENV_KEY] = uri
     return
 
 

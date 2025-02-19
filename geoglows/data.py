@@ -149,6 +149,7 @@ def retrospective(river_id: int or list, *, format: str = 'df') -> pd.DataFrame 
     pass
 
 
+@_retrospective
 def daily_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
     """
     Retrieves daily average streamflow for a given river_id
@@ -163,6 +164,7 @@ def daily_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
     return calc_daily_averages(df)
 
 
+@_retrospective
 def monthly_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
     """
     Retrieves monthly average streamflow for a given river_id
@@ -177,6 +179,7 @@ def monthly_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
     return calc_monthly_averages(df)
 
 
+@_retrospective
 def annual_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
     """
     Retrieves annual average streamflow for a given river_id

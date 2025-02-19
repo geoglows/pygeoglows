@@ -5,6 +5,7 @@ import hydrostats as hs
 import hydrostats.data as hd
 import numpy as np
 import pandas as pd
+import xarray as xr
 from scipy import interpolate
 
 from .analyze import fdc
@@ -49,8 +50,7 @@ def correct_historical(simulated_data: pd.DataFrame, observed_data: pd.DataFrame
         values += value.tolist()
 
     corrected = pd.DataFrame(data=values, index=dates, columns=['Corrected Simulated Streamflow'])
-    corrected.sort_index(inplace=True)
-    return corrected
+    return corrected.clip(lower=0).sort_index()
 
 
 def sfdc_bias_correction(river_id: int) -> pd.DataFrame:
@@ -174,7 +174,7 @@ def correct_forecast(forecast_data: pd.DataFrame, simulated_data: pd.DataFrame,
         tmp = forecast_copy[column].dropna()
         forecast_copy.update(pd.DataFrame(to_flow(to_prob(tmp.values)), index=tmp.index, columns=[column]))
 
-    return forecast_copy
+    return forecast_copy.clip(lower=0).sort_index()
 
 
 def statistics_tables(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
@@ -222,13 +222,15 @@ def _flow_and_probability_mapper(monthly_data: pd.DataFrame, to_probability: boo
                                  to_flow: bool = False, extrapolate: bool = False) -> interpolate.interp1d:
     if not to_flow and not to_probability:
         raise ValueError('You need to specify either to_probability or to_flow as True')
+    if to_flow and to_probability:
+        raise ValueError('You cannot specify both to_probability and to_flow as True')
 
     # get maximum value to bound histogram
     max_val = math.ceil(np.max(monthly_data.max()))
     min_val = math.floor(np.min(monthly_data.min()))
 
     if max_val == min_val:
-        warnings.warn('The observational data has the same max and min value. You may get unanticipated results.')
+        warnings.warn('The observed data have the same max and min value. You may get unanticipated results.')
         max_val += .1
 
     # determine number of histograms bins needed
@@ -261,12 +263,53 @@ def _flow_and_probability_mapper(monthly_data: pd.DataFrame, to_probability: boo
     # interpolated function to convert simulated streamflow to prob
     if to_probability:
         if extrapolate:
-            func = interpolate.interp1d(bin_edges, cdf, fill_value='extrapolate')
+            return interpolate.interp1d(bin_edges, cdf, fill_value='extrapolate')
         else:
-            func = interpolate.interp1d(bin_edges, cdf)
-        return lambda x: np.clip(func(x), 0, 1)
+            return interpolate.interp1d(bin_edges, cdf)
     # interpolated function to convert simulated prob to observed streamflow
     elif to_flow:
         if extrapolate:
             return interpolate.interp1d(cdf, bin_edges, fill_value='extrapolate')
         return interpolate.interp1d(cdf, bin_edges)
+
+
+def transform_forecast_to_hydroweb_wse(df: pd.DataFrame, river_id: int):
+    """
+    Transforms the streamflow data to water surface elevation using the SFDC table
+
+    Args:
+        df: a dataframe of streamflow data with a datetime index
+        river_id: an integer of the river_id
+
+    Returns:
+        pandas DataFrame with water surface elevation values
+    """
+    with xr.open_zarr('s3://rfs-v2/transformers/hydroweb.zarr/', storage_options={'anon': True}) as ds:
+        try:
+            hwt = ds.sel(river_id=river_id).to_dataframe()[['wse']]
+        except Exception as e:
+            raise ValueError(f'River ID {river_id} not found in the SFDC table') from e
+    with xr.open_zarr('s3://rfs-v2/retrospective/fdc_monthly.zarr', storage_options={'anon': True}) as ds:
+        try:
+            fdc = ds.sel(river_id=river_id).to_dataframe()[['fdc_monthly']]
+        except Exception as e:
+            raise ValueError(f'River ID {river_id} not found in the FDC table') from e
+    hwt.to_csv('/Users/rchales/hwt.csv')
+
+    wse = []
+    for month in df.index.month.unique():
+        wse_columns = {}
+        for column in df.columns:
+            prob = np.interp(
+                df[df.index.month == month][column].values.flatten(),
+                fdc.loc[month].values.flatten(),
+                fdc.loc[month].index.values.flatten()
+            )
+            wse_columns[column] = np.interp(
+                prob,
+                hwt.loc[month].index.values.flatten(),
+                hwt.loc[month].values.flatten()
+            )
+        wse.append(pd.DataFrame(wse_columns, index=df[df.index.month == month].index))
+    wse = pd.concat(wse, axis=0).sort_index()
+    return wse
