@@ -7,11 +7,6 @@ import xarray as xr
 
 from ._constants import get_metadata_table_path, get_sfdc_zarr_uri, get_transformer_table_uri
 from ._download_decorators import _forecast, _retrospective, DEFAULT_REST_ENDPOINT, DEFAULT_REST_ENDPOINT_VERSION
-from .analyze import (
-    daily_averages as calc_daily_averages,
-    monthly_averages as calc_monthly_averages,
-    annual_averages as calc_annual_averages,
-)
 
 __all__ = [
     # forecast products
@@ -194,6 +189,25 @@ def annual_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
     pass
 
 
+@_retrospective
+def return_periods(river_id: int or list, *, format: str = 'df', method: str = 'gumbel1') -> pd.DataFrame or xr.Dataset:
+    """
+    Retrieves the return period thresholds based on a specified historic simulation forcing on a certain river_id.
+
+    Args:
+        river_id (int): the ID of a stream, should be a 9 digit integer
+        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
+        method (str): the method to use to estimate the return period thresholds. default is 'gumbel1'
+
+    Changelog:
+        v1.4.0: adds method parameter for future expansion of multiple return period methods
+
+    Returns:
+        pd.DataFrame
+    """
+    pass
+
+
 def sfdc(curve_id: int or list) -> pd.DataFrame:
     """
     Retrieves data from the SFDC table based on 'asgn_mid' values for given river_id.
@@ -244,25 +258,6 @@ def assigned_sfdc_curve_id(river_id: int) -> list:
     df = pd.read_parquet(get_transformer_table_uri())
     curve_ids = df.loc[df['river_id'] == river_id, 'sfdc_curve_id'].values[0]
     return curve_ids
-
-
-@_retrospective
-def return_periods(river_id: int or list, *, format: str = 'df', method: str = 'gumbel1') -> pd.DataFrame or xr.Dataset:
-    """
-    Retrieves the return period thresholds based on a specified historic simulation forcing on a certain river_id.
-
-    Args:
-        river_id (int): the ID of a stream, should be a 9 digit integer
-        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
-        method (str): the method to use to estimate the return period thresholds. default is 'gumbel1'
-
-    Changelog:
-        v1.4.0: adds method parameter for future expansion of multiple return period methods
-
-    Returns:
-        pd.DataFrame
-    """
-    pass
 
 
 # model config and supplementary data
