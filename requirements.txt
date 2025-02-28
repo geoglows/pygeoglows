@@ -9,4 +9,4 @@ numpy>=1
 hydrostats
 HydroErr
 xarray>=2022
-zarr>=2,<3
+zarr>=2
