@@ -44,9 +44,10 @@ def _forecast(function):
                           json={'river_id': river_id, 'product': product_name, 'format': return_format},
                           timeout=1, )  # short timeout- don't need the response, post only needs to be received
 
-        s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
         date = kwargs.get('date', False)
         if not date:
+            print('Date not specified. Must be searched on s3. Specify the date for fastest results.')
+            s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
             zarr_vars = ['rivid', 'Qout', 'time', 'ensemble']
             dates = [s3.glob(ODP_FORECAST_S3_BUCKET_URI + '/' + f'*.zarr/{var}') for var in zarr_vars]
             dates = [set([d.split('/')[1].replace('.zarr', '') for d in date]) for date in dates]
@@ -61,7 +62,8 @@ def _forecast(function):
         else:
             raise ValueError('Date must be YYYYMMDD or YYYYMMDDHH format. Use dates() to view available data.')
 
-        s3store = s3fs.S3Map(root=f'{ODP_FORECAST_S3_BUCKET_URI}/{date}', s3=s3, check=False)
+        fs = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
+        store = s3fs.S3Map(root=f'{ODP_FORECAST_S3_BUCKET_URI}/{date}', s3=fs, check=False)
 
         attrs = {
             'source': 'geoglows',
@@ -69,33 +71,33 @@ def _forecast(function):
             'retrieval_date': pd.Timestamp.now().strftime('%Y%m%d'),
             'units': 'cubic meters per second',
         }
-        ds = xr.open_zarr(s3store).sel(rivid=river_id)
-        if return_format == 'xarray' and product_name == 'forecastensembles':
-            ds = ds.rename({'time': 'datetime', 'rivid': 'river_id'})
+        with xr.open_zarr(store, zarr_format=2).sel(rivid=river_id) as ds:
+            if return_format == 'xarray' and product_name == 'forecastensembles':
+                ds = ds.rename({'time': 'datetime', 'rivid': 'river_id'})
+                ds.attrs = attrs
+                return ds
+            df = ds.to_dataframe().round(2).reset_index()
+            df['time'] = pd.to_datetime(df['time'], utc=True)
+
+            # rename columns to match the REST API
+            if isinstance(river_id, int) or isinstance(river_id, np.int64):
+                df = df.pivot(index='time', columns='ensemble', values='Qout')
+            else:
+                df = df.pivot(index=['time', 'rivid'], columns='ensemble', values='Qout')
+                df.index.names = ['time', 'river_id']
+            df = df[sorted(df.columns)]
+            df.columns = [f'ensemble_{str(x).zfill(2)}' for x in df.columns]
+
+            if product_name == 'forecast':
+                df = calc_simple_forecast(df)
+            elif product_name == 'forecaststats':
+                df = calc_forecast_stats(df)
+
+            if return_format == 'df':
+                return df
+            ds = df.to_xarray()
             ds.attrs = attrs
             return ds
-        df = ds.to_dataframe().round(2).reset_index()
-        df['time'] = pd.to_datetime(df['time'], utc=True)
-
-        # rename columns to match the REST API
-        if isinstance(river_id, int) or isinstance(river_id, np.int64):
-            df = df.pivot(index='time', columns='ensemble', values='Qout')
-        else:
-            df = df.pivot(index=['time', 'rivid'], columns='ensemble', values='Qout')
-            df.index.names = ['time', 'river_id']
-        df = df[sorted(df.columns)]
-        df.columns = [f'ensemble_{str(x).zfill(2)}' for x in df.columns]
-
-        if product_name == 'forecast':
-            df = calc_simple_forecast(df)
-        elif product_name == 'forecaststats':
-            df = calc_forecast_stats(df)
-
-        if return_format == 'df':
-            return df
-        ds = df.to_xarray()
-        ds.attrs = attrs
-        return ds
 
     def from_rest(*args, **kwargs):
         # update the default values set by the function unless the user has already specified them
@@ -159,7 +161,8 @@ def _forecast(function):
             if 'datetime' in df.columns:
                 df['datetime'] = pd.to_datetime(df['datetime'])
                 df = df.set_index('datetime')
-                df.index = df.index.tz_localize('UTC')
+                if df.index.tz is None:
+                    df.index = df.index.tz_localize('UTC')
             return df
         elif return_format == 'json':
             return response.json()
@@ -174,20 +177,13 @@ def _forecast(function):
         return from_aws(*args, **kwargs)
 
     main.__doc__ = function.__doc__  # necessary for code documentation auto generators
+    main.__name__ = function.__name__
     return main
 
 
 def _retrospective(function):
     def main(*args, **kwargs):
         product_name = function.__name__.lower()
-
-        zarr_name_table = {
-            'retrospective': 's3://rfs-v2/retrospective/hourly.zarr',
-            'daily_averages': 's3://rfs-v2/retrospective/daily.zarr',
-            'monthly_averages': 's3://rfs-v2/retrospective/monthly-timeseries.zarr',
-            'annual_averages': 's3://rfs-v2/retrospective/yearly-timeseries.zarr',
-            'return_periods': 's3://geoglows-v2-retrospective/return-periods.zarr',
-        }
 
         river_id = args[0] if len(args) > 0 else kwargs.get('river_id', None)
         return_format = kwargs.get('format', 'df')
@@ -197,12 +193,22 @@ def _retrospective(function):
 
         if kwargs.get('skip_log', False):
             requests.post(f'{DEFAULT_REST_ENDPOINT}{DEFAULT_REST_ENDPOINT_VERSION}/log',
-                          timeout=1,  # short timeout because we don't need the response, post just needs to be received
+                          timeout=1,  # short timeout. don't need the response, post just needs to be received
                           json={'river_id': river_id, 'product': product_name, 'format': return_format})
 
-        s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
-        s3store = s3fs.S3Map(root=zarr_name_table[product_name], s3=s3, check=False)
-        with xr.open_zarr(s3store) as ds:
+        zarr_name_table = {
+            'retrospective': 's3://rfs-v2/retrospective/hourly.zarr',
+            'daily_averages': 's3://rfs-v2/retrospective/daily.zarr',
+            'monthly_averages': 's3://rfs-v2/retrospective/monthly-timeseries.zarr',
+            'annual_averages': 's3://rfs-v2/retrospective/yearly-timeseries.zarr',
+            'fdc': 's3://rfs-v2/retrospective/fdc.zarr',
+            'return_periods': 's3://geoglows-v2-retrospective/return-periods.zarr',
+        }
+
+        fs = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
+        store = s3fs.S3Map(root=zarr_name_table[product_name], s3=fs, check=False)
+
+        with xr.open_zarr(store, zarr_format=2) as ds:
             if return_format == 'xarray':
                 return ds
             if river_id is None:
@@ -221,6 +227,20 @@ def _retrospective(function):
                 )
                 df.index = df.index.tz_localize('UTC')
                 return df
+            if product_name == 'fdc':
+                resolution = kwargs.get('resolution', 'daily')
+                assert resolution in ('daily', 'hourly'), f'Unsupported resolution requested: {resolution}'
+                kind = kwargs.get('kind', 'monthly')
+                assert kind in ('total', 'monthly'), f'Unsupported kind requested: {kind}'
+                var_name = f'fdc_{resolution}{f"_{kind}" if kind == "monthly" else ""}'
+                index = ['month', 'p_exceed'] if kwargs.get('kind', 'monthly') == 'monthly' else ['p_exceed']
+                return (
+                    ds
+                    [var_name]
+                    .to_dataframe()
+                    .reset_index()
+                    .pivot(columns='river_id', values=var_name, index=index)
+                )
             if product_name == 'return-periods':
                 rp_methods = {
                     'gumbel1': 'gumbel1_return_period',
@@ -236,4 +256,5 @@ def _retrospective(function):
             raise ValueError(f'Unsupported product requested: {product_name}')
 
     main.__doc__ = function.__doc__  # necessary for code documentation auto generators
+    main.__name__ = function.__name__
     return main

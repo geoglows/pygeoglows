@@ -190,6 +190,25 @@ def annual_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
 
 
 @_retrospective
+def fdc(river_id: int or list, *,
+        format: str = 'df', resolution: str = 'daily', kind: str = 'monthly') -> pd.DataFrame or xr.Dataset:
+    """
+    Retrieves the flow duration curve for a given river_id
+
+    Args:
+        river_id (int): the ID of a stream, should be a 9 digit integer
+        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
+        resolution (str): time step of the retrospective data used to calculate the fdc, either 'daily' or 'hourly'.
+        kind (str): retrieve either the 'total' FDC (all values considered, returns 1 curve)
+            or 'monthly' (12 curves, each using values in that month)
+
+    Returns:
+        pd.DataFrame or xr.Dataset
+    """
+    pass
+
+
+@_retrospective
 def return_periods(river_id: int or list, *, format: str = 'df', method: str = 'gumbel1') -> pd.DataFrame or xr.Dataset:
     """
     Retrieves the return period thresholds based on a specified historic simulation forcing on a certain river_id.
@@ -224,8 +243,14 @@ def sfdc(curve_id: int or list) -> pd.DataFrame:
     if isinstance(curve_id, list):
         assert all(len(str(x)) == 12 for x in curve_id), "curve_id must be a 12 digit integer"
         assert all(isinstance(x, int) for x in curve_id), "curve_id must be a 12 digit integer"
-    ds = xr.open_zarr(get_sfdc_zarr_uri(), storage_options={'anon': True})
-    return ds.sel(curve_id=curve_id).to_dataframe().reset_index()
+    return (
+        xr
+        .open_zarr(get_sfdc_zarr_uri(), storage_options={'anon': True})
+        .sel(curve_id=curve_id)
+        .to_dataframe()
+        .reset_index()
+        .pivot(index=['month', 'p_exceed'], values='sfdc', columns='curve_id')
+    )
 
 
 def sfdc_for_river_id(river_id: int) -> pd.DataFrame:
@@ -256,7 +281,7 @@ def assigned_sfdc_curve_id(river_id: int) -> list:
     """
     assert isinstance(river_id, int), 'river_id must be an integer'
     df = pd.read_parquet(get_transformer_table_uri())
-    curve_ids = df.loc[df['river_id'] == river_id, 'sfdc_curve_id'].values[0]
+    curve_ids = df.loc[river_id, 'sfdc_curve_id']
     return curve_ids
 
 
