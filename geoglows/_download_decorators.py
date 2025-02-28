@@ -62,16 +62,15 @@ def _forecast(function):
         else:
             raise ValueError('Date must be YYYYMMDD or YYYYMMDDHH format. Use dates() to view available data.')
 
-        fs = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
-        store = s3fs.S3Map(root=f'{ODP_FORECAST_S3_BUCKET_URI}/{date}', s3=fs, check=False)
-
         attrs = {
             'source': 'geoglows',
             'forecast_date': date[:8],
             'retrieval_date': pd.Timestamp.now().strftime('%Y%m%d'),
             'units': 'cubic meters per second',
         }
-        with xr.open_zarr(store, zarr_format=2).sel(rivid=river_id) as ds:
+
+        file_uri = f'{ODP_FORECAST_S3_BUCKET_URI}/{date}'
+        with xr.open_zarr(file_uri, zarr_format=2, storage_options={'anon': True}).sel(rivid=river_id) as ds:
             if return_format == 'xarray' and product_name == 'forecastensembles':
                 ds = ds.rename({'time': 'datetime', 'rivid': 'river_id'})
                 ds.attrs = attrs
@@ -122,7 +121,7 @@ def _forecast(function):
         river_id = args[0] if len(args) > 0 else kwargs.get('river_id', None)
         if river_id is None and product_name != 'dates':
             raise ValueError('River ID must be provided to retrieve forecast data.')
-        if not isinstance(river_id, (int, np.int64, )):
+        if not isinstance(river_id, (int, np.int64,)):
             raise ValueError('Multiple river_ids are not available via REST API. Provide a single 9 digit integer.')
         if river_id and version == 'v2':
             assert 1_000_000_000 > river_id >= 110_000_000, ValueError('River ID must be a 9 digit integer')
@@ -205,10 +204,7 @@ def _retrospective(function):
             'return_periods': 's3://geoglows-v2-retrospective/return-periods.zarr',
         }
 
-        fs = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
-        store = s3fs.S3Map(root=zarr_name_table[product_name], s3=fs, check=False)
-
-        with xr.open_zarr(store, zarr_format=2) as ds:
+        with xr.open_zarr(zarr_name_table[product_name], zarr_format=2, storage_options={'anon': True}) as ds:
             if return_format == 'xarray':
                 return ds
             if river_id is None:

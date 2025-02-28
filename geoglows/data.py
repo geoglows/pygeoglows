@@ -25,8 +25,7 @@ __all__ = [
 
     # transformers
     'sfdc',
-    'assigned_sfdc_curve_id',
-    'sfdc_for_river_id',
+    'hydroweb_wse_transformer',
 
     # metadata
     'metadata_tables',
@@ -227,12 +226,14 @@ def return_periods(river_id: int or list, *, format: str = 'df', method: str = '
     pass
 
 
-def sfdc(curve_id: int or list) -> pd.DataFrame:
+# @_transformer
+def sfdc(*, curve_id: int or list = None, river_id: int or list = None) -> pd.DataFrame:
     """
     Retrieves data from the SFDC table based on 'asgn_mid' values for given river_id.
 
     Args:
-        curve_id (int or list): Single or list of sfdc curve IDs
+        curve_id (int or list): the ID of an sfdcd transformer curve, should be a 12 digit integer
+        river_id (int): the ID of a stream, should be a 9 digit integer
 
     Returns:
         pd.DataFrame
@@ -243,6 +244,15 @@ def sfdc(curve_id: int or list) -> pd.DataFrame:
     if isinstance(curve_id, list):
         assert all(len(str(x)) == 12 for x in curve_id), "curve_id must be a 12 digit integer"
         assert all(isinstance(x, int) for x in curve_id), "curve_id must be a 12 digit integer"
+    if curve_id is None and river_id is None:
+        raise ValueError("curve_id or river_id must be provided")
+    if curve_id is not None and river_id is not None:
+        raise ValueError("curve_id and river_id cannot both be provided")
+
+    if river_id is not None:
+        assert isinstance(river_id, int), 'river_id must be an integer'
+        curve_id = pd.read_parquet(get_transformer_table_uri()).loc[river_id, 'sfdc_curve_id']
+
     return (
         xr
         .open_zarr(get_sfdc_zarr_uri(), storage_options={'anon': True})
@@ -253,36 +263,21 @@ def sfdc(curve_id: int or list) -> pd.DataFrame:
     )
 
 
-def sfdc_for_river_id(river_id: int) -> pd.DataFrame:
+# @_transformer
+def hydroweb_wse_transformer(river_id: int) -> pd.DataFrame:
     """
-    Retrieves data from the SFDC table using 'asgn_mid' values obtained from the SABER assign table for the given 'river_id'.
-
+    Retrieves a water surface elevation transform curves only for select rivers with hydroweb observations
     Args:
-        river_id (int or list): ID(s) of a stream(s).
+        river_id:
 
     Returns:
-        pd.DataFrame: Filtered DataFrame from the SFDC table based on 'asgn_mid' values.
+        pd.DataFrame
     """
-    assert isinstance(river_id, int), 'river_id must be an integer'
-    curve_ids = assigned_sfdc_curve_id(river_id)
-    filtered_sfdc = sfdc(curve_ids)
-    return filtered_sfdc
-
-
-def assigned_sfdc_curve_id(river_id: int) -> list:
-    """
-    Retrieves 'asgn_mid' values from the SABER assign table for the given river_id(s).
-
-    Args:
-        river_id (int or list): ID(s) of a stream(s), should be a 9-digit integer or a list of such integers.
-
-    Returns:
-        list: List of 'asgn_mid' values for given river_id.
-    """
-    assert isinstance(river_id, int), 'river_id must be an integer'
-    df = pd.read_parquet(get_transformer_table_uri())
-    curve_ids = df.loc[river_id, 'sfdc_curve_id']
-    return curve_ids
+    with xr.open_zarr('s3://rfs-v2/transformers/hydroweb.zarr/', storage_options={'anon': True}) as ds:
+        try:
+            return ds.sel(river_id=river_id).to_dataframe()[['wse']]
+        except Exception as e:
+            raise ValueError(f'River ID {river_id} not found in the SFDC table') from e
 
 
 # model config and supplementary data
