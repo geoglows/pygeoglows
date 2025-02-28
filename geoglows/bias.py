@@ -7,10 +7,8 @@ import numpy as np
 import pandas as pd
 from scipy import interpolate
 
-from .analyze import fdc as calc_fdc
-from .data import retrospective
-from .data import hydroweb_wse_transformer
 from .data import fdc as get_fdc
+from .data import hydroweb_wse_transformer
 from .data import sfdc
 
 __all__ = [

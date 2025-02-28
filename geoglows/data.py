@@ -21,6 +21,7 @@ __all__ = [
     'daily_averages',
     'monthly_averages',
     'annual_averages',
+    'fdc',
     'return_periods',
 
     # transformers
