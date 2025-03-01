@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ._constants import get_metadata_table_path, get_sfdc_zarr_uri, get_transformer_table_uri
+from ._constants import get_uri
 from ._download_decorators import _forecast, _retrospective, DEFAULT_REST_ENDPOINT, DEFAULT_REST_ENDPOINT_VERSION
 
 __all__ = [
@@ -252,11 +252,13 @@ def sfdc(*, curve_id: int or list = None, river_id: int or list = None) -> pd.Da
 
     if river_id is not None:
         assert isinstance(river_id, int), 'river_id must be an integer'
-        curve_id = pd.read_parquet(get_transformer_table_uri()).loc[river_id, 'sfdc_curve_id']
+        curve_id = pd.read_parquet(get_uri('transformer_table')).loc[river_id, 'sfdc_curve_id']
 
+    uri = get_uri('sfdc')
+    storage_options = {'anon': True} if uri.startswith('s3://rfs-v2') else None
     return (
         xr
-        .open_zarr(get_sfdc_zarr_uri(), storage_options={'anon': True})
+        .open_zarr(uri, storage_options=storage_options)
         .sel(curve_id=curve_id)
         .to_dataframe()
         .reset_index()
@@ -269,12 +271,14 @@ def hydroweb_wse_transformer(river_id: int) -> pd.DataFrame:
     """
     Retrieves a water surface elevation transform curves only for select rivers with hydroweb observations
     Args:
-        river_id:
+        river_id: the ID of a stream, should be a 9 digit integer
 
     Returns:
         pd.DataFrame
     """
-    with xr.open_zarr('s3://rfs-v2/transformers/hydroweb.zarr/', storage_options={'anon': True}) as ds:
+    uri = get_uri('hydroweb')
+    storage_options = {'anon': True} if uri.startswith('s3://rfs-v2') else None
+    with xr.open_zarr(uri, storage_options=storage_options) as ds:
         try:
             return ds.sel(river_id=river_id).to_dataframe()[['wse']]
         except Exception as e:
@@ -294,7 +298,7 @@ def metadata_tables(columns: list = None, metadata_table_path: str = None) -> pd
     """
     if metadata_table_path:
         return pd.read_parquet(metadata_table_path, columns=columns)
-    metadata_table_path = get_metadata_table_path()
+    metadata_table_path = get_uri('metadata_table')
     if os.path.exists(metadata_table_path):
         return pd.read_parquet(metadata_table_path, columns=columns)
     warn = f"""

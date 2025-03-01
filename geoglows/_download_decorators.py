@@ -10,14 +10,14 @@ import xarray as xr
 from ._constants import (
     ODP_FORECAST_S3_BUCKET_URI,
     ODP_S3_BUCKET_REGION,
+    DEFAULT_REST_ENDPOINT,
+    DEFAULT_REST_ENDPOINT_VERSION,
+    get_uri,
 )
 from .analyze import (
     simple_forecast as calc_simple_forecast,
     forecast_stats as calc_forecast_stats,
 )
-
-DEFAULT_REST_ENDPOINT = 'https://geoglows.ecmwf.int/api/'
-DEFAULT_REST_ENDPOINT_VERSION = 'v2'  # 'v1, v2, latest'
 
 __all__ = [
     '_forecast',
@@ -195,16 +195,10 @@ def _retrospective(function):
                           timeout=1,  # short timeout. don't need the response, post just needs to be received
                           json={'river_id': river_id, 'product': product_name, 'format': return_format})
 
-        zarr_name_table = {
-            'retrospective': 's3://rfs-v2/retrospective/hourly.zarr',
-            'daily_averages': 's3://rfs-v2/retrospective/daily.zarr',
-            'monthly_averages': 's3://rfs-v2/retrospective/monthly-timeseries.zarr',
-            'annual_averages': 's3://rfs-v2/retrospective/yearly-timeseries.zarr',
-            'fdc': 's3://rfs-v2/retrospective/fdc.zarr',
-            'return_periods': 's3://geoglows-v2-retrospective/return-periods.zarr',
-        }
+        uri = get_uri(product_name)
+        storage_options = {'anon': True} if uri.startswith('s3://rfs-v2') else None
 
-        with xr.open_zarr(zarr_name_table[product_name], zarr_format=2, storage_options={'anon': True}) as ds:
+        with xr.open_zarr(uri, zarr_format=2, storage_options=storage_options) as ds:
             if return_format == 'xarray':
                 return ds
             if river_id is None:
@@ -218,8 +212,7 @@ def _retrospective(function):
                     ds
                     .to_dataframe()
                     .reset_index()
-                    .set_index('time')
-                    .pivot(columns='river_id', values='Q')
+                    .pivot(columns='river_id', values='Q', index='time')
                 )
                 df.index = df.index.tz_localize('UTC')
                 return df
