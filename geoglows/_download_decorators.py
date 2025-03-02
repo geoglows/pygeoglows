@@ -188,8 +188,6 @@ def _retrospective(function):
         return_format = kwargs.get('format', 'df')
         assert return_format in ('df', 'xarray'), f'Unsupported return format requested: {return_format}'
 
-        method = kwargs.get('method', 'gumbel1')
-
         if kwargs.get('skip_log', False):
             requests.post(f'{DEFAULT_REST_ENDPOINT}{DEFAULT_REST_ENDPOINT_VERSION}/log',
                           timeout=1,  # short timeout. don't need the response, post just needs to be received
@@ -230,17 +228,16 @@ def _retrospective(function):
                     .reset_index()
                     .pivot(columns='river_id', values=var_name, index=index)
                 )
-            if product_name == 'return-periods':
-                rp_methods = {
-                    'gumbel1': 'gumbel1_return_period',
-                }
-                assert method in rp_methods, f'Unrecognized return period estimation method given: {method}'
+            if product_name == 'return_periods':
+                method = kwargs.get('method', 'logpearson3')
+                methods = ('gumbel', 'logpearson3')
+                assert method in methods, f'Unrecognized return period estimation method given: {method}'
                 return (
                     ds
-                    [rp_methods[method]]
+                    [method]
                     .to_dataframe()
                     .reset_index()
-                    .pivot(index='rivid', columns='return_period', values=rp_methods[method])
+                    .pivot(index='river_id', columns='return_period', values=method)
                 )
             raise ValueError(f'Unsupported product requested: {product_name}')
 

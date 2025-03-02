@@ -209,7 +209,7 @@ def fdc(river_id: int or list, *,
 
 
 @_retrospective
-def return_periods(river_id: int or list, *, format: str = 'df', method: str = 'gumbel1') -> pd.DataFrame or xr.Dataset:
+def return_periods(river_id: int or list, *, format: str = 'df', method: str = 'logpearson3') -> pd.DataFrame or xr.Dataset:
     """
     Retrieves the return period thresholds based on a specified historic simulation forcing on a certain river_id.
 

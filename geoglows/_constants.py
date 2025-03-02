@@ -13,7 +13,7 @@ default_uri = {
     'monthly_averages': 's3://rfs-v2/retrospective/monthly-timeseries.zarr',
     'annual_averages': 's3://rfs-v2/retrospective/yearly-timeseries.zarr',
     'fdc': 's3://rfs-v2/retrospective/fdc.zarr',
-    'return_periods': 's3://geoglows-v2-retrospective/return-periods.zarr',
+    'return_periods': 's3://rfs-v2/retrospective/return-periods.zarr',
     # transformers
     'sfdc': 's3://rfs-v2/transformers/sfdc.zarr',
     'hydroweb': 's3://rfs-v2/transformers/hydroweb.zarr',
