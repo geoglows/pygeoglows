@@ -237,7 +237,7 @@ def _retrospective(function):
                     [method]
                     .to_dataframe()
                     .reset_index()
-                    .pivot(index='river_id', columns='return_period', values=method)
+                    .pivot(columns='river_id', index='return_period', values=method)
                 )
             raise ValueError(f'Unsupported product requested: {product_name}')
 
