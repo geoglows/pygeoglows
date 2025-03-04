@@ -29,7 +29,7 @@ __all__ = [
     'hydroweb_wse_transformer',
 
     # metadata
-    'metadata_tables',
+    'metadata_table',
 
     'DEFAULT_REST_ENDPOINT',
     'DEFAULT_REST_ENDPOINT_VERSION',
