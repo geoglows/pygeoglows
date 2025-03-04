@@ -18,9 +18,9 @@ __all__ = [
 
     # retrospective products
     'retrospective',
-    'daily_averages',
-    'monthly_averages',
-    'annual_averages',
+    'retro_daily',
+    'retro_monthly',
+    'retro_yearly',
     'fdc',
     'return_periods',
 
@@ -129,77 +129,110 @@ def forecast_records(*, river_id: int, start_date: str, end_date: str, format: s
 
 # Retrospective simulation and derived products
 @_retrospective
-def retrospective(river_id: int or list, *, format: str = 'df') -> pd.DataFrame or xr.Dataset:
+def retrospective(river_id: int or list, **kwargs) -> pd.DataFrame or xr.Dataset:
     """
-    Retrieves the retrospective simulation of streamflow for a given river_id from the
-    AWS Open Data Program GEOGLOWS V2 S3 bucket
+    Retrieves the retrospective simulation of streamflow for a given river_id from s3 buckets
 
     Args:
         river_id (int): the ID of a stream, should be a 9 digit integer
+
+    Keyword Args:
         format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
+        storage_options (dict): options to pass to the xarray open_dataset function
+        resolution (str): resolution of data to retrieve: hourly, daily, monthly, or yearly. default hourly
 
     Returns:
-        pd.DataFrame
+        pd.DataFrame or xr.Dataset
     """
     pass
 
 
 @_retrospective
-def daily_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
+def retro_hourly(river_id: int or list, **kwargs) -> pd.DataFrame or xr.Dataset:
+    """
+    Retrieves hourly streamflow for a given river_id
+
+    Args:
+        river_id (int): the ID of a stream, should be a 9 digit integer
+
+    Keyword Args:
+        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
+        storage_options (dict): options to pass to the xarray open_dataset function
+
+    Returns:
+        pd.DataFrame or xr.Dataset
+    """
+    pass
+
+
+@_retrospective
+def retro_daily(river_id: int or list, **kwargs) -> pd.DataFrame or xr.Dataset:
     """
     Retrieves daily average streamflow for a given river_id
 
     Args:
         river_id (int): the ID of a stream, should be a 9 digit integer
+
+    Keyword Args:
         format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
+        storage_options (dict): options to pass to the xarray open_dataset function
 
     Returns:
-        pd.DataFrame
+        pd.DataFrame or xr.Dataset
     """
     pass
 
 
 @_retrospective
-def monthly_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
+def retro_monthly(river_id: int or list, **kwargs) -> pd.DataFrame or xr.Dataset:
     """
     Retrieves monthly average streamflow for a given river_id
 
     Args:
         river_id (int): the ID of a stream, should be a 9 digit integer
+
+    Keyword Args:
         format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
+        storage_options (dict): options to pass to the xarray open_dataset function
 
     Returns:
-        pd.DataFrame
+        pd.DataFrame or xr.Dataset
     """
     pass
 
 
 @_retrospective
-def annual_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
+def retro_yearly(river_id: int or list, **kwargs) -> pd.DataFrame or xr.Dataset:
     """
     Retrieves annual average streamflow for a given river_id
 
     Args:
         river_id (int): the ID of a stream, should be a 9 digit integer
+
+    Keyword Args:
         format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
+        storage_options (dict): options to pass to the xarray open_dataset function
 
     Returns:
-        pd.DataFrame
+        pd.DataFrame or xr.Dataset
     """
     pass
 
 
 @_retrospective
-def fdc(river_id: int or list, *,
-        format: str = 'df', resolution: str = 'daily', kind: str = 'monthly') -> pd.DataFrame or xr.Dataset:
+def fdc(river_id: int or list,
+        *, resolution: str = 'daily', fdc_type: str = 'monthly', **kwargs) -> pd.DataFrame or xr.Dataset:
     """
     Retrieves the flow duration curve for a given river_id
 
     Args:
         river_id (int): the ID of a stream, should be a 9 digit integer
+
+    Keyword Args:
         format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
-        resolution (str): time step of the retrospective data used to calculate the fdc, either 'daily' or 'hourly'.
-        kind (str): retrieve either the 'total' FDC (all values considered, returns 1 curve)
+        storage_options (dict): options to pass to the xarray open_dataset function
+        resolution (str): resolution of data to retrieve: hourly or daily. default daily
+        fdc_type (str): either the 'total' FDC (all values considered, returns 1 curve)
             or 'monthly' (12 curves, each using values in that month)
 
     Returns:
@@ -209,20 +242,20 @@ def fdc(river_id: int or list, *,
 
 
 @_retrospective
-def return_periods(river_id: int or list, *, format: str = 'df', method: str = 'logpearson3') -> pd.DataFrame or xr.Dataset:
+def return_periods(river_id: int or list, **kwargs) -> pd.DataFrame or xr.Dataset:
     """
     Retrieves the return period thresholds based on a specified historic simulation forcing on a certain river_id.
 
     Args:
         river_id (int): the ID of a stream, should be a 9 digit integer
-        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
-        method (str): the method to use to estimate the return period thresholds. default is 'gumbel1'
 
-    Changelog:
-        v1.4.0: adds method parameter for future expansion of multiple return period methods
+    Keyword Args:
+        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
+        storage_options (dict): options to pass to the xarray open_dataset function
+        distribution (str): the method to use to estimate the return period thresholds. default is 'logpearson3'
 
     Returns:
-        pd.DataFrame
+        pd.DataFrame or xr.Dataset
     """
     pass
 
@@ -296,18 +329,10 @@ def metadata_tables(columns: list = None, metadata_table_path: str = None) -> pd
     Returns:
         pd.DataFrame
     """
-    if metadata_table_path:
-        return pd.read_parquet(metadata_table_path, columns=columns)
-    metadata_table_path = get_uri('metadata_table')
-    if os.path.exists(metadata_table_path):
-        return pd.read_parquet(metadata_table_path, columns=columns)
-    warn = f"""
-    Local copy of geoglows v2 metadata table not found.
-    A copy of the table has been cached at {metadata_table_path} which you can move as desired.
-    You should set the environment variable PYGEOGLOWS_METADATA_TABLE_PATH or provide the metadata_table_path argument.
-    """
-    warnings.warn(warn)
-    df = pd.read_parquet('http://geoglows-v2.s3-website-us-west-2.amazonaws.com/tables/package-metadata-table.parquet')
-    os.makedirs(os.path.dirname(metadata_table_path), exist_ok=True)
-    df.to_parquet(metadata_table_path)
-    return df[columns] if columns else df
+    metadata_table_path = metadata_table_path or get_uri('metadata_table')
+    if not os.path.exists(metadata_table_path):
+        warn = 'Local copy of model metadata table not found. You should download it and specify it using the \
+        PYGEOGLOWS_METADATA_TABLE_PATH environment variable or as an argument to this function to avoid constant \
+        redownloads which are slow'
+        warnings.warn(warn, UserWarning)
+    return pd.read_parquet(metadata_table_path, columns=columns)

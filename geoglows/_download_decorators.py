@@ -182,10 +182,18 @@ def _forecast(function):
 
 def _retrospective(function):
     def main(*args, **kwargs):
-        product_name = function.__name__.lower()
-
+        products = ('retro_hourly', 'retro_daily', 'retro_monthly', 'retro_yearly', 'fdc', 'return_periods')
         river_id = args[0] if len(args) > 0 else kwargs.get('river_id', None)
         return_format = kwargs.get('format', 'df')
+        resolution = kwargs.get('resolution', 'hourly')
+        distribution = kwargs.get('distribution', 'logpearson3')  # only used for return_periods
+        fdc_type = kwargs.get('fdc_type', 'monthly')  # only used for fdc
+
+        product_name = function.__name__.lower()
+
+        if product_name == 'retrospective':
+            product_name = f"retro_{resolution}"
+            assert product_name in products, ValueError('Unrecognized retrospective simulation resolution')
         assert return_format in ('df', 'xarray'), f'Unsupported return format requested: {return_format}'
 
         if kwargs.get('skip_log', False):
@@ -195,6 +203,7 @@ def _retrospective(function):
 
         uri = get_uri(product_name)
         storage_options = {'anon': True} if uri.startswith('s3://rfs-v2') else None
+        storage_options = kwargs.get('storage_options', storage_options)
 
         with xr.open_zarr(uri, zarr_format=2, storage_options=storage_options) as ds:
             if return_format == 'xarray':
@@ -205,7 +214,7 @@ def _retrospective(function):
                 ds = ds.sel(river_id=river_id)
             except Exception:
                 raise ValueError(f'River ID(s) not found in the retrospective dataset: {river_id}')
-            if product_name in ('retrospective', 'daily_averages', 'monthly_averages', 'annual_averages'):
+            if product_name in ('retro_hourly', 'retro_daily', 'retro_monthly', 'retro_yearly'):
                 df = (
                     ds
                     .to_dataframe()
@@ -215,12 +224,10 @@ def _retrospective(function):
                 df.index = df.index.tz_localize('UTC')
                 return df
             if product_name == 'fdc':
-                resolution = kwargs.get('resolution', 'daily')
                 assert resolution in ('daily', 'hourly'), f'Unsupported resolution requested: {resolution}'
-                kind = kwargs.get('kind', 'monthly')
-                assert kind in ('total', 'monthly'), f'Unsupported kind requested: {kind}'
-                var_name = f'fdc_{resolution}{f"_{kind}" if kind == "monthly" else ""}'
-                index = ['month', 'p_exceed'] if kwargs.get('kind', 'monthly') == 'monthly' else ['p_exceed']
+                assert fdc_type in ('total', 'monthly'), f'Unsupported fdc_type: {fdc_type}'
+                var_name = f'fdc_{resolution}{f"_{fdc_type}" if fdc_type == "monthly" else ""}'
+                index = ['month', 'p_exceed'] if fdc_type == 'monthly' else ['p_exceed']
                 return (
                     ds
                     [var_name]
@@ -229,15 +236,14 @@ def _retrospective(function):
                     .pivot(columns='river_id', values=var_name, index=index)
                 )
             if product_name == 'return_periods':
-                method = kwargs.get('method', 'logpearson3')
-                methods = ('gumbel', 'logpearson3')
-                assert method in methods, f'Unrecognized return period estimation method given: {method}'
+                distributions = ('gumbel', 'logpearson3')
+                assert distribution in distributions, f'Unrecognized return period estimation method given: {distribution}'
                 return (
                     ds
-                    [method]
+                    [distribution]
                     .to_dataframe()
                     .reset_index()
-                    .pivot(columns='river_id', index='return_period', values=method)
+                    .pivot(columns='river_id', index='return_period', values=distribution)
                 )
             raise ValueError(f'Unsupported product requested: {product_name}')
 

@@ -7,11 +7,12 @@ DEFAULT_REST_ENDPOINT_VERSION = 'v2'  # 'v1, v2, latest'
 
 default_uri = {
     # forecasts
+
     # retrospective
-    'retrospective': 's3://rfs-v2/retrospective/hourly.zarr',
-    'daily_averages': 's3://rfs-v2/retrospective/daily.zarr',
-    'monthly_averages': 's3://rfs-v2/retrospective/monthly-timeseries.zarr',
-    'annual_averages': 's3://rfs-v2/retrospective/yearly-timeseries.zarr',
+    'retro_hourly': 's3://rfs-v2/retrospective/hourly.zarr',
+    'retro_daily': 's3://rfs-v2/retrospective/daily.zarr',
+    'retro_monthly': 's3://rfs-v2/retrospective/monthly-timeseries.zarr',
+    'retro_yearly': 's3://rfs-v2/retrospective/yearly-timeseries.zarr',
     'fdc': 's3://rfs-v2/retrospective/fdc.zarr',
     'return_periods': 's3://rfs-v2/retrospective/return-periods.zarr',
     # transformers
@@ -19,16 +20,17 @@ default_uri = {
     'hydroweb': 's3://rfs-v2/transformers/hydroweb.zarr',
     # tables
     'transformer_table': 's3://rfs-v2/transformers/transformer_table.parquet',
-    'metadata_table': 's3://geoglows-v2/transformers/metadata-tables.parquet',
+    'metadata_table': 'https://rfs-v2.s3-us-west-2.amazonaws.com/tables/model-metadata-table.parquet',
 }
 
 env_keys = {
     # forecasts
+
     # retrospective
-    'retrospective': 'PYGEOGLOWS_RETROSPECTIVE_URI',
-    'daily_averages': 'PYGEOGLOWS_DAILY_AVERAGES_URI',
-    'monthly_averages': 'PYGEOGLOWS_MONTHLY_AVERAGES_URI',
-    'annual_averages': 'PYGEOGLOWS_ANNUAL_AVERAGES_URI',
+    'retro_hourly': 'PYGEOGLOWS_RETRO_HOURLY_URI',
+    'retro_daily': 'PYGEOGLOWS_RETRO_DAILY_URI',
+    'retro_monthly': 'PYGEOGLOWS_RETRO_MONTHLY_URI',
+    'retro_yearly': 'PYGEOGLOWS_RETRO_YEARLY_URI',
     'fdc': 'PYGEOGLOWS_FDC_URI',
     'return_periods': 'PYGEOGLOWS_RETURN_PERIODS_URI',
     # transformers
@@ -41,7 +43,10 @@ env_keys = {
 
 
 def get_uri(product_name):
-    return os.getenv(env_keys[product_name], default_uri[product_name])
+    try:
+        return os.getenv(env_keys[product_name], default_uri[product_name])
+    except KeyError:
+        raise KeyError(f'Product name {product_name} not found in default_uri or env_keys')
 
 
 def set_uri(product_name, uri):
