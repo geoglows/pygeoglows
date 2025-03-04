@@ -160,7 +160,10 @@ def _forecast(function):
             if 'datetime' in df.columns:
                 df['datetime'] = pd.to_datetime(df['datetime'])
                 df = df.set_index('datetime')
-                df.index = df.index.tz_localize('UTC')
+                try:
+                    df.index = df.index.tz_localize('UTC')
+                except Exception:
+                    pass
             return df
         elif return_format == 'json':
             return response.json()
