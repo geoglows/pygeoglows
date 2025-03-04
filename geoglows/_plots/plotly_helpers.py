@@ -17,13 +17,13 @@ def _rperiod_scatters(startdate: str,
     colors = return_period_plot_colors()
     x_vals = (startdate, enddate, enddate, startdate)
 
-    r2 = int(rperiods[2].values[0])
-    r5 = int(rperiods[5].values[0])
-    r10 = int(rperiods[10].values[0])
-    r25 = int(rperiods[25].values[0])
-    r50 = int(rperiods[50].values[0])
-    r100 = int(rperiods[100].values[0])
-    rmax = int(max(2 * r100 - r25, y_max))
+    r2 = int(rperiods.loc[2].values[0])
+    r5 = int(rperiods.loc[5].values[0])
+    r10 = int(rperiods.loc[10].values[0])
+    r25 = int(rperiods.loc[25].values[0])
+    r50 = int(rperiods.loc[50].values[0])
+    r100 = int(rperiods.loc[100].values[0])
+    rmax = int(max(1.75 * r100 - r25, y_max))
 
     visible = True if max_plotted_flow > r2 else 'legendonly'
 

@@ -16,4 +16,4 @@ dependencies:
   - scipy >=1
   - shapely >=2
   - xarray >=2024
-  - zarr = 2
+  - zarr >=2

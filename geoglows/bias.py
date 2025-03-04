@@ -7,9 +7,9 @@ import numpy as np
 import pandas as pd
 from scipy import interpolate
 
-from .analyze import fdc
-from .data import retrospective
-from .data import sfdc_for_river_id
+from .data import fdc as get_fdc
+from .data import hydroweb_wse_transformer
+from .data import sfdc
 
 __all__ = [
     'correct_historical',
@@ -49,11 +49,10 @@ def correct_historical(simulated_data: pd.DataFrame, observed_data: pd.DataFrame
         values += value.tolist()
 
     corrected = pd.DataFrame(data=values, index=dates, columns=['Corrected Simulated Streamflow'])
-    corrected.sort_index(inplace=True)
-    return corrected
+    return corrected.clip(lower=0).sort_index()
 
 
-def sfdc_bias_correction(river_id: int) -> pd.DataFrame:
+def sfdc_bias_correction(sim_data: pd.DataFrame, river_id: int) -> pd.DataFrame:
     """
     Corrects the bias in the simulated data for a given river_id using the SFDC method. This method is based on the
      https://github.com/rileyhales/saber-hbc repository.
@@ -64,46 +63,39 @@ def sfdc_bias_correction(river_id: int) -> pd.DataFrame:
 
     """
     assert isinstance(river_id, int), 'river_id must be an integer'
-    sim_data = retrospective(river_id=river_id)
-    sfdc_b = sfdc_for_river_id(river_id=river_id)
-    sim_fdc_b = []
-    for i in range(1, 13):
-        mdf = fdc(sim_data[sim_data.index.month == i].values.flatten()).rename(columns={'Q': 'fdc'}).reset_index()
-        mdf['month'] = i
-        sim_fdc_b.append(mdf)
-    sim_fdc_b = pd.concat(sim_fdc_b, axis=0)
+    sfdc_b = sfdc(river_id=river_id)
+    fdc_b = get_fdc(river_id=river_id)
 
     # Process each month from January (1) to December (12)
-    monthly_results = []
-    for month in sorted(set(sim_data.index.month)):
-        mon_sim_b = sim_data[sim_data.index.month == month].dropna().clip(lower=0)
-        qb_original = mon_sim_b[river_id].values.flatten()
-        scalar_fdc = sfdc_b[sfdc_b['month'] == month][['p_exceed', 'sfdc']].set_index('p_exceed')
-        sim_fdc_b_m = sim_fdc_b[sim_fdc_b['month'] == month][['p_exceed', 'fdc']].set_index('p_exceed')
+    column_results = []
+    for column in sim_data.columns:
+        monthly_results = []
+        for month in sorted(set(sim_data.index.month)):
+            mon_sim_b = sim_data[sim_data.index.month == month].dropna().clip(lower=0)
+            qb_original = mon_sim_b[column].values.flatten()
+            scalar_fdc = sfdc_b.loc[month]
+            sim_fdc_b_m = fdc_b.loc[month]
 
-        flow_to_percent = _make_interpolator(sim_fdc_b_m.values.flatten(),
-                                             sim_fdc_b_m.index,
-                                             extrap='nearest',
-                                             fill_value=None)
+            flow_to_percent = _make_interpolator(sim_fdc_b_m.values.flatten(),
+                                                 sim_fdc_b_m.index,
+                                                 extrap='nearest',
+                                                 fill_value=None)
 
-        percent_to_scalar = _make_interpolator(scalar_fdc.index,
-                                               scalar_fdc.values.flatten(),
-                                               extrap='nearest',
-                                               fill_value=None)
-        p_exceed = flow_to_percent(qb_original)
-        scalars = percent_to_scalar(p_exceed)
-        qb_adjusted = qb_original / scalars
+            percent_to_scalar = _make_interpolator(scalar_fdc.index,
+                                                   scalar_fdc.values.flatten(),
+                                                   extrap='nearest',
+                                                   fill_value=None)
+            p_exceed = flow_to_percent(qb_original)
+            scalars = percent_to_scalar(p_exceed)
+            qb_adjusted = qb_original / scalars
 
-        # Create a DataFrame for this month's results
-        month_df = pd.DataFrame({
-            'date': mon_sim_b.index,
-            'Simulated': qb_original,
-            'Bias Corrected Simulation': qb_adjusted
-        })
-
-        # Append the month's DataFrame to the results list
-        monthly_results.append(month_df)
-    return pd.concat(monthly_results).set_index('date').sort_index()
+            # Append the month's DataFrame to the results list
+            monthly_results.append(pd.DataFrame({
+                'datetime': mon_sim_b.index,
+                f'{column}': qb_adjusted
+            }).set_index('datetime'))
+        column_results.append(pd.concat(monthly_results).sort_index())
+    return pd.concat(column_results, axis=1)
 
 
 def _make_interpolator(x: np.array, y: np.array, extrap: str = 'nearest',
@@ -174,7 +166,7 @@ def correct_forecast(forecast_data: pd.DataFrame, simulated_data: pd.DataFrame,
         tmp = forecast_copy[column].dropna()
         forecast_copy.update(pd.DataFrame(to_flow(to_prob(tmp.values)), index=tmp.index, columns=[column]))
 
-    return forecast_copy
+    return forecast_copy.clip(lower=0).sort_index()
 
 
 def statistics_tables(corrected: pd.DataFrame, simulated: pd.DataFrame, observed: pd.DataFrame,
@@ -222,13 +214,15 @@ def _flow_and_probability_mapper(monthly_data: pd.DataFrame, to_probability: boo
                                  to_flow: bool = False, extrapolate: bool = False) -> interpolate.interp1d:
     if not to_flow and not to_probability:
         raise ValueError('You need to specify either to_probability or to_flow as True')
+    if to_flow and to_probability:
+        raise ValueError('You cannot specify both to_probability and to_flow as True')
 
     # get maximum value to bound histogram
     max_val = math.ceil(np.max(monthly_data.max()))
     min_val = math.floor(np.min(monthly_data.min()))
 
     if max_val == min_val:
-        warnings.warn('The observational data has the same max and min value. You may get unanticipated results.')
+        warnings.warn('The observed data have the same max and min value. You may get unanticipated results.')
         max_val += .1
 
     # determine number of histograms bins needed
@@ -261,12 +255,44 @@ def _flow_and_probability_mapper(monthly_data: pd.DataFrame, to_probability: boo
     # interpolated function to convert simulated streamflow to prob
     if to_probability:
         if extrapolate:
-            func = interpolate.interp1d(bin_edges, cdf, fill_value='extrapolate')
+            return interpolate.interp1d(bin_edges, cdf, fill_value='extrapolate')
         else:
-            func = interpolate.interp1d(bin_edges, cdf)
-        return lambda x: np.clip(func(x), 0, 1)
+            return interpolate.interp1d(bin_edges, cdf)
     # interpolated function to convert simulated prob to observed streamflow
     elif to_flow:
         if extrapolate:
             return interpolate.interp1d(cdf, bin_edges, fill_value='extrapolate')
         return interpolate.interp1d(cdf, bin_edges)
+
+
+def transform_forecast_to_hydroweb_wse(df: pd.DataFrame, river_id: int):
+    """
+    Transforms the streamflow data to water surface elevation using the SFDC table
+
+    Args:
+        df: a dataframe of streamflow data with a datetime index
+        river_id: an integer of the river_id
+
+    Returns:
+        pandas DataFrame with water surface elevation values
+    """
+    hwt = hydroweb_wse_transformer(river_id=river_id)
+    fdc = get_fdc(river_id=river_id, resolution='hourly', kind='monthly')  # hourly because its for forecast only
+
+    wse = []
+    for month in df.index.month.unique():
+        wse_columns = {}
+        for column in df.columns:
+            prob = np.interp(
+                df[df.index.month == month][column].values.flatten(),
+                fdc.loc[month].values.flatten(),
+                fdc.loc[month].index.values.flatten()
+            )
+            wse_columns[column] = np.interp(
+                prob,
+                hwt.loc[month].index.values.flatten(),
+                hwt.loc[month].values.flatten()
+            )
+        wse.append(pd.DataFrame(wse_columns, index=df[df.index.month == month].index))
+    wse = pd.concat(wse, axis=0).sort_index()
+    return wse
