@@ -50,5 +50,7 @@ def get_uri(product_name):
 
 
 def set_uri(product_name, uri):
+    if product_name not in env_keys:
+        raise KeyError(f'Product name {product_name} not found in env_keys')
     os.environ[env_keys[product_name]] = uri
     return
