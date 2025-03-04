@@ -11,6 +11,7 @@ __all__ = [
     'bias', 'plots', 'data', 'analyze', 'tables',
     'set_uri', 'get_uri'
 ]
+
 __version__ = '2.0.0'
 __author__ = 'Riley Hales'
 __license__ = 'BSD 3-Clause Clear License'
