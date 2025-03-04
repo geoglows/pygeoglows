@@ -1,6 +1,6 @@
 import numpy as np
 
-from .data import metadata_tables
+from .data import metadata_table
 
 __all__ = ['river_to_vpu', 'latlon_to_river', 'river_to_latlon', ]
 
@@ -17,7 +17,7 @@ def river_to_vpu(river_id: int, metadata_table_path: str = None) -> int:
         int: a 3 digit integer that is the VPU number for the given River ID number
     """
     return (
-        metadata_tables(columns=['LINKNO', 'VPUCode'], metadata_table_path=metadata_table_path)
+        metadata_table(columns=['LINKNO', 'VPUCode'], metadata_table_path=metadata_table_path)
         .loc[lambda x: x['LINKNO'] == river_id, 'VPUCode']
         .values[0]
     )
@@ -34,7 +34,7 @@ def latlon_to_river(lat: float, lon: float, metadata_table_path: str = None) -> 
     Returns:
         int: a 9 digit integer that is a valid GEOGLOWS River ID number
     """
-    df = metadata_tables(columns=['LINKNO', 'lat', 'lon'], metadata_table_path=metadata_table_path)
+    df = metadata_table(columns=['LINKNO', 'lat', 'lon'], metadata_table_path=metadata_table_path)
     df['dist'] = ((df['lat'] - lat) ** 2 + (df['lon'] - lon) ** 2) ** 0.5
     return df.loc[lambda x: x['dist'] == df['dist'].min(), 'LINKNO'].values[0]
 
@@ -51,7 +51,7 @@ def river_to_latlon(river_id: int, metadata_table_path: str = None) -> np.ndarra
         np.ndarray: a numpy array of floats, [lat, lon]
     """
     return (
-        metadata_tables(columns=['LINKNO', 'lat', 'lon'], metadata_table_path=metadata_table_path)
+        metadata_table(columns=['LINKNO', 'lat', 'lon'], metadata_table_path=metadata_table_path)
         .loc[lambda x: x['LINKNO'] == river_id, ['lat', 'lon']]
         .values[0]
     )
