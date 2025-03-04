@@ -319,7 +319,7 @@ def hydroweb_wse_transformer(river_id: int) -> pd.DataFrame:
 
 
 # model config and supplementary data
-def metadata_tables(columns: list = None, metadata_table_path: str = None) -> pd.DataFrame:
+def metadata_table(columns: list = None, metadata_table_path: str = None) -> pd.DataFrame:
     """
     Retrieves the master table of rivers metadata and properties as a pandas DataFrame
     Args:
@@ -334,5 +334,5 @@ def metadata_tables(columns: list = None, metadata_table_path: str = None) -> pd
         warn = 'Local copy of model metadata table not found. You should download it and specify it using the \
         PYGEOGLOWS_METADATA_TABLE_PATH environment variable or as an argument to this function to avoid constant \
         redownloads which are slow'
-        warnings.warn(warn, UserWarning)
+        warnings.warn(warn, UserWarning, stacklevel=2)
     return pd.read_parquet(metadata_table_path, columns=columns)
