@@ -18,6 +18,7 @@ __all__ = [
 
     # retrospective products
     'retrospective',
+    'retro_hourly',
     'retro_daily',
     'retro_monthly',
     'retro_yearly',
