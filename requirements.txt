@@ -8,5 +8,5 @@ s3fs>=2022
 numpy>=1
 hydrostats
 HydroErr
-xarray>=2022
-zarr==2
+xarray>=2025
+zarr>=2

@@ -9,16 +9,15 @@ import xarray as xr
 
 from ._constants import (
     ODP_FORECAST_S3_BUCKET_URI,
-    ODP_RETROSPECTIVE_S3_BUCKET_URI,
     ODP_S3_BUCKET_REGION,
+    DEFAULT_REST_ENDPOINT,
+    DEFAULT_REST_ENDPOINT_VERSION,
+    get_uri,
 )
 from .analyze import (
     simple_forecast as calc_simple_forecast,
     forecast_stats as calc_forecast_stats,
 )
-
-DEFAULT_REST_ENDPOINT = 'https://geoglows.ecmwf.int/api/'
-DEFAULT_REST_ENDPOINT_VERSION = 'v2'  # 'v1, v2, latest'
 
 __all__ = [
     '_forecast',
@@ -45,9 +44,10 @@ def _forecast(function):
                           json={'river_id': river_id, 'product': product_name, 'format': return_format},
                           timeout=1, )  # short timeout- don't need the response, post only needs to be received
 
-        s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
         date = kwargs.get('date', False)
         if not date:
+            print('Date not specified. Must be searched on s3. Specify the date for fastest results.')
+            s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
             zarr_vars = ['rivid', 'Qout', 'time', 'ensemble']
             dates = [s3.glob(ODP_FORECAST_S3_BUCKET_URI + '/' + f'*.zarr/{var}') for var in zarr_vars]
             dates = [set([d.split('/')[1].replace('.zarr', '') for d in date]) for date in dates]
@@ -62,41 +62,41 @@ def _forecast(function):
         else:
             raise ValueError('Date must be YYYYMMDD or YYYYMMDDHH format. Use dates() to view available data.')
 
-        s3store = s3fs.S3Map(root=f'{ODP_FORECAST_S3_BUCKET_URI}/{date}', s3=s3, check=False)
-
         attrs = {
             'source': 'geoglows',
             'forecast_date': date[:8],
             'retrieval_date': pd.Timestamp.now().strftime('%Y%m%d'),
             'units': 'cubic meters per second',
         }
-        ds = xr.open_zarr(s3store).sel(rivid=river_id)
-        if return_format == 'xarray' and product_name == 'forecastensembles':
-            ds = ds.rename({'time': 'datetime', 'rivid': 'river_id'})
+
+        file_uri = f'{ODP_FORECAST_S3_BUCKET_URI}/{date}'
+        with xr.open_zarr(file_uri, zarr_format=2, storage_options={'anon': True}).sel(rivid=river_id) as ds:
+            if return_format == 'xarray' and product_name == 'forecastensembles':
+                ds = ds.rename({'time': 'datetime', 'rivid': 'river_id'})
+                ds.attrs = attrs
+                return ds
+            df = ds.to_dataframe().round(2).reset_index()
+            df['time'] = pd.to_datetime(df['time'], utc=True)
+
+            # rename columns to match the REST API
+            if isinstance(river_id, int) or isinstance(river_id, np.int64):
+                df = df.pivot(index='time', columns='ensemble', values='Qout')
+            else:
+                df = df.pivot(index=['time', 'rivid'], columns='ensemble', values='Qout')
+                df.index.names = ['time', 'river_id']
+            df = df[sorted(df.columns)]
+            df.columns = [f'ensemble_{str(x).zfill(2)}' for x in df.columns]
+
+            if product_name == 'forecast':
+                df = calc_simple_forecast(df)
+            elif product_name == 'forecaststats':
+                df = calc_forecast_stats(df)
+
+            if return_format == 'df':
+                return df
+            ds = df.to_xarray()
             ds.attrs = attrs
             return ds
-        df = ds.to_dataframe().round(2).reset_index()
-        df['time'] = pd.to_datetime(df['time'], utc=True)
-
-        # rename columns to match the REST API
-        if isinstance(river_id, int) or isinstance(river_id, np.int64):
-            df = df.pivot(index='time', columns='ensemble', values='Qout')
-        else:
-            df = df.pivot(index=['time', 'rivid'], columns='ensemble', values='Qout')
-            df.index.names = ['time', 'river_id']
-        df = df[sorted(df.columns)]
-        df.columns = [f'ensemble_{str(x).zfill(2)}' for x in df.columns]
-
-        if product_name == 'forecast':
-            df = calc_simple_forecast(df)
-        elif product_name == 'forecaststats':
-            df = calc_forecast_stats(df)
-
-        if return_format == 'df':
-            return df
-        ds = df.to_xarray()
-        ds.attrs = attrs
-        return ds
 
     def from_rest(*args, **kwargs):
         # update the default values set by the function unless the user has already specified them
@@ -121,7 +121,7 @@ def _forecast(function):
         river_id = args[0] if len(args) > 0 else kwargs.get('river_id', None)
         if river_id is None and product_name != 'dates':
             raise ValueError('River ID must be provided to retrieve forecast data.')
-        if not isinstance(river_id, (int, np.int64, )):
+        if not isinstance(river_id, (int, np.int64,)):
             raise ValueError('Multiple river_ids are not available via REST API. Provide a single 9 digit integer.')
         if river_id and version == 'v2':
             assert 1_000_000_000 > river_id >= 110_000_000, ValueError('River ID must be a 9 digit integer')
@@ -160,10 +160,8 @@ def _forecast(function):
             if 'datetime' in df.columns:
                 df['datetime'] = pd.to_datetime(df['datetime'])
                 df = df.set_index('datetime')
-                try:
+                if df.index.tz is None:
                     df.index = df.index.tz_localize('UTC')
-                except Exception:
-                    pass
             return df
         elif return_format == 'json':
             return response.json()
@@ -178,59 +176,77 @@ def _forecast(function):
         return from_aws(*args, **kwargs)
 
     main.__doc__ = function.__doc__  # necessary for code documentation auto generators
+    main.__name__ = function.__name__
     return main
 
 
 def _retrospective(function):
     def main(*args, **kwargs):
-        product_name = function.__name__.replace("_", "-").lower()
-
+        products = ('retro_hourly', 'retro_daily', 'retro_monthly', 'retro_yearly', 'fdc', 'return_periods')
         river_id = args[0] if len(args) > 0 else kwargs.get('river_id', None)
-        if river_id is None:
-            raise ValueError('River ID must be provided to retrieve retrospective data.')
-
         return_format = kwargs.get('format', 'df')
-        assert return_format in ('df', 'xarray'), f'Unsupported return format requested: {return_format}'
+        resolution = kwargs.get('resolution', 'hourly')
+        distribution = kwargs.get('distribution', 'logpearson3')  # only used for return_periods
+        fdc_type = kwargs.get('fdc_type', 'monthly')  # only used for fdc
 
-        method = kwargs.get('method', 'gumbel1')
+        product_name = function.__name__.lower()
+
+        if product_name == 'retrospective':
+            product_name = f"retro_{resolution}"
+            assert product_name in products, ValueError('Unrecognized retrospective simulation resolution')
+        assert return_format in ('df', 'xarray'), f'Unsupported return format requested: {return_format}'
 
         if kwargs.get('skip_log', False):
             requests.post(f'{DEFAULT_REST_ENDPOINT}{DEFAULT_REST_ENDPOINT_VERSION}/log',
-                          timeout=1,  # short timeout because we don't need the response, post just needs to be received
+                          timeout=1,  # short timeout. don't need the response, post just needs to be received
                           json={'river_id': river_id, 'product': product_name, 'format': return_format})
 
-        s3 = s3fs.S3FileSystem(anon=True, client_kwargs=dict(region_name=ODP_S3_BUCKET_REGION))
-        s3store = s3fs.S3Map(root=f'{ODP_RETROSPECTIVE_S3_BUCKET_URI}/{product_name}.zarr', s3=s3, check=False)
-        ds = xr.open_zarr(s3store)
-        try:
-            ds = ds.sel(rivid=river_id)
-        except Exception:
-            raise ValueError(f'River ID(s) not found in the retrospective dataset: {river_id}')
-        if return_format == 'xarray':
-            return ds
-        if product_name == 'retrospective':
-            df = (
-                ds
-                .to_dataframe()
-                .reset_index()
-                .set_index('time')
-                .pivot(columns='rivid', values='Qout')
-            )
-            df.index = df.index.tz_localize('UTC')
-            return df
-        if product_name == 'return-periods':
-            rp_methods = {
-                'gumbel1': 'gumbel1_return_period',
-            }
-            assert method in rp_methods, f'Unrecognized return period estimation method given: {method}'
-            return (
-                ds
-                [rp_methods[method]]
-                .to_dataframe()
-                .reset_index()
-                .pivot(index='rivid', columns='return_period', values=rp_methods[method])
-            )
-        raise ValueError(f'Unsupported product requested: {product_name}')
+        uri = get_uri(product_name)
+        storage_options = {'anon': True} if uri.startswith('s3://rfs-v2') else None
+        storage_options = kwargs.get('storage_options', storage_options)
+
+        with xr.open_zarr(uri, zarr_format=2, storage_options=storage_options) as ds:
+            if return_format == 'xarray':
+                return ds
+            if river_id is None:
+                raise ValueError('River ID must be provided to retrieve retrospective data.')
+            try:
+                ds = ds.sel(river_id=river_id)
+            except Exception:
+                raise ValueError(f'River ID(s) not found in the retrospective dataset: {river_id}')
+            if product_name in ('retro_hourly', 'retro_daily', 'retro_monthly', 'retro_yearly'):
+                df = (
+                    ds
+                    .to_dataframe()
+                    .reset_index()
+                    .pivot(columns='river_id', values='Q', index='time')
+                )
+                df.index = df.index.tz_localize('UTC')
+                return df
+            if product_name == 'fdc':
+                assert resolution in ('daily', 'hourly'), f'Unsupported resolution requested: {resolution}'
+                assert fdc_type in ('total', 'monthly'), f'Unsupported fdc_type: {fdc_type}'
+                var_name = f'fdc_{resolution}{f"_{fdc_type}" if fdc_type == "monthly" else ""}'
+                index = ['month', 'p_exceed'] if fdc_type == 'monthly' else ['p_exceed']
+                return (
+                    ds
+                    [var_name]
+                    .to_dataframe()
+                    .reset_index()
+                    .pivot(columns='river_id', values=var_name, index=index)
+                )
+            if product_name == 'return_periods':
+                distributions = ('gumbel', 'logpearson3')
+                assert distribution in distributions, f'Unrecognized return period estimation method given: {distribution}'
+                return (
+                    ds
+                    [distribution]
+                    .to_dataframe()
+                    .reset_index()
+                    .pivot(columns='river_id', index='return_period', values=distribution)
+                )
+            raise ValueError(f'Unsupported product requested: {product_name}')
 
     main.__doc__ = function.__doc__  # necessary for code documentation auto generators
+    main.__name__ = function.__name__
     return main

@@ -5,13 +5,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-from ._constants import get_metadata_table_path, get_sfdc_zarr_uri, get_transformer_table_uri
+from ._constants import get_uri
 from ._download_decorators import _forecast, _retrospective, DEFAULT_REST_ENDPOINT, DEFAULT_REST_ENDPOINT_VERSION
-from .analyze import (
-    daily_averages as calc_daily_averages,
-    monthly_averages as calc_monthly_averages,
-    annual_averages as calc_annual_averages,
-)
 
 __all__ = [
     # forecast products
@@ -23,18 +18,22 @@ __all__ = [
 
     # retrospective products
     'retrospective',
-    'daily_averages',
-    'monthly_averages',
-    'annual_averages',
+    'retro_hourly',
+    'retro_daily',
+    'retro_monthly',
+    'retro_yearly',
+    'fdc',
     'return_periods',
 
     # transformers
     'sfdc',
-    'assigned_sfdc_curve_id',
-    'sfdc_for_river_id',
+    'hydroweb_wse_transformer',
 
     # metadata
-    'metadata_tables',
+    'metadata_table',
+    'river_to_vpu',
+    'latlon_to_river',
+    'river_to_latlon',
 
     'DEFAULT_REST_ENDPOINT',
     'DEFAULT_REST_ENDPOINT_VERSION',
@@ -134,69 +133,145 @@ def forecast_records(*, river_id: int, start_date: str, end_date: str, format: s
 
 # Retrospective simulation and derived products
 @_retrospective
-def retrospective(river_id: int or list, *, format: str = 'df') -> pd.DataFrame or xr.Dataset:
+def retrospective(river_id: int or list, **kwargs) -> pd.DataFrame or xr.Dataset:
     """
-    Retrieves the retrospective simulation of streamflow for a given river_id from the
-    AWS Open Data Program GEOGLOWS V2 S3 bucket
+    Retrieves the retrospective simulation of streamflow for a given river_id from s3 buckets
 
     Args:
         river_id (int): the ID of a stream, should be a 9 digit integer
+
+    Keyword Args:
         format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
+        storage_options (dict): options to pass to the xarray open_dataset function
+        resolution (str): resolution of data to retrieve: hourly, daily, monthly, or yearly. default hourly
 
     Returns:
-        pd.DataFrame
+        pd.DataFrame or xr.Dataset
     """
     pass
 
 
-def daily_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
+@_retrospective
+def retro_hourly(river_id: int or list, **kwargs) -> pd.DataFrame or xr.Dataset:
+    """
+    Retrieves hourly streamflow for a given river_id
+
+    Args:
+        river_id (int): the ID of a stream, should be a 9 digit integer
+
+    Keyword Args:
+        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
+        storage_options (dict): options to pass to the xarray open_dataset function
+
+    Returns:
+        pd.DataFrame or xr.Dataset
+    """
+    pass
+
+
+@_retrospective
+def retro_daily(river_id: int or list, **kwargs) -> pd.DataFrame or xr.Dataset:
     """
     Retrieves daily average streamflow for a given river_id
 
     Args:
         river_id (int): the ID of a stream, should be a 9 digit integer
 
+    Keyword Args:
+        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
+        storage_options (dict): options to pass to the xarray open_dataset function
+
     Returns:
-        pd.DataFrame
+        pd.DataFrame or xr.Dataset
     """
-    df = retrospective(river_id, **kwargs)
-    return calc_daily_averages(df)
+    pass
 
 
-def monthly_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
+@_retrospective
+def retro_monthly(river_id: int or list, **kwargs) -> pd.DataFrame or xr.Dataset:
     """
     Retrieves monthly average streamflow for a given river_id
 
     Args:
         river_id (int): the ID of a stream, should be a 9 digit integer
 
+    Keyword Args:
+        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
+        storage_options (dict): options to pass to the xarray open_dataset function
+
     Returns:
-        pd.DataFrame
+        pd.DataFrame or xr.Dataset
     """
-    df = retrospective(river_id, **kwargs)
-    return calc_monthly_averages(df)
+    pass
 
 
-def annual_averages(river_id: int or list, **kwargs) -> pd.DataFrame:
+@_retrospective
+def retro_yearly(river_id: int or list, **kwargs) -> pd.DataFrame or xr.Dataset:
     """
     Retrieves annual average streamflow for a given river_id
 
     Args:
         river_id (int): the ID of a stream, should be a 9 digit integer
 
+    Keyword Args:
+        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
+        storage_options (dict): options to pass to the xarray open_dataset function
+
     Returns:
-        pd.DataFrame
+        pd.DataFrame or xr.Dataset
     """
-    df = retrospective(river_id, **kwargs)
-    return calc_annual_averages(df)
+    pass
 
 
-def sfdc(curve_id: int or list) -> pd.DataFrame:
+@_retrospective
+def fdc(river_id: int or list,
+        *, resolution: str = 'daily', fdc_type: str = 'monthly', **kwargs) -> pd.DataFrame or xr.Dataset:
+    """
+    Retrieves the flow duration curve for a given river_id
+
+    Args:
+        river_id (int): the ID of a stream, should be a 9 digit integer
+
+    Keyword Args:
+        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
+        storage_options (dict): options to pass to the xarray open_dataset function
+        resolution (str): resolution of data to retrieve: hourly or daily. default daily
+        fdc_type (str): either the 'total' FDC (all values considered, returns 1 curve)
+            or 'monthly' (12 curves, each using values in that month)
+
+    Returns:
+        pd.DataFrame or xr.Dataset
+    """
+    pass
+
+
+@_retrospective
+def return_periods(river_id: int or list, **kwargs) -> pd.DataFrame or xr.Dataset:
+    """
+    Retrieves the return period thresholds based on a specified historic simulation forcing on a certain river_id.
+
+    Args:
+        river_id (int): the ID of a stream, should be a 9 digit integer
+
+    Keyword Args:
+        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
+        storage_options (dict): options to pass to the xarray open_dataset function
+        distribution (str): the method to use to estimate the return period thresholds. default is 'logpearson3'
+
+    Returns:
+        pd.DataFrame or xr.Dataset
+    """
+    pass
+
+
+# @_transformer
+def sfdc(*, curve_id: int or list = None, river_id: int or list = None) -> pd.DataFrame:
     """
     Retrieves data from the SFDC table based on 'asgn_mid' values for given river_id.
 
     Args:
-        curve_id (int or list): Single or list of sfdc curve IDs
+        curve_id (int or list): the ID of an sfdcd transformer curve, should be a 12 digit integer
+        river_id (int): the ID of a stream, should be a 9 digit integer
 
     Returns:
         pd.DataFrame
@@ -207,63 +282,48 @@ def sfdc(curve_id: int or list) -> pd.DataFrame:
     if isinstance(curve_id, list):
         assert all(len(str(x)) == 12 for x in curve_id), "curve_id must be a 12 digit integer"
         assert all(isinstance(x, int) for x in curve_id), "curve_id must be a 12 digit integer"
-    ds = xr.open_zarr(get_sfdc_zarr_uri(), storage_options={'anon': True})
-    return ds.sel(curve_id=curve_id).to_dataframe().reset_index()
+    if curve_id is None and river_id is None:
+        raise ValueError("curve_id or river_id must be provided")
+    if curve_id is not None and river_id is not None:
+        raise ValueError("curve_id and river_id cannot both be provided")
+
+    if river_id is not None:
+        assert isinstance(river_id, int), 'river_id must be an integer'
+        curve_id = pd.read_parquet(get_uri('transformer_table')).loc[river_id, 'sfdc_curve_id']
+
+    uri = get_uri('sfdc')
+    storage_options = {'anon': True} if uri.startswith('s3://rfs-v2') else None
+    return (
+        xr
+        .open_zarr(uri, storage_options=storage_options)
+        .sel(curve_id=curve_id)
+        .to_dataframe()
+        .reset_index()
+        .pivot(index=['month', 'p_exceed'], values='sfdc', columns='curve_id')
+    )
 
 
-def sfdc_for_river_id(river_id: int) -> pd.DataFrame:
+# @_transformer
+def hydroweb_wse_transformer(river_id: int) -> pd.DataFrame:
     """
-    Retrieves data from the SFDC table using 'asgn_mid' values obtained from the SABER assign table for the given 'river_id'.
-
+    Retrieves a water surface elevation transform curves only for select rivers with hydroweb observations
     Args:
-        river_id (int or list): ID(s) of a stream(s).
-
-    Returns:
-        pd.DataFrame: Filtered DataFrame from the SFDC table based on 'asgn_mid' values.
-    """
-    assert isinstance(river_id, int), 'river_id must be an integer'
-    curve_ids = assigned_sfdc_curve_id(river_id)
-    filtered_sfdc = sfdc(curve_ids)
-    return filtered_sfdc
-
-
-def assigned_sfdc_curve_id(river_id: int) -> list:
-    """
-    Retrieves 'asgn_mid' values from the SABER assign table for the given river_id(s).
-
-    Args:
-        river_id (int or list): ID(s) of a stream(s), should be a 9-digit integer or a list of such integers.
-
-    Returns:
-        list: List of 'asgn_mid' values for given river_id.
-    """
-    assert isinstance(river_id, int), 'river_id must be an integer'
-    df = pd.read_parquet(get_transformer_table_uri())
-    curve_ids = df.loc[df['river_id'] == river_id, 'sfdc_curve_id'].values[0]
-    return curve_ids
-
-
-@_retrospective
-def return_periods(river_id: int or list, *, format: str = 'df', method: str = 'gumbel1') -> pd.DataFrame or xr.Dataset:
-    """
-    Retrieves the return period thresholds based on a specified historic simulation forcing on a certain river_id.
-
-    Args:
-        river_id (int): the ID of a stream, should be a 9 digit integer
-        format (str): the format to return the data, either 'df' or 'xarray'. default is 'df'
-        method (str): the method to use to estimate the return period thresholds. default is 'gumbel1'
-
-    Changelog:
-        v1.4.0: adds method parameter for future expansion of multiple return period methods
+        river_id: the ID of a stream, should be a 9 digit integer
 
     Returns:
         pd.DataFrame
     """
-    pass
+    uri = get_uri('hydroweb')
+    storage_options = {'anon': True} if uri.startswith('s3://rfs-v2') else None
+    with xr.open_zarr(uri, storage_options=storage_options) as ds:
+        try:
+            return ds.sel(river_id=river_id).to_dataframe()[['wse']]
+        except Exception as e:
+            raise ValueError(f'River ID {river_id} not found in the SFDC table') from e
 
 
 # model config and supplementary data
-def metadata_tables(columns: list = None, metadata_table_path: str = None) -> pd.DataFrame:
+def metadata_table(columns: list = None, metadata_table_path: str = None) -> pd.DataFrame:
     """
     Retrieves the master table of rivers metadata and properties as a pandas DataFrame
     Args:
@@ -273,18 +333,62 @@ def metadata_tables(columns: list = None, metadata_table_path: str = None) -> pd
     Returns:
         pd.DataFrame
     """
-    if metadata_table_path:
-        return pd.read_parquet(metadata_table_path, columns=columns)
-    metadata_table_path = get_metadata_table_path()
-    if os.path.exists(metadata_table_path):
-        return pd.read_parquet(metadata_table_path, columns=columns)
-    warn = f"""
-    Local copy of geoglows v2 metadata table not found.
-    A copy of the table has been cached at {metadata_table_path} which you can move as desired.
-    You should set the environment variable PYGEOGLOWS_METADATA_TABLE_PATH or provide the metadata_table_path argument.
+    metadata_table_path = metadata_table_path or get_uri('metadata_table')
+    if not os.path.exists(metadata_table_path):
+        warn = 'Local copy of model metadata table not found. You should download it and specify it using the \
+        PYGEOGLOWS_METADATA_TABLE_PATH environment variable or as an argument to this function to avoid constant \
+        redownloads which are slow'
+        warnings.warn(warn, UserWarning, stacklevel=2)
+    return pd.read_parquet(metadata_table_path, columns=columns)
+
+
+def river_to_vpu(river_id: int, metadata_table_path: str = None) -> int:
     """
-    warnings.warn(warn)
-    df = pd.read_parquet('http://geoglows-v2.s3-website-us-west-2.amazonaws.com/tables/package-metadata-table.parquet')
-    os.makedirs(os.path.dirname(metadata_table_path), exist_ok=True)
-    df.to_parquet(metadata_table_path)
-    return df[columns] if columns else df
+    Gives the VPU number for a given River ID number
+
+    Args:
+        river_id (int): a 9 digit integer that is a valid GEOGLOWS River ID number
+        metadata_table_path (str): optional path to the local metadata table
+
+    Returns:
+        int: a 3 digit integer that is the VPU number for the given River ID number
+    """
+    return (
+        metadata_table(columns=['LINKNO', 'VPUCode'], metadata_table_path=metadata_table_path)
+        .loc[lambda x: x['LINKNO'] == river_id, 'VPUCode']
+        .values[0]
+    )
+
+
+def latlon_to_river(lat: float, lon: float, metadata_table_path: str = None) -> int:
+    """
+    Gives the River ID number whose outlet is nearest the given lat and lon
+    Args:
+        lat (float): a latitude
+        lon (float): a longitude
+        metadata_table_path (str): optional path to the local metadata table
+
+    Returns:
+        int: a 9 digit integer that is a valid GEOGLOWS River ID number
+    """
+    df = metadata_table(columns=['LINKNO', 'lat', 'lon'], metadata_table_path=metadata_table_path)
+    df['dist'] = ((df['lat'] - lat) ** 2 + (df['lon'] - lon) ** 2) ** 0.5
+    return df.loc[lambda x: x['dist'] == df['dist'].min(), 'LINKNO'].values[0]
+
+
+def river_to_latlon(river_id: int, metadata_table_path: str = None) -> np.ndarray:
+    """
+    Gives the lat and lon of the outlet of the river with the given River ID number
+
+    Args:
+        river_id (int): a 9 digit integer that is a valid GEOGLOWS River ID number
+        metadata_table_path (str): optional path to the local metadata table
+
+    Returns:
+        np.ndarray: a numpy array of floats, [lat, lon]
+    """
+    return (
+        metadata_table(columns=['LINKNO', 'lat', 'lon'], metadata_table_path=metadata_table_path)
+        .loc[lambda x: x['LINKNO'] == river_id, ['lat', 'lon']]
+        .values[0]
+    )
