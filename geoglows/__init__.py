@@ -12,6 +12,6 @@ __all__ = [
     'set_uri', 'get_uri'
 ]
 
-__version__ = '2.0.0'
+__version__ = '2.0.1'
 __author__ = 'Riley Hales'
 __license__ = 'BSD 3-Clause Clear License'
