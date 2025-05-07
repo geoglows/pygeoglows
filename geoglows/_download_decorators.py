@@ -202,7 +202,7 @@ def _retrospective(function):
                           json={'river_id': river_id, 'product': product_name, 'format': return_format})
 
         uri = get_uri(product_name)
-        storage_options = {'anon': True} if uri.startswith('s3://rfs-v2') else None
+        storage_options = {'anon': True} if uri.startswith('s3://geoglows-v2') else None
         storage_options = kwargs.get('storage_options', storage_options)
 
         with xr.open_zarr(uri, zarr_format=2, storage_options=storage_options) as ds:
