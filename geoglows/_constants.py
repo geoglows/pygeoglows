@@ -21,7 +21,7 @@ default_uri = {
     'hydroweb': f'{BUCKET_BASE_URI}/transformers/hydroweb.zarr',
     # tables
     'transformer_table': 'http://geoglows-v2.s3-us-west-2.amazonaws.com/transformers/transformer_table.parquet',
-    'metadata_table': 'http://geoglows-v2.s3-us-west-2.amazonaws.com/tables/v2-model-table.parquet',
+    'metadata_table': 'https://geoglows-v2.s3-us-west-2.amazonaws.com/tables/v2-model-table.parquet',
 }
 
 env_keys = {
