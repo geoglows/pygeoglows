@@ -292,7 +292,7 @@ def sfdc(*, curve_id: int or list = None, river_id: int or list = None) -> pd.Da
         curve_id = pd.read_parquet(get_uri('transformer_table')).loc[river_id, 'sfdc_curve_id']
 
     uri = get_uri('sfdc')
-    storage_options = {'anon': True} if uri.startswith('s3://rfs-v2') else None
+    storage_options = {'anon': True} if uri.startswith('s3://geoglows-v2') else None
     return (
         xr
         .open_zarr(uri, storage_options=storage_options)
@@ -314,7 +314,7 @@ def hydroweb_wse_transformer(river_id: int) -> pd.DataFrame:
         pd.DataFrame
     """
     uri = get_uri('hydroweb')
-    storage_options = {'anon': True} if uri.startswith('s3://rfs-v2') else None
+    storage_options = {'anon': True} if uri.startswith('s3://geoglows-v2') else None
     with xr.open_zarr(uri, storage_options=storage_options) as ds:
         try:
             return ds.sel(river_id=river_id).to_dataframe()[['wse']]
