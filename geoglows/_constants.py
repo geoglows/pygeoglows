@@ -2,6 +2,7 @@ import os
 
 ODP_FORECAST_S3_BUCKET_URI = 's3://geoglows-v2-forecasts'
 ODP_S3_BUCKET_REGION = 'us-west-2'
+BUCKET_BASE_URI = 's3://geoglows-v2'
 DEFAULT_REST_ENDPOINT = 'https://geoglows.ecmwf.int/api/'
 DEFAULT_REST_ENDPOINT_VERSION = 'v2'  # 'v1, v2, latest'
 
@@ -9,18 +10,18 @@ default_uri = {
     # forecasts
 
     # retrospective
-    'retro_hourly': 's3://rfs-v2/retrospective/hourly.zarr',
-    'retro_daily': 's3://rfs-v2/retrospective/daily.zarr',
-    'retro_monthly': 's3://rfs-v2/retrospective/monthly-timeseries.zarr',
-    'retro_yearly': 's3://rfs-v2/retrospective/yearly-timeseries.zarr',
-    'fdc': 's3://rfs-v2/retrospective/fdc.zarr',
-    'return_periods': 's3://rfs-v2/retrospective/return-periods.zarr',
+    'retro_hourly': f'{BUCKET_BASE_URI}/retrospective/hourly.zarr',
+    'retro_daily': f'{BUCKET_BASE_URI}/retrospective/daily.zarr',
+    'retro_monthly': f'{BUCKET_BASE_URI}/retrospective/monthly-timeseries.zarr',
+    'retro_yearly': f'{BUCKET_BASE_URI}/retrospective/yearly-timeseries.zarr',
+    'fdc': f'{BUCKET_BASE_URI}/retrospective/fdc.zarr',
+    'return_periods': f'{BUCKET_BASE_URI}/retrospective/return-periods.zarr',
     # transformers
-    'sfdc': 's3://rfs-v2/transformers/sfdc.zarr',
-    'hydroweb': 's3://rfs-v2/transformers/hydroweb.zarr',
+    'sfdc': f'{BUCKET_BASE_URI}/transformers/sfdc.zarr',
+    'hydroweb': f'{BUCKET_BASE_URI}/transformers/hydroweb.zarr',
     # tables
-    'transformer_table': 's3://rfs-v2/transformers/transformer_table.parquet',
-    'metadata_table': 'https://rfs-v2.s3-us-west-2.amazonaws.com/tables/model-metadata-table.parquet',
+    'transformer_table': 'https://geoglows-v2.s3-us-west-2.amazonaws.com/transformers/transformer_table.parquet',
+    'metadata_table': 'https://geoglows-v2.s3-us-west-2.amazonaws.com/tables/v2-model-table.parquet',
 }
 
 env_keys = {
