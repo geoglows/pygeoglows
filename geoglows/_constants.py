@@ -20,7 +20,7 @@ default_uri = {
     'sfdc': f'{BUCKET_BASE_URI}/transformers/sfdc.zarr',
     'hydroweb': f'{BUCKET_BASE_URI}/transformers/hydroweb.zarr',
     # tables
-    'transformer_table': f'{BUCKET_BASE_URI}/transformers/transformer_table.parquet',
+    'transformer_table': 'http://geoglows-v2.s3-us-west-2.amazonaws.com/transformers/transformer_table.parquet',
     'metadata_table': 'http://geoglows-v2.s3-us-west-2.amazonaws.com/tables/v2-model-table.parquet',
 }
 
