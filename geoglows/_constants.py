@@ -2,7 +2,7 @@ import os
 
 ODP_FORECAST_S3_BUCKET_URI = 's3://geoglows-v2-forecasts'
 ODP_S3_BUCKET_REGION = 'us-west-2'
-BUCKET_BASE_URI = f's3://geoglows-v2'
+BUCKET_BASE_URI = 's3://geoglows-v2'
 DEFAULT_REST_ENDPOINT = 'https://geoglows.ecmwf.int/api/'
 DEFAULT_REST_ENDPOINT_VERSION = 'v2'  # 'v1, v2, latest'
 
@@ -20,7 +20,7 @@ default_uri = {
     'sfdc': f'{BUCKET_BASE_URI}/transformers/sfdc.zarr',
     'hydroweb': f'{BUCKET_BASE_URI}/transformers/hydroweb.zarr',
     # tables
-    'transformer_table': 'http://geoglows-v2.s3-us-west-2.amazonaws.com/transformers/transformer_table.parquet',
+    'transformer_table': 'https://geoglows-v2.s3-us-west-2.amazonaws.com/transformers/transformer_table.parquet',
     'metadata_table': 'https://geoglows-v2.s3-us-west-2.amazonaws.com/tables/v2-model-table.parquet',
 }
 
