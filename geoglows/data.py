@@ -275,16 +275,15 @@ def sfdc(*, river_id: int or list) -> pd.DataFrame:
     Returns:
         pd.DataFrame
     """
-    # check that curve_id is a 12 digit integer or a list of such integers
     uri = get_uri('sfdc')
     storage_options = {'anon': True} if uri.startswith('s3://geoglows-v2') else None
     return (
         xr
         .open_zarr(uri, storage_options=storage_options)
-        .sel(curve_id=curve_id)
+        .sel(river_id=river_id)
         .to_dataframe()
         .reset_index()
-        .pivot(index=['month', 'p_exceed'], values='sfdc', columns='curve_id')
+        .pivot(index=['month', 'p_exceed'], values='sfdc', columns='river_id')
     )
 
 
@@ -302,7 +301,7 @@ def hydroweb_wse_transformer(river_id: int) -> pd.DataFrame:
     storage_options = {'anon': True} if uri.startswith('s3://geoglows-v2') else None
     with xr.open_zarr(uri, storage_options=storage_options) as ds:
         try:
-            return ds.sel(river_id=river_id).to_dataframe()[['wse', ]]
+            return ds.sel(river_id=river_id).to_dataframe()[['wse']]
         except Exception as e:
             raise ValueError(f'River ID {river_id} not found in the SFDC table') from e
 
