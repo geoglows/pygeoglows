@@ -265,32 +265,17 @@ def return_periods(river_id: int or list, **kwargs) -> pd.DataFrame or xr.Datase
 
 
 # @_transformer
-def sfdc(*, curve_id: int or list = None, river_id: int or list = None) -> pd.DataFrame:
+def sfdc(*, river_id: int or list) -> pd.DataFrame:
     """
     Retrieves data from the SFDC table based on 'asgn_mid' values for given river_id.
 
     Args:
-        curve_id (int or list): the ID of an sfdcd transformer curve, should be a 12 digit integer
         river_id (int): the ID of a stream, should be a 9 digit integer
 
     Returns:
         pd.DataFrame
     """
     # check that curve_id is a 12 digit integer or a list of such integers
-    if isinstance(curve_id, (int, np.integer)):
-        assert len(str(curve_id)) == 12, "curve_id must be a 12 digit integer"
-    if isinstance(curve_id, list):
-        assert all(len(str(x)) == 12 for x in curve_id), "curve_id must be a 12 digit integer"
-        assert all(isinstance(x, int) for x in curve_id), "curve_id must be a 12 digit integer"
-    if curve_id is None and river_id is None:
-        raise ValueError("curve_id or river_id must be provided")
-    if curve_id is not None and river_id is not None:
-        raise ValueError("curve_id and river_id cannot both be provided")
-
-    if river_id is not None:
-        assert isinstance(river_id, int), 'river_id must be an integer'
-        curve_id = pd.read_parquet(get_uri('transformer_table')).loc[river_id, 'sfdc_curve_id']
-
     uri = get_uri('sfdc')
     storage_options = {'anon': True} if uri.startswith('s3://geoglows-v2') else None
     return (
@@ -317,7 +302,7 @@ def hydroweb_wse_transformer(river_id: int) -> pd.DataFrame:
     storage_options = {'anon': True} if uri.startswith('s3://geoglows-v2') else None
     with xr.open_zarr(uri, storage_options=storage_options) as ds:
         try:
-            return ds.sel(river_id=river_id).to_dataframe()[['wse']]
+            return ds.sel(river_id=river_id).to_dataframe()[['wse', ]]
         except Exception as e:
             raise ValueError(f'River ID {river_id} not found in the SFDC table') from e
 
