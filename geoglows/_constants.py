@@ -20,7 +20,6 @@ default_uri = {
     'sfdc': f'{BUCKET_BASE_URI}/transformers/sfdc.zarr',
     'hydroweb': f'{BUCKET_BASE_URI}/transformers/hydroweb.zarr',
     # tables
-    'transformer_table': 'https://geoglows-v2.s3-us-west-2.amazonaws.com/transformers/transformer_table.parquet',
     'metadata_table': 'https://geoglows-v2.s3-us-west-2.amazonaws.com/tables/v2-model-table.parquet',
 }
 
@@ -38,7 +37,6 @@ env_keys = {
     'sfdc': 'PYGEOGLOWS_SFDC_URI',
     'hydroweb': 'PYGEOGLOWS_HYDROWEB_URI',
     # tables
-    'transformer_table': 'PYGEOGLOWS_TRANSFORMER_TABLE_URI',
     'metadata_table': 'PYGEOGLOWS_METADATA_TABLE_PATH',
 }
 
