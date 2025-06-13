@@ -226,7 +226,7 @@ def _retrospective(function):
             if product_name == 'fdc':
                 assert resolution in ('daily', 'hourly'), f'Unsupported resolution requested: {resolution}'
                 assert fdc_type in ('total', 'monthly'), f'Unsupported fdc_type: {fdc_type}'
-                var_name = f'fdc_{resolution}{f"_{fdc_type}" if fdc_type == "monthly" else ""}'
+                var_name = f'{resolution}{f"_{fdc_type}" if fdc_type == "monthly" else ""}'
                 index = ['month', 'p_exceed'] if fdc_type == 'monthly' else ['p_exceed']
                 return (
                     ds
