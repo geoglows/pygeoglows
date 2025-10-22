@@ -137,7 +137,7 @@ def discharge_transform(sim_data: pd.DataFrame, river_id: int) -> pd.DataFrame:
     )
 
     transformed = []
-    for month in sim_data.index.month.unique().sort_values().values:
+    for month in sorted(sim_data.index.month.unique()):
         month_qrange = qrange.loc[qrange['month'] == month, 'Qrange'].values.flatten()
         month_qtop_coefficients = qtop_df.loc[qtop_df['month'] == month, 'QtoP'].values.flatten()
         month_ptoq_coefficients = ptoq_df.loc[ptoq_df['month'] == month, 'PtoQ'].values.flatten()
