@@ -7,8 +7,10 @@ import numpy as np
 import pandas as pd
 from scipy import interpolate
 
+from .analyze import fdc_monthly
 from .data import fdc as get_fdc
 from .data import hydroweb_wse_transformer
+from .data import polyfits
 from .data import sfdc
 
 __all__ = [
@@ -16,6 +18,7 @@ __all__ = [
     'correct_forecast',
     'statistics_tables',
     'sfdc_bias_correction',
+    'discharge_transform',
 ]
 
 
@@ -60,11 +63,10 @@ def sfdc_bias_correction(sim_data: pd.DataFrame, river_id: int) -> pd.DataFrame:
     Args: river_id: int: a 9 digit integer that is a valid GEOGLOWS River ID number
 
     Returns: pandas DataFrame with a DateTime index and columns with Simulated flow, Bias Corrected Simulation flow.
-
     """
     assert isinstance(river_id, int), 'river_id must be an integer'
     sfdc_b = sfdc(river_id=river_id)
-    fdc_b = get_fdc(river_id=river_id)
+    fdc_b = fdc_monthly(sim_data, steps=101, col_name=river_id)
 
     # Process each month from January (1) to December (12)
     column_results = []
@@ -96,6 +98,64 @@ def sfdc_bias_correction(sim_data: pd.DataFrame, river_id: int) -> pd.DataFrame:
             }).set_index('datetime'))
         column_results.append(pd.concat(monthly_results).sort_index())
     return pd.concat(column_results, axis=1)
+
+
+def discharge_transform(sim_data: pd.DataFrame, river_id: int) -> pd.DataFrame:
+    """
+    Transforms a given discharge dataframe given the river_id of that data which is used to lookup transformation weights
+
+    Args:
+        sim_data: daily average discharge data with a datetime index and exactly 1 column of discharge values
+        river_id: the integer river_id used to lookup the correct transformation weights
+
+    Returns:
+        A pandas Dataframe with a datetime index, a column with the same name as the input but with values transformed, and the original column also included
+    """
+    assert isinstance(river_id, int), 'river_id must be an integer'
+
+    polyfits_ds = polyfits(river_id=river_id)
+    qrange = (
+        polyfits_ds
+        [['Qrange']]
+        .to_dataframe()
+        .drop(columns='river_id')
+        .reset_index()
+    )
+    qtop_df = (
+        polyfits_ds
+        [['QtoP']]
+        .to_dataframe()
+        .drop(columns='river_id')
+        .reset_index()
+    )
+    ptoq_df = (
+        polyfits_ds
+        [['PtoQ']]
+        .to_dataframe()
+        .drop(columns='river_id')
+        .reset_index()
+    )
+
+    transformed = []
+    for month in sim_data.index.month.unique().sort_values().values:
+        month_qrange = qrange.loc[qrange['month'] == month, 'Qrange'].values.flatten()
+        month_qtop_coefficients = qtop_df.loc[qtop_df['month'] == month, 'QtoP'].values.flatten()
+        month_ptoq_coefficients = ptoq_df.loc[ptoq_df['month'] == month, 'PtoQ'].values.flatten()
+        qtop = np.poly1d(month_qtop_coefficients)
+        ptoq = np.poly1d(month_ptoq_coefficients)
+
+        monthly_df = sim_data.loc[sim_data.index.month == month].clip(month_qrange[0], month_qrange[1])
+        monthly_q = monthly_df.values.flatten()
+        p = np.exp(qtop(monthly_q)) - 1
+        p = np.clip(p, 0, 100)
+        q_transformed = np.exp(ptoq(p)) - 1
+        q_transformed = pd.DataFrame(
+            q_transformed.reshape(monthly_df.shape),
+            index=monthly_df.index,
+            columns=monthly_df.columns,
+        )
+        transformed.append(q_transformed)
+    return pd.concat(transformed).sort_index()
 
 
 def _make_interpolator(x: np.array, y: np.array, extrap: str = 'nearest',

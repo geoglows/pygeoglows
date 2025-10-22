@@ -28,6 +28,7 @@ __all__ = [
     # transformers
     'sfdc',
     'hydroweb_wse_transformer',
+    'polyfits',
 
     # metadata
     'metadata_table',
@@ -304,6 +305,24 @@ def hydroweb_wse_transformer(river_id: int) -> pd.DataFrame:
             return ds.sel(river_id=river_id).to_dataframe()[['wse']]
         except Exception as e:
             raise ValueError(f'River ID {river_id} not found in the SFDC table') from e
+
+
+def polyfits(river_id: int) -> xr.Dataset:
+    """
+    Retrieves the polynomial fit coefficients for a given river_id
+
+    Args:
+        river_id (int): the ID of a stream, should be a 9 digit integer
+    Returns:
+        xr.Dataset
+    """
+    uri = get_uri('polyfits')
+    storage_options = {'anon': True} if uri.startswith('s3://geoglows-v2') else None
+    with xr.open_zarr(uri, storage_options=storage_options) as ds:
+        try:
+            return ds.sel(river_id=river_id)
+        except Exception as e:
+            raise ValueError(f'River ID {river_id} not found in the Polyfits table') from e
 
 
 # model config and supplementary data
