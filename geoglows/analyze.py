@@ -16,6 +16,7 @@ __all__ = [
     'return_periods',
     'low_return_periods',
     'fdc',
+    'fdc_monthly',
     'sfdc',
 ]
 
@@ -270,11 +271,33 @@ def fdc(flows: np.array, steps: int = 101, col_name: str = 'Q') -> pd.DataFrame:
         pd.DataFrame with index 'p_exceed' and columns 'Q' (or col_name)
     """
     # calculate the FDC and save to parquet
-    exceed_prob = np.linspace(100, 0, steps)
-    fdc_flows = np.nanpercentile(flows, exceed_prob)
+    quantiles = np.linspace(100, 0, steps)
+    exceed_prob = np.linspace(0, 100, steps)
+    fdc_flows = np.nanpercentile(flows, quantiles)
     df = pd.DataFrame(fdc_flows, columns=[col_name, ], index=exceed_prob)
     df.index.name = 'p_exceed'
     return df
+
+
+def fdc_monthly(flows: pd.DataFrame, steps: int = 101, col_name: str = 'Q') -> pd.DataFrame:
+    """
+    Compute monthly flow duration curves (exceedance probabilities) from a dataframe of flows with a datetime index
+
+    Args:
+        flows: dataframe of flows with a datetime index
+        steps: number of steps (exceedance probabilities) to use in the FDC
+        col_name: name of the column in the returned dataframe
+
+    Returns:
+        pd.DataFrame with a multi-index of 'month' and 'p_exceed' and columns 'Q' (or col_name)
+    """
+    fdc_dfs = []
+    for month in range(1, 13):
+        month_flows = flows[flows.index.month == month].values.flatten()
+        fdc_df = fdc(month_flows, steps=steps, col_name=col_name)
+        fdc_df['month'] = month
+        fdc_dfs.append(fdc_df.set_index('month', append=True))
+    return pd.concat(fdc_dfs).reorder_levels(['month', 'p_exceed']).sort_index()
 
 
 def sfdc(sim_fdc: pd.DataFrame, obs_fdc: pd.DataFrame) -> pd.DataFrame:
